@@ -7,7 +7,7 @@ class UniformBandit:
         self.num_objectives = num_objectives
         self.arm_means = np.zeros((num_arms, num_objectives))
         self.arm_counts = np.zeros(num_arms)
-        self.current_arm = 0
+        self.current_arm = np.random.randint(num_arms)
 
     def choose_arm(self):
         arm = self.current_arm
@@ -26,4 +26,4 @@ class UniformBandit:
     def reset(self):
         self.arm_means = np.zeros((self.num_arms, self.num_objectives))
         self.arm_counts = np.zeros(self.num_arms)
-        self.current_arm = 0
+        self.current_arm = np.random.randint(self.num_arms)
