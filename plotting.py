@@ -8,7 +8,7 @@ import matplotlib.patches as mpatches
 from matplotlib.patches import Ellipse, Patch
 
 # Increase the font size of the plots
-plt.rcParams.update({'font.size': 16})
+plt.rcParams.update({'font.size': 17})
 # Change the font to a fancy serif font for use in a latex document
 plt.rcParams.update({'font.family': 'serif'})
 # plt.rcParams['figure.constrained_layout.use'] = True
@@ -278,11 +278,11 @@ def plot_arm_pulls_single(setup, algorithm_name, optimal_arms, total_pulls):
     plt.show()
 
 
-# Results are stored in a csv file with the following columns: algorithm name, run, time step, arm pulled at time t, cumulative pareto regret, cumulative unfairness regret, bernoulli metric, jaccard similarity, hypervolume
-def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=False):
+def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=False, baseline=None):
     """
     Plot the evolution of the Bernoulli metric. The Bernoulli metric is the fraction of times the algorithm pulls a Pareto optimal arm.
     The x-axis represents the time steps and the y-axis represents the Bernoulli metric. The metric is averaged over the experiments.
+    :param baseline: File containing the baseline results.
     :param plot_std: Whether to plot the standard deviation of the Bernoulli metric.
     :param file: The file containing the experimental results.
     :param num_runs: The number of runs of the experiment.
@@ -297,6 +297,8 @@ def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, p
     avg_bernoulli_metrics = np.mean(bernoulli_metrics, axis=1)
     std_bernoulli_metrics = np.std(bernoulli_metrics, axis=1)
 
+    # algorithm_names = ["MOMAB1", "MOMAB2", "MOMAB3", "MOMAB4", "Nieuwe MOMAB"]
+
     for i, name in enumerate(algorithm_names):
         rolling_avg = pd.Series(avg_bernoulli_metrics[i]).rolling(window=rolling_avg_window).mean()
         if rolling_avg_window > 1:
@@ -310,18 +312,35 @@ def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, p
                              avg_bernoulli_metrics[i] + 1.96 * std_bernoulli_metrics[i] / np.sqrt(num_runs),
                              alpha=0.2, color=colors[i])
 
+    if baseline is not None:
+        baseline_df = pd.read_csv(baseline, header=None)
+        baseline_bernoulli_metrics = baseline_df.values[:, 3].reshape(1, num_runs, num_arm_pulls).astype(np.float64)
+        avg_baseline_bernoulli_metrics = np.mean(baseline_bernoulli_metrics, axis=1)
+        std_baseline_bernoulli_metrics = np.std(baseline_bernoulli_metrics, axis=1)
+        rolling_avg = pd.Series(avg_baseline_bernoulli_metrics[0]).rolling(window=rolling_avg_window).mean()
+        if rolling_avg_window > 1:
+            plt.plot(rolling_avg, label="Huidige techniek", color=colors[-1])
+            plt.plot(avg_baseline_bernoulli_metrics[0], alpha=0.2, color=colors[-1])
+        else:
+            plt.plot(avg_baseline_bernoulli_metrics[0], label="Huidige techniek")
+        if plot_std:
+            plt.fill_between(range(len(avg_baseline_bernoulli_metrics[0])),
+                             avg_baseline_bernoulli_metrics[0] - 1.96 * std_baseline_bernoulli_metrics[0] / np.sqrt(num_runs),
+                             avg_baseline_bernoulli_metrics[0] + 1.96 * std_baseline_bernoulli_metrics[0] / np.sqrt(num_runs),
+                             alpha=0.2, color="tab:gray")
+
     plt.ylim(0, 1)
-    # plt.title("Bernoulli metric")
-    plt.xlabel("Time steps")
+    plt.xlabel("Arm pulls")
     plt.ylabel("Bernoulli metric")
-    plt.legend(loc='lower right')
+    plt.legend()
     plt.show()
 
 
-def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=False):
+def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=False, baseline=None):
     """
     Plot the evolution of the Jaccard metric. The Jaccard metric is the Jaccard similarity between the set of Pareto optimal arms and the set of arms recommended by the algorithm.
     The x-axis represents the time steps and the y-axis represents the Jaccard metric. The metric is averaged over the experiments.
+    :param baseline: File containing the baseline results.
     :param plot_std: Whether to plot the standard deviation of the Jaccard metric.
     :param file: The file containing the experimental results.
     :param num_runs: The number of runs of the experiment.
@@ -349,18 +368,37 @@ def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plo
                              avg_jaccard_metrics[i] + 1.96 * std_jaccard_metrics[i] / np.sqrt(num_runs),
                              alpha=0.2, color=colors[i])
 
+    if baseline is not None:
+        baseline_df = pd.read_csv(baseline, header=None)
+        baseline_jaccard_metrics = baseline_df.values[:, 4].reshape(1, num_runs, num_arm_pulls).astype(np.float64)
+        avg_baseline_jaccard_metrics = np.mean(baseline_jaccard_metrics, axis=1)
+        std_baseline_jaccard_metrics = np.std(baseline_jaccard_metrics, axis=1)
+        rolling_avg = pd.Series(avg_baseline_jaccard_metrics[0]).rolling(window=rolling_avg_window).mean()
+        if rolling_avg_window > 1:
+            plt.plot(rolling_avg, label="Uniform Sampling", color=colors[-1])
+            plt.plot(avg_baseline_jaccard_metrics[0], alpha=0.2, color=colors[-1])
+        else:
+            plt.plot(avg_baseline_jaccard_metrics[0], label="Uniform Sampling")
+        if plot_std:
+            plt.fill_between(range(len(avg_baseline_jaccard_metrics[0])),
+                             avg_baseline_jaccard_metrics[0] - 1.96 * std_baseline_jaccard_metrics[0] / np.sqrt(num_runs),
+                             avg_baseline_jaccard_metrics[0] + 1.96 * std_baseline_jaccard_metrics[0] / np.sqrt(num_runs),
+                             alpha=0.2, color="tab:gray")
+
     plt.ylim(0, 1)
-    # plt.title("Jaccard metric")
     plt.xlabel("Time steps")
     plt.ylabel("Jaccard metric")
     plt.legend(loc='lower right')
     plt.show()
 
 
-def plot_hypervolume(file, num_runs, num_arm_pulls, y_low_lim, y_up_lim, rolling_avg_window=1, plot_std=False):
+def plot_hypervolume(file, num_runs, num_arm_pulls, y_low_lim, y_up_lim, rolling_avg_window=1, plot_std=False, baseline=None):
     """
     Plot the evolution of the hypervolume metric. The hypervolume metric is the hypervolume of the arms recommended by the algorithm.
     The x-axis represents the time steps and the y-axis represents the hypervolume metric. The metric is averaged over the experiments.
+    :param y_up_lim: Upper limit of the y-axis.
+    :param y_low_lim: Lower limit of the y-axis.
+    :param baseline: File containing the baseline results.
     :param plot_std: Whether to plot the standard deviation of the hypervolume metric.
     :param file: The file containing the experimental results.
     :param num_runs: The number of runs of the experiment.
@@ -388,19 +426,35 @@ def plot_hypervolume(file, num_runs, num_arm_pulls, y_low_lim, y_up_lim, rolling
                              avg_hypervolumes[i] + 1.96 * std_hyper_volumes[i] / np.sqrt(num_runs),
                              alpha=0.2, color=colors[i])
 
+    if baseline is not None:
+        baseline_df = pd.read_csv(baseline, header=None)
+        baseline_hypervolumes = baseline_df.values[:, 5].reshape(1, num_runs, num_arm_pulls).astype(np.float64)
+        avg_baseline_hypervolumes = np.mean(baseline_hypervolumes, axis=1)
+        std_baseline_hypervolumes = np.std(baseline_hypervolumes, axis=1)
+        rolling_avg = pd.Series(avg_baseline_hypervolumes[0]).rolling(window=rolling_avg_window).mean()
+        if rolling_avg_window > 1:
+            plt.plot(rolling_avg, label="Uniform Sampling", color=colors[-1])
+            plt.plot(avg_baseline_hypervolumes[0], alpha=0.2, color=colors[-1])
+        else:
+            plt.plot(avg_baseline_hypervolumes[0], label="Uniform Sampling")
+        if plot_std:
+            plt.fill_between(range(len(avg_baseline_hypervolumes[0])),
+                             avg_baseline_hypervolumes[0] - 1.96 * std_baseline_hypervolumes[0] / np.sqrt(num_runs),
+                             avg_baseline_hypervolumes[0] + 1.96 * std_baseline_hypervolumes[0] / np.sqrt(num_runs),
+                             alpha=0.2, color="tab:gray")
+
     plt.ylim(y_low_lim, y_up_lim)
 
-    # plt.title("Hypervolume metric")
     plt.xlabel("Time steps")
     plt.ylabel("Hypervolume metric")
-    plt.legend(loc='lower right')
+    plt.legend()
     plt.show()
 
 
-def plot_arm_pull_frequencies(file, num_runs, num_arm_pulls, optimal_arms, num_arms, algorithm):
+def plot_arm_pull_frequencies(file, num_runs, num_arm_pulls, optimal_arms, num_arms, algorithm, df_arm_idx):
     result_df = pd.read_csv(file, header=None)
     algorithm_results = result_df[result_df[0] == algorithm]
-    arm_pulled = algorithm_results.values[:, 6].reshape(num_runs, num_arm_pulls)
+    arm_pulled = algorithm_results.values[:, df_arm_idx].reshape(num_runs, num_arm_pulls)
     pulls_per_arm_per_run = np.zeros((num_runs, num_arms))
     for i in range(num_runs):
         for j in range(num_arm_pulls):
@@ -410,6 +464,7 @@ def plot_arm_pull_frequencies(file, num_runs, num_arm_pulls, optimal_arms, num_a
     bars = plt.bar(range(num_arms), avg_pulls_per_arm, yerr=1.96 * std_pulls_per_arm / np.sqrt(num_runs))
     for i in optimal_arms:
         bars[i].set_color('green')
+    plt.xticks(range(0, num_arms, 5))
     plt.xlabel("Arm index")
     plt.ylabel("Pull frequency")
     plt.show()
@@ -429,7 +484,8 @@ def plot_arm_rec_frequencies(file, num_runs, num_arm_pulls, optimal_arms, num_ar
     avg_recommendations_per_run = np.mean(recommendations_per_run)
     avg_recommendations_per_arm = np.mean(recommendations_per_arm_per_run, axis=0) / avg_recommendations_per_run
     std_recommendations_per_arm = np.std(recommendations_per_arm_per_run, axis=0) / avg_recommendations_per_run
-    bars = plt.bar(range(num_arms), avg_recommendations_per_arm, yerr=1.96 * std_recommendations_per_arm / np.sqrt(num_runs))
+    bars = plt.bar(range(num_arms), avg_recommendations_per_arm,
+                   yerr=1.96 * std_recommendations_per_arm / np.sqrt(num_runs))
     for i in optimal_arms:
         bars[i].set_color('green')
     plt.xticks(range(0, num_arms, 5))
@@ -439,8 +495,9 @@ def plot_arm_rec_frequencies(file, num_runs, num_arm_pulls, optimal_arms, num_ar
 
 
 if __name__ == "__main__":
-    plot_bernoulli_metric("results/TTPFTS_hypers.csv", 25, 30_000, rolling_avg_window=1, plot_std=True)
-    plot_jaccard_metric("results/TTPFTS_hypers.csv", 25, 30_000, rolling_avg_window=1, plot_std=True)
-    plot_hypervolume("results/TTPFTS_hypers.csv", 25, 30_000, 9_200, 9_310, rolling_avg_window=1, plot_std=True)
-    # for algorithm in ["Pareto UCB1", "Pareto Thompson Sampling", "Pareto Knowledge Gradient", "Annealing Pareto", "TTPFTS"]:
-    #     plot_arm_rec_frequencies("results/finalV2_recs.csv", 100, 30_000, [0, 5, 6, 8, 14, 30, 31, 32], 53, algorithm)
+    plot_bernoulli_metric("results/Auer_test_results.csv", 100, 10_000, plot_std=True, baseline=None)
+    plot_jaccard_metric("results/Auer_test_results.csv", 100, 10_000, plot_std=True, baseline=None)
+    plot_hypervolume("results/Auer_test_results.csv", 100, 10_000, plot_std=True, baseline=None)
+    # plot_arm_rec_frequencies("results/baseline_recs.csv", 100, 30_000, [0, 5, 6, 8, 14, 30, 31, 32], 53, "Uniform Sampling")
+    # plot_arm_pull_frequencies("results/bandits/test2.csv", 100, 250_000, [0, 1, 2, 3], 20,
+    #                           "Linear Scalarized Knowledge Gradient (objectives)", 3)
