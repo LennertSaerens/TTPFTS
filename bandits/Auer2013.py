@@ -23,15 +23,15 @@ class Auer2013Bandit:
         """
         self.num_arms = num_arms
         self.num_objectives = num_objectives
-        self.active_arms = np.arange(num_arms)
-        self.optimal = []
         self.epsilon = epsilon
         self.delta = delta
+
+        self.active_arms = np.arange(num_arms)
+        self.optimal = []
+
         self.arm_means = np.zeros((num_arms, num_objectives))
         self.arm_counts = np.zeros((num_arms, num_objectives))
-        self.active_arm_counts = np.zeros((num_arms, num_objectives))
-        # The current arm starts as the first of the active_arms arms
-        self.current_arm = self.active_arms[0]
+        self.current_arm = 0
 
     def choose_arm(self):
         """
@@ -40,16 +40,13 @@ class Auer2013Bandit:
         :return: The arm to pull.
         """
         # Check if all active arms have been pulled once
-        if np.all(self.active_arm_counts > 0):
+        if np.all(self.arm_counts[self.active_arms] > 0):
             # If all active arms have been pulled once, update the optimal and active arms
             self.update_optimal_and_active_arms()
 
-        arm = self.current_arm
-        # Increment the count of the arm
+        arm = self.active_arms[self.current_arm]
         self.arm_counts[arm] += 1
-        self.active_arm_counts[arm] += 1
-        # Update the current arm to the next arm in the active_arms arms
-        self.current_arm = self.active_arms[(np.where(self.active_arms == arm)[0][0] + 1) % len(self.active_arms)]
+        self.current_arm = (self.current_arm + 1) % len(self.active_arms)
         return arm
 
     def update_optimal_and_active_arms(self):
@@ -102,11 +99,8 @@ class Auer2013Bandit:
         self.active_arms = np.setdiff1d(A_1, P_2)
         # Set the optimal arms to the union of the current optimal arms and P_2
         self.optimal = np.union1d(self.optimal, P_2)
-
-        # Set the current arm to the first arm in the active_arms arms
-        self.current_arm = self.active_arms[0]
-        # Reset the active arm counts based on the new active_arms
-        self.active_arm_counts = np.zeros((len(self.active_arms), self.num_objectives))
+        # Reset the current arm to 0
+        self.current_arm = 0
 
     def get_arm_ci(self, arm: int):
         """
@@ -130,11 +124,7 @@ class Auer2013Bandit:
         :return: The gap between the two arms.
         """
         # Find the smallest difference between the two arms across all objectives
-        min_dim_diff = np.min(self.arm_means[arm_i, :] - self.arm_means[arm_j, :])
-        if min_dim_diff > 0:
-            return min_dim_diff
-        else:
-            return 0
+        return max(0, np.min(self.arm_means[arm_i] - self.arm_means[arm_j]))
 
     def get_max_gap(self, arm_i: int, arm_j: int):
         """
@@ -144,11 +134,7 @@ class Auer2013Bandit:
         :param arm_j: The second arm.
         :return: The maximum gap between the two arms.
         """
-        max_dim_diff = np.max(self.arm_means[arm_i, :] - self.arm_means[arm_j, :])
-        if max_dim_diff > 0:
-            return max_dim_diff
-        else:
-            return 0
+        return max(0, np.max(self.arm_means[arm_i] - self.arm_means[arm_j]))
 
     def get_top_arms(self):
         return self.optimal
@@ -170,7 +156,6 @@ class Auer2013Bandit:
         """
         self.arm_means = np.zeros((self.num_arms, self.num_objectives))
         self.arm_counts = np.zeros((self.num_arms, self.num_objectives))
-        self.active_arm_counts = np.zeros((self.num_arms, self.num_objectives))
         self.active_arms = np.arange(self.num_arms)
         self.optimal = []
-        self.current_arm = self.active_arms[0]
+        self.current_arm = 0
