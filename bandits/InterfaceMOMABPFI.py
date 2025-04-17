@@ -15,7 +15,7 @@ class BaseMOMABAlgorithm(ABC):
 
     @abstractmethod
     def get_top_arms(self) -> np.ndarray:
-        """Returns the top arms based on some criteria."""
+        """Returns the arms considered Pareto optimal."""
         pass
 
     @abstractmethod
