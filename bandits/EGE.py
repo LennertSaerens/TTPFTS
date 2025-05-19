@@ -4,19 +4,42 @@ import math
 import numpy as np
 
 
-def calc_round_budget(r: int, total_budget: int, num_arms: int) -> int:
+def special_log(K: int) -> float:
     """
-    Calculate the budget for the current round.
+    Calculate the special logarithm for the given number of arms.
+    :param K: The number of arms.
+    :return: The special logarithm value.
+    """
+    res = 1 / 2
+    for i in range(2, K + 1):
+        res += 1 / i
+    return res
+
+
+def n(T: int, K: int, r: int) -> int:
+    """
+    :param T: The total arm pull budget.
+    :param K: The number of arms.
     :param r: The current round number.
-    :param total_budget: The total budget available.
+    :return: The number of arms for the current round.
+    """
+    if r == 0:
+        return 0
+    else:
+        return math.ceil(
+            (1 / special_log(K)) * ((T - K) / (K + 1 - r))
+        )
+
+
+def calc_round_budget_SR(r: int, total_budget: int, num_arms: int) -> int:
+    """
+    Calculate the budget for the current round in the Successive Rejects case.
+    :param r: The current round number.
+    :param total_budget: The total arm pull budget.
     :param num_arms: The number of arms.
     :return: The budget for the current round.
     """
-    return math.ceil(
-        (1 / np.log(num_arms)) * ((total_budget - num_arms) / (num_arms + 1 - r))
-    ) - math.ceil(
-        (1 / np.log(num_arms)) * ((total_budget - num_arms) / (num_arms + 1 - r + 1))
-    )
+    return n(total_budget, num_arms, r) - n(total_budget, num_arms, r - 1)
 
 
 class EGE(BaseMOMABAlgorithm):
@@ -24,7 +47,8 @@ class EGE(BaseMOMABAlgorithm):
     Empirical Gap Elimination Bandit
     From "Bandit Pareto Set Identification: the Fixed Budget Setting" by Kone et al.
     """
-    def __init__(self, num_arms, num_objectives, budget):
+
+    def __init__(self, num_arms, num_objectives, budget, budget_f=calc_round_budget_SR):
         super().__init__(num_arms, num_objectives)
         self.budget = budget
 
@@ -37,7 +61,8 @@ class EGE(BaseMOMABAlgorithm):
         self.suboptimal_arms = []
 
         self.curr_round = 1
-        self.round_budget = calc_round_budget(self.curr_round, self.budget, self.num_arms)
+        self.budget_f = budget_f
+        self.round_budget = budget_f(self.curr_round, self.budget, self.num_arms)
         self.current_arm = 0
 
     def choose_arm(self):
@@ -55,6 +80,7 @@ class EGE(BaseMOMABAlgorithm):
         self.total_arm_counts[arm] += 1
         # Update the current arm to the next one in the active arms
         self.current_arm = (self.current_arm + 1) % len(self.active_arms)
+        # print(f"Pulling arm {arm} in round {self.curr_round} with budget {self.round_budget}")
         return arm
 
     def get_top_arms(self):
@@ -78,9 +104,15 @@ class EGE(BaseMOMABAlgorithm):
         """
         self.arm_means = np.zeros((self.num_arms, self.num_objectives))
         self.total_arm_counts = np.zeros((self.num_arms, self.num_objectives))
+        self.round_arm_counts = np.zeros((self.num_arms, self.num_objectives))
+
         self.active_arms = np.arange(self.num_arms)
         self.optimal_arms = []
         self.suboptimal_arms = []
+
+        self.curr_round = 1
+        self.round_budget = self.budget_f(self.curr_round, self.budget, self.num_arms)
+        self.current_arm = 0
 
     def min_gap(self, arm_i: int, arm_j: int) -> float:
         """
@@ -107,14 +139,16 @@ class EGE(BaseMOMABAlgorithm):
         self.update_active_arms()
 
         self.curr_round += 1
-        self.round_budget = calc_round_budget(self.curr_round, self.budget, self.num_arms)
-        self.round_arm_counts = np.zeros(len(self.active_arms))
+        self.round_budget = self.budget_f(self.curr_round, self.budget, self.num_arms)
+        self.round_arm_counts = np.zeros((self.num_arms, self.num_objectives))
+        self.current_arm = 0
 
     def update_active_arms(self) -> None:
         """
         Update the active arms based on the current arm means.
         """
         max_arms = self.num_arms - self.curr_round
+        # print(f"Max arms after round {self.curr_round}: {max_arms}")
 
         # Calculate the empirical Pareto set
         is_strictly_worse = np.all(self.arm_means[:, None, :] < self.arm_means[None, :, :], axis=2)
@@ -124,10 +158,16 @@ class EGE(BaseMOMABAlgorithm):
 
         empirical_gaps = np.zeros(len(self.active_arms))
         for i, arm in enumerate(self.active_arms):
+            max_min_gap = np.max([self.min_gap(arm, arm_j) for arm_j in self.active_arms if arm_j != arm])
             if arm in diff:
-                empirical_gaps[i] = np.max([self.min_gap(arm, arm_j) for arm_j in self.active_arms if arm_j != arm])
+                empirical_gaps[i] = max_min_gap
             else:
-                empirical_gaps[i] = np.min([self.max_gap(arm, arm_j) for arm_j in self.active_arms if arm_j != arm])
+                ij_max_gap = [self.max_gap(arm, arm_j) for arm_j in self.active_arms if arm_j != arm]
+                ji_max_gap = [self.max_gap(arm_j, arm) for arm_j in self.active_arms if arm_j != arm]
+                pos_part_max_min_gap = max(max_min_gap, 0)
+                pos_part_ji_max_gap = [gap if gap > 0 else 0 for gap in ji_max_gap]
+                combined_gaps = [gap + pos_part_max_min_gap for gap in pos_part_ji_max_gap]
+                empirical_gaps[i] = np.min(ij_max_gap.extend(combined_gaps))
 
         # Sort the arms by increasing empirical gaps
         sorted_indices = np.argsort(empirical_gaps)
@@ -141,3 +181,11 @@ class EGE(BaseMOMABAlgorithm):
 
         self.optimal_arms = np.union1d(self.optimal_arms, (np.intersect1d(emp_Pareto_arms, active_diff)))
         self.suboptimal_arms = np.union1d(self.suboptimal_arms, np.setdiff1d(active_diff, emp_Pareto_arms))
+
+        # print(f"Round {self.curr_round} Information: \n"
+        #         f"Empirical gaps: {empirical_gaps} \n"
+        #         f"Sorted indices: {sorted_indices}, sorted arms: {sorted_arms} \n"
+        #         f"New active arms: {self.active_arms} \n"
+        #         f"Empirical Pareto arms: {emp_Pareto_arms} \n"
+        #         f"Optimal arms: {self.optimal_arms} \n"
+        #         f"Suboptimal arms: {self.suboptimal_arms} \n")
