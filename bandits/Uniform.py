@@ -1,8 +1,11 @@
 import numpy as np
 
+from bandits.InterfaceMOMABPFI import BaseMOMABAlgorithm
 
-class UniformBandit:
+
+class UniformBandit(BaseMOMABAlgorithm):
     def __init__(self, num_arms, num_objectives):
+        super().__init__(num_arms, num_objectives)
         self.num_arms = num_arms
         self.num_objectives = num_objectives
         self.arm_means = np.zeros((num_arms, num_objectives))

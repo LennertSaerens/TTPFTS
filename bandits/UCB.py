@@ -43,7 +43,7 @@ class PUCB1Bandit:
     #     :return: The top arms.
     #     """
     #     ucb_values = self.arm_means + self.kappa * np.sqrt(
-    #         (2 * math.log(self.n * pow(self.num_objectives * self.num_arms, 1 / 4))) / self.arm_counts
+    #         (2 * math.log(self.n * pow(self.num_objectives * self.num_arms, 1 / 4))) / self.itt_arm_counts
     #     )
     #     is_strictly_worse = np.all(ucb_values[:, None, :] < ucb_values[None, :, :], axis=2)
     #     pareto_indices = np.where(~np.any(is_strictly_worse, axis=1))[0]
