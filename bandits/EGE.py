@@ -48,7 +48,7 @@ class EGE(BaseMOMABAlgorithm):
     From "Bandit Pareto Set Identification: the Fixed Budget Setting" by Kone et al.
     """
 
-    def __init__(self, num_arms, num_objectives, budget, budget_f=calc_round_budget_SR):
+    def __init__(self, num_arms, num_objectives, budget: int, budget_f=calc_round_budget_SR):
         super().__init__(num_arms, num_objectives)
         self.budget = budget
 

@@ -1,6 +1,6 @@
 import numpy as np
 import random
-import scipy.stats as stats
+from scipy.stats import invgamma, norm
 
 
 class TTPFTSBandit:
@@ -74,8 +74,8 @@ class NormalTTPFTSBandit:
         self.num_objectives = num_objectives
         self.mu = np.zeros((num_arms, num_objectives))  # mean
         self.lambdas = np.ones((num_arms, num_objectives))  # precision
-        self.alpha = np.ones((num_arms, num_objectives))  # shape
-        self.beta = np.ones((num_arms, num_objectives))  # scale
+        self.alpha = np.full((num_arms, num_objectives), 2)  # shape
+        self.beta = np.full((num_arms, num_objectives), 2)  # scale
         self.p = p
 
     def choose_arm(self):
@@ -84,14 +84,16 @@ class NormalTTPFTSBandit:
         in the non-Pareto optimal set and return one of them.
         :return: The arm to pull.
         """
-        stds = stats.invgamma.rvs(self.alpha, scale=self.beta)
-        samples = np.random.normal(self.mu, stds / self.lambdas)
+        stds = invgamma.rvs(a=self.alpha, scale=self.beta)
+        samples = norm.rvs(loc=self.mu, scale=np.sqrt(stds / self.lambdas))
         is_strictly_worse = np.all(samples[:, None, :] < samples[None, :, :], axis=2)
         pareto_indices = np.where(~np.any(is_strictly_worse, axis=1))[0]
         if np.random.random() < self.p:
             return random.choice(pareto_indices)
         else:
             non_pareto_indices = np.setdiff1d(np.arange(self.num_arms), pareto_indices)
+            if len(non_pareto_indices) == 0:
+                return random.choice(pareto_indices)
             non_pareto_samples = samples[non_pareto_indices]
             is_strictly_worse = np.all(non_pareto_samples[:, None, :] < non_pareto_samples[None, :, :], axis=2)
             non_dominated_indices = np.where(~np.any(is_strictly_worse, axis=1))[0]
@@ -125,11 +127,10 @@ class NormalTTPFTSBandit:
         :return: None
         """
         for o in range(self.num_objectives):
+            self.beta[arm][o] += 0.5 * (reward[o] - self.mu[arm][o])**2 * (self.lambdas[arm][o] / (self.lambdas[arm][o] + 1))
             self.mu[arm][o] = (self.mu[arm][o] * self.lambdas[arm][o] + reward[o]) / (self.lambdas[arm][o] + 1)
             self.lambdas[arm][o] += 1
             self.alpha[arm][o] += 0.5
-            self.beta[arm][o] += 0.5 * (reward[o] - self.mu[arm][o]) ** 2 * (
-                        (self.lambdas[arm][o] - 1) / self.lambdas[arm][o])
 
     def reset(self):
         """
