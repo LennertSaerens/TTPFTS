@@ -319,10 +319,10 @@ def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, p
         std_baseline_bernoulli_metrics = np.std(baseline_bernoulli_metrics, axis=1)
         rolling_avg = pd.Series(avg_baseline_bernoulli_metrics[0]).rolling(window=rolling_avg_window).mean()
         if rolling_avg_window > 1:
-            plt.plot(rolling_avg, label="Huidige techniek", color=colors[-1])
+            plt.plot(rolling_avg, label="Uniform Sampling", color=colors[-1])
             plt.plot(avg_baseline_bernoulli_metrics[0], alpha=0.2, color=colors[-1])
         else:
-            plt.plot(avg_baseline_bernoulli_metrics[0], label="Huidige techniek")
+            plt.plot(avg_baseline_bernoulli_metrics[0], label="Uniform Sampling")
         if plot_std:
             plt.fill_between(range(len(avg_baseline_bernoulli_metrics[0])),
                              avg_baseline_bernoulli_metrics[0] - 1.96 * std_baseline_bernoulli_metrics[0] / np.sqrt(num_runs),
@@ -333,6 +333,7 @@ def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, p
     plt.xlabel("Arm pulls")
     plt.ylabel("Bernoulli metric")
     plt.legend()
+    plt.savefig(f"{file}_bernoulli.png")
     plt.show()
 
 
@@ -389,6 +390,7 @@ def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plo
     plt.xlabel("Time steps")
     plt.ylabel("Jaccard metric")
     plt.legend(loc='lower right')
+    plt.savefig(f"{file}_jaccard.png")
     plt.show()
 
 
@@ -448,6 +450,63 @@ def plot_hypervolume(file, num_runs, num_arm_pulls, y_low_lim, y_up_lim, rolling
     plt.xlabel("Time steps")
     plt.ylabel("Hypervolume metric")
     plt.legend()
+    plt.savefig(f"{file}_hypervolume.png")
+    plt.show()
+
+
+def plot_mis_id_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=False, baseline=None):
+    """
+    Plot the evolution of the mis-identification metric.
+    The x-axis represents the time steps and the y-axis represents the mis-identification metric. The metric is averaged over the experiments.
+    :param baseline: File containing the baseline results.
+    :param plot_std: Whether to plot the standard deviation of the mis-identification metric.
+    :param file: The file containing the experimental results.
+    :param num_runs: The number of runs of the experiment.
+    :param num_arm_pulls: The number of arm pulls in each run of the experiment.
+    :param rolling_avg_window: The window size for the optional rolling average.
+    :return: None
+    """
+    result_df = pd.read_csv(file, header=None)
+    algorithm_names = result_df[0].unique()
+    num_algorithms = len(algorithm_names)
+    mis_id_metrics = result_df.values[:, 5].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
+    avg_mis_id_metrics = np.log10(np.mean(mis_id_metrics, axis=1))
+    std_mis_id_metrics = np.std(mis_id_metrics, axis=1)
+
+    for i, name in enumerate(algorithm_names):
+        rolling_avg = pd.Series(avg_mis_id_metrics[i]).rolling(window=rolling_avg_window).mean()
+        if rolling_avg_window > 1:
+            plt.plot(rolling_avg, label=f"{name}", color=colors[i])
+            plt.plot(avg_mis_id_metrics[i], alpha=0.2, color=colors[i])
+        else:
+            plt.plot(avg_mis_id_metrics[i], label=f"{name}")
+        if plot_std:
+            plt.fill_between(range(len(avg_mis_id_metrics[i])),
+                             avg_mis_id_metrics[i] - 1.96 * std_mis_id_metrics[i] / np.sqrt(num_runs),
+                             avg_mis_id_metrics[i] + 1.96 * std_mis_id_metrics[i] / np.sqrt(num_runs),
+                             alpha=0.2, color=colors[i])
+
+    if baseline is not None:
+        baseline_df = pd.read_csv(baseline, header=None)
+        baseline_mis_id_metrics = baseline_df.values[:, 5].reshape(1, num_runs, num_arm_pulls).astype(np.float64)
+        avg_baseline_mis_id_metrics = np.mean(baseline_mis_id_metrics, axis=1)
+        std_baseline_mis_id_metrics = np.std(baseline_mis_id_metrics, axis=1)
+        rolling_avg = pd.Series(avg_baseline_mis_id_metrics[0]).rolling(window=rolling_avg_window).mean()
+        if rolling_avg_window > 1:
+            plt.plot(rolling_avg, label="Uniform Sampling", color=colors[-1])
+            plt.plot(avg_baseline_mis_id_metrics[0], alpha=0.2, color=colors[-1])
+        else:
+            plt.plot(avg_baseline_mis_id_metrics[0], label="Uniform Sampling")
+        if plot_std:
+            plt.fill_between(range(len(avg_baseline_mis_id_metrics[0])),
+                             avg_baseline_mis_id_metrics[0] - 1.96 * std_baseline_mis_id_metrics[0] / np.sqrt(num_runs),
+                             avg_baseline_mis_id_metrics[0] + 1.96 * std_baseline_mis_id_metrics[0] / np.sqrt(num_runs),
+                             alpha=0.2, color="tab:gray")
+
+    plt.xlabel("Time steps")
+    plt.ylabel("Mis-identification metric")
+    plt.legend(loc='best')
+    plt.savefig(f"{file}_mis_id.png")
     plt.show()
 
 
@@ -495,9 +554,9 @@ def plot_arm_rec_frequencies(file, num_runs, num_arm_pulls, optimal_arms, num_ar
 
 
 if __name__ == "__main__":
-    plot_bernoulli_metric("results/Auer_test_results.csv", 100, 10_000, plot_std=True, baseline=None)
-    plot_jaccard_metric("results/Auer_test_results.csv", 100, 10_000, plot_std=True, baseline=None)
-    plot_hypervolume("results/Auer_test_results.csv", 100, 10_000, plot_std=True, baseline=None)
+    plot_bernoulli_metric("results/TTPFTSvsUniform_EgeExp4.csv", 50, 9910, plot_std=True, baseline=None)
+    plot_jaccard_metric("results/TTPFTSvsUniform_EgeExp4.csv", 50, 9910, plot_std=True, baseline=None)
+    plot_mis_id_metric("results/TTPFTSvsUniform_EgeExp4.csv", 50, 9910, plot_std=False, baseline=None)
     # plot_arm_rec_frequencies("results/baseline_recs.csv", 100, 30_000, [0, 5, 6, 8, 14, 30, 31, 32], 53, "Uniform Sampling")
     # plot_arm_pull_frequencies("results/bandits/test2.csv", 100, 250_000, [0, 1, 2, 3], 20,
     #                           "Linear Scalarized Knowledge Gradient (objectives)", 3)
