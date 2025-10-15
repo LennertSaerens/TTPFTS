@@ -51,3 +51,8 @@ class EgeExp4(BaseEnvironment):
         Plot the arms and the Pareto front.
         """
         pass
+
+    def reset(self):
+        self.arms = generate_arms()
+        is_strictly_worse = np.all(self.arms[:, None, :] < self.arms[None, :, :], axis=2)
+        self.pareto_indices = np.where(~np.any(is_strictly_worse, axis=1))[0]

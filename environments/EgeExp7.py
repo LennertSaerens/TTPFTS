@@ -60,18 +60,19 @@ class EgeExp7(BaseEnvironment):
         """
         Plot the arms and the Pareto front.
         """
-        plt.figure(figsize=(6, 6))
+        plt.figure(figsize=(8, 6))
         plt.scatter(*zip(*self.arms), label='Arms')
         plt.scatter(*zip(*[self.arms[i] for i in self.pareto_indices]), color='green', label='Pareto Optimal Arms')
 
         # Draw ellipses around Pareto optimal arms
         for i in self.pareto_indices:
-            ellipse = Ellipse(xy=self.arms[i], width=self.stds, height=self.stds, edgecolor='green', facecolor='none')
+            ellipse = Ellipse(xy=self.arms[i], width=self.stds, height=self.stds, edgecolor='green', facecolor='none', alpha=0.5)
             plt.gca().add_patch(ellipse)
 
         plt.xlabel('Objective 1')
         plt.ylabel('Objective 2')
-        plt.title('EgeExp7 Environment Arms and Pareto Front')
+        # plt.title('EgeExp7 Environment Arms and Pareto Front')
         plt.legend()
         plt.grid()
+        plt.savefig('environments/plots/EgeExp7.pdf', format='pdf')
         plt.show()
