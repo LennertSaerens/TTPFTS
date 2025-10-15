@@ -7,11 +7,11 @@ from bandits.UCB import PUCB1Bandit, LSUCB1Bandit
 from bandits.KnowledgeGradient import PKGBandit, LSKGArmsBandit, LSKGObjectivesBandit
 from bandits.Annealing import APBandit
 
-num_runs = 10  # Number of experiments M
-horizon = 1_000  # Number of time steps T
+num_runs = 100  # Number of experiments M
+horizon = 250_000  # Number of time steps T
 
 # Configuration for the first experiment
-e1_arms = [(0.55, 0.5), (0.53, 0.51), (0.52, 0.54), (0.5, 0.57), (0.51, 0.51), (0.5, 0.5)]  # + 14 * [(0.48, 0.48)]
+e1_arms = [(0.55, 0.5), (0.53, 0.51), (0.52, 0.54), (0.5, 0.57), (0.51, 0.51), (0.5, 0.5)] + 14 * [(0.48, 0.48)]
 e1_num_arms = len(e1_arms)
 e1_num_objectives = len(e1_arms[0])
 e1_pareto_arms = [0, 1, 2, 3]
@@ -96,25 +96,25 @@ def calc_hypervolume(recommended):
 
 def run_experiment(num_arms, num_objectives, arms, pareto_arms, weights, result_file, write=False, log=False):
     setup = {
-        "Pareto UCB1": {
-            "agent": PUCB1Bandit(num_arms, num_objectives, 0.5),
-            "cumulative_pareto_regrets": [[] for _ in range(num_runs)],
-            "cumulative_unfairness_regrets": [[] for _ in range(num_runs)],
-            "arm_pulls": [np.zeros(num_arms) for _ in range(num_runs)]
-        },
-        # "Linear Scalarized UCB1": {
-        #     "agent": LSUCB1Bandit(num_arms, num_objectives, weights, 0.5),
+        # "Pareto UCB1": {
+        #     "agent": PUCB1Bandit(num_arms, num_objectives, 0.5),
         #     "cumulative_pareto_regrets": [[] for _ in range(num_runs)],
         #     "cumulative_unfairness_regrets": [[] for _ in range(num_runs)],
-        #     "arm_pulls": [np.zeros(num_arms) for _ in range(num_runs)],
-        #     "cor_rec_per": [[] for _ in range(num_runs)]
+        #     "arm_pulls": [np.zeros(num_arms) for _ in range(num_runs)]
         # },
-        "Pareto Thompson Sampling": {
-            "agent": PTSBandit(num_arms, num_objectives),
+        "Linear Scalarized UCB1": {
+            "agent": LSUCB1Bandit(num_arms, num_objectives, weights, 0.5),
             "cumulative_pareto_regrets": [[] for _ in range(num_runs)],
             "cumulative_unfairness_regrets": [[] for _ in range(num_runs)],
-            "arm_pulls": [np.zeros(num_arms) for _ in range(num_runs)]
+            "arm_pulls": [np.zeros(num_arms) for _ in range(num_runs)],
+            "cor_rec_per": [[] for _ in range(num_runs)]
         },
+        # "Pareto Thompson Sampling": {
+        #     "agent": PTSBandit(num_arms, num_objectives),
+        #     "cumulative_pareto_regrets": [[] for _ in range(num_runs)],
+        #     "cumulative_unfairness_regrets": [[] for _ in range(num_runs)],
+        #     "arm_pulls": [np.zeros(num_arms) for _ in range(num_runs)]
+        # },
         #     "Linear Scalarized Thompson Sampling": {
         #         "agent": LSTSBandit(num_arms, num_objectives, weights),
         #         "cumulative_pareto_regrets": [[] for _ in range(num_runs)],
@@ -128,20 +128,20 @@ def run_experiment(num_arms, num_objectives, arms, pareto_arms, weights, result_
         #     "cumulative_unfairness_regrets": [[] for _ in range(num_runs)],
         #     "arm_pulls": [np.zeros(num_arms) for _ in range(num_runs)]
         # },
-        #     "Linear Scalarized Knowledge Gradient (arms)": {
-        #         "agent": LSKGArmsBandit(num_arms, num_objectives, horizon, 5, weights),
-        #         "cumulative_pareto_regrets": [[] for _ in range(num_runs)],
-        #         "cumulative_unfairness_regrets": [[] for _ in range(num_runs)],
-        #         "arm_pulls": [np.zeros(num_arms) for _ in range(num_runs)],
-        #         "cor_rec_per": [[] for _ in range(num_runs)]
-        #     },
-        #     "Linear Scalarized Knowledge Gradient (objectives)": {
-        #         "agent": LSKGObjectivesBandit(num_arms, num_objectives, horizon, 5, weights),
-        #         "cumulative_pareto_regrets": [[] for _ in range(num_runs)],
-        #         "cumulative_unfairness_regrets": [[] for _ in range(num_runs)],
-        #         "arm_pulls": [np.zeros(num_arms) for _ in range(num_runs)],
-        #         "cor_rec_per": [[] for _ in range(num_runs)]
-        #     },
+        "Linear Scalarized Knowledge Gradient (arms)": {
+            "agent": LSKGArmsBandit(num_arms, num_objectives, horizon, 5, weights),
+            "cumulative_pareto_regrets": [[] for _ in range(num_runs)],
+            "cumulative_unfairness_regrets": [[] for _ in range(num_runs)],
+            "arm_pulls": [np.zeros(num_arms) for _ in range(num_runs)],
+            "cor_rec_per": [[] for _ in range(num_runs)]
+        },
+        "Linear Scalarized Knowledge Gradient (objectives)": {
+            "agent": LSKGObjectivesBandit(num_arms, num_objectives, horizon, 5, weights),
+            "cumulative_pareto_regrets": [[] for _ in range(num_runs)],
+            "cumulative_unfairness_regrets": [[] for _ in range(num_runs)],
+            "arm_pulls": [np.zeros(num_arms) for _ in range(num_runs)],
+            "cor_rec_per": [[] for _ in range(num_runs)]
+        },
         # "Annealing Pareto": {
         #     "agent": APBandit(num_arms, num_objectives, horizon, 5, 1, 0.9995),
         #     "cumulative_pareto_regrets": [[] for _ in range(num_runs)],
@@ -176,41 +176,43 @@ def run_experiment(num_arms, num_objectives, arms, pareto_arms, weights, result_
                 agent.learn(arm, reward)
 
                 # Calculate the pareto regret and the unfairness regret
-                pareto_regret = calculate_pareto_regret(arm, arms, pareto_arms)
-                unfairness_regret = calculate_unfairness_regret(arm_pulls, pareto_arms)
+                # pareto_regret = calculate_pareto_regret(arm, arms, pareto_arms)
+                # unfairness_regret = calculate_unfairness_regret(arm_pulls, pareto_arms)
 
-                recommended = agent.get_top_arms()
-                cor_rec = is_completely_cor_rec(recommended, pareto_arms)
-                jaccard_sim = calculate_jaccard_similarity(recommended, pareto_arms)
-                hypervolume = calc_hypervolume(recommended)
+                # recommended = agent.get_top_arms()
+                # cor_rec = is_completely_cor_rec(recommended, pareto_arms)
+                # jaccard_sim = calculate_jaccard_similarity(recommended, pareto_arms)
+                # hypervolume = calc_hypervolume(recommended)
 
-                if log:
-                    print(
-                        f"t: {t}, arm: {arm}, reward: {reward}, pareto regret: {pareto_regret}, unfairness regret: {unfairness_regret}")
+                # if log:
+                #     print(
+                #         f"t: {t}, arm: {arm}, reward: {reward}, pareto regret: {pareto_regret}, unfairness regret: {unfairness_regret}")
 
                 # Update the cumulative pareto regret and the cumulative unfairness regret
-                cumulative_pareto_regret = cumulative_pareto_regrets[experiment][
-                                               -1] + pareto_regret if t > 0 else pareto_regret
-                cumulative_unfairness_regret = cumulative_unfairness_regrets[experiment][
-                                                   -1] + unfairness_regret if t > 0 else unfairness_regret
-
-                cumulative_pareto_regrets[experiment].append(cumulative_pareto_regret)
-                cumulative_unfairness_regrets[experiment].append(cumulative_unfairness_regret)
+                # cumulative_pareto_regret = cumulative_pareto_regrets[experiment][
+                #                                -1] + pareto_regret if t > 0 else pareto_regret
+                # cumulative_unfairness_regret = cumulative_unfairness_regrets[experiment][
+                #                                    -1] + unfairness_regret if t > 0 else unfairness_regret
+                #
+                # cumulative_pareto_regrets[experiment].append(cumulative_pareto_regret)
+                # cumulative_unfairness_regrets[experiment].append(cumulative_unfairness_regret)
 
                 if result_file is not None and write:
                     with open(result_file, 'a') as file:
+                        # file.write(
+                        #     f"{algorithm},{experiment},{t},{arm},{cumulative_pareto_regret},{cumulative_unfairness_regret},{cor_rec},{jaccard_sim},{hypervolume}\n")
                         file.write(
-                            f"{algorithm},{experiment},{t},{arm},{cumulative_pareto_regret},{cumulative_unfairness_regret},{cor_rec},{jaccard_sim},{hypervolume}\n")
+                            f"{algorithm},{experiment},{t},{arm}\n")
 
-            setup[algorithm]["arm_pulls"][experiment] = arm_pulls
+            # setup[algorithm]["arm_pulls"][experiment] = arm_pulls
 
     # Plot the cumulative pareto regrets and the cumulative unfairness regrets
-    plotting.plot_regrets(setup)
+    # plotting.plot_regrets(setup)
     # plotting.plot_bernoulli_metric(setup)
     # plotting.plot_jaccard_metric(setup)
     # plotting.plot_hypervolume(setup)
 
 
 if __name__ == "__main__":
-    run_experiment(e1_num_arms, e1_num_objectives, e1_arms, e1_pareto_arms, e1_weights, "results/bandits/test.csv",
-                   log=False, write=False, )
+    run_experiment(e1_num_arms, e1_num_objectives, e1_arms, e1_pareto_arms, e1_weights, "results/bandits/test2.csv",
+                   log=False, write=True, )

@@ -297,6 +297,8 @@ def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, p
     avg_bernoulli_metrics = np.mean(bernoulli_metrics, axis=1)
     std_bernoulli_metrics = np.std(bernoulli_metrics, axis=1)
 
+    plt.figure(figsize=(8, 6))
+
     # algorithm_names = ["MOMAB1", "MOMAB2", "MOMAB3", "MOMAB4", "Nieuwe MOMAB"]
 
     for i, name in enumerate(algorithm_names):
@@ -333,7 +335,7 @@ def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, p
     plt.xlabel("Arm pulls")
     plt.ylabel("Bernoulli metric")
     plt.legend()
-    plt.savefig(f"{file}_bernoulli.png")
+    plt.savefig(f"{file}_bernoulli.pdf", format="pdf")
     plt.show()
 
 
@@ -355,6 +357,8 @@ def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plo
     jaccard_metrics = result_df.values[:, 4].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
     avg_jaccard_metrics = np.mean(jaccard_metrics, axis=1)
     std_jaccard_metrics = np.std(jaccard_metrics, axis=1)
+
+    plt.figure(figsize=(8, 6))
 
     for i, name in enumerate(algorithm_names):
         rolling_avg = pd.Series(avg_jaccard_metrics[i]).rolling(window=rolling_avg_window).mean()
@@ -390,7 +394,7 @@ def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plo
     plt.xlabel("Time steps")
     plt.ylabel("Jaccard metric")
     plt.legend(loc='lower right')
-    plt.savefig(f"{file}_jaccard.png")
+    plt.savefig(f"{file}_jaccard.pdf", format="pdf")
     plt.show()
 
 
@@ -414,6 +418,8 @@ def plot_hypervolume(file, num_runs, num_arm_pulls, y_low_lim, y_up_lim, rolling
     hypervolumes = result_df.values[:, 5].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
     avg_hypervolumes = np.mean(hypervolumes, axis=1)
     std_hyper_volumes = np.std(hypervolumes, axis=1)
+
+    plt.figure(figsize=(8, 6))
 
     for i, name in enumerate(algorithm_names):
         rolling_avg = pd.Series(avg_hypervolumes[i]).rolling(window=rolling_avg_window).mean()
@@ -450,7 +456,7 @@ def plot_hypervolume(file, num_runs, num_arm_pulls, y_low_lim, y_up_lim, rolling
     plt.xlabel("Time steps")
     plt.ylabel("Hypervolume metric")
     plt.legend()
-    plt.savefig(f"{file}_hypervolume.png")
+    plt.savefig(f"{file}_hypervolume.pdf", format="pdf")
     plt.show()
 
 
@@ -472,6 +478,8 @@ def plot_mis_id_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot
     mis_id_metrics = result_df.values[:, 5].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
     avg_mis_id_metrics = np.log10(np.mean(mis_id_metrics, axis=1))
     std_mis_id_metrics = np.std(mis_id_metrics, axis=1)
+
+    plt.figure(figsize=(8, 6))
 
     for i, name in enumerate(algorithm_names):
         rolling_avg = pd.Series(avg_mis_id_metrics[i]).rolling(window=rolling_avg_window).mean()
@@ -506,7 +514,7 @@ def plot_mis_id_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot
     plt.xlabel("Time steps")
     plt.ylabel("Mis-identification metric")
     plt.legend(loc='best')
-    plt.savefig(f"{file}_mis_id.png")
+    plt.savefig(f"{file}_mis_id.pdf", format="pdf", bbox_inches='tight')
     plt.show()
 
 
@@ -554,9 +562,9 @@ def plot_arm_rec_frequencies(file, num_runs, num_arm_pulls, optimal_arms, num_ar
 
 
 if __name__ == "__main__":
-    plot_bernoulli_metric("results/TTPFTSvsUniform_EgeExp4.csv", 50, 9910, plot_std=True, baseline=None)
-    plot_jaccard_metric("results/TTPFTSvsUniform_EgeExp4.csv", 50, 9910, plot_std=True, baseline=None)
-    plot_mis_id_metric("results/TTPFTSvsUniform_EgeExp4.csv", 50, 9910, plot_std=False, baseline=None)
+    plot_bernoulli_metric("results/EGEvsTTPFTSvsPUCB1vsUniform_Molecules.csv", 100, 9800, plot_std=True, baseline=None, rolling_avg_window=1)
+    plot_jaccard_metric("results/EGEvsTTPFTSvsPUCB1vsUniform_Molecules.csv", 100, 9800, plot_std=True, baseline=None, rolling_avg_window=1)
+    plot_mis_id_metric("results/EGEvsTTPFTSvsPUCB1vsUniform_Molecules.csv", 100, 9800, plot_std=True, baseline=None, rolling_avg_window=1)
     # plot_arm_rec_frequencies("results/baseline_recs.csv", 100, 30_000, [0, 5, 6, 8, 14, 30, 31, 32], 53, "Uniform Sampling")
     # plot_arm_pull_frequencies("results/bandits/test2.csv", 100, 250_000, [0, 1, 2, 3], 20,
     #                           "Linear Scalarized Knowledge Gradient (objectives)", 3)
