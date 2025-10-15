@@ -33,18 +33,23 @@ class N50VS(BaseEnvironment):
         """
         Plot the arms and the Pareto front.
         """
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(8, 6))
         plt.scatter(*zip(*self.arms), label='Arms')
         plt.scatter(*zip(*[self.arms[i] for i in self.pareto_indices]), color='green', label='Pareto Optimal Arms')
 
         # Draw ellipses around Pareto optimal arms
         for i in self.pareto_indices:
-            ellipse = Ellipse(xy=self.arms[i], width=self.stds[i][0], height=self.stds[i][1], edgecolor='green', facecolor='none')
+            ellipse = Ellipse(xy=self.arms[i], width=self.stds[i][0], height=self.stds[i][1], edgecolor='green', facecolor='none', alpha=0.5)
             plt.gca().add_patch(ellipse)
 
         plt.xlabel('Objective 1')
         plt.ylabel('Objective 2')
-        plt.title('N50VS Environment Arms and Pareto Front')
+        # plt.title('N50VS Environment Arms and Pareto Front')
         plt.legend()
         plt.grid()
+        plt.savefig('environments/plots/N50VS.pdf', format='pdf')
         plt.show()
+
+    def reset(self):
+        self.arms = self.optimal_arms + self.suboptimal_arms
+        self.stds = [(np.random.uniform(1, 3), np.random.uniform(1, 3)) for _ in range(self.num_arms)]
