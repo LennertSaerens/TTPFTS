@@ -68,3 +68,7 @@ class BaseEnvironment(ABC):
     def plot(self):
         """Plot the arms and the Pareto front."""
         return NotImplementedError
+
+    def reset(self) -> None:
+        """Resets the environment."""
+        pass
