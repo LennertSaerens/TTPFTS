@@ -278,11 +278,11 @@ def plot_arm_pulls_single(setup, algorithm_name, optimal_arms, total_pulls):
     plt.show()
 
 
-def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=False, baseline=None):
+def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=False, ege_sr_file=None):
     """
     Plot the evolution of the Bernoulli metric. The Bernoulli metric is the fraction of times the algorithm pulls a Pareto optimal arm.
     The x-axis represents the time steps and the y-axis represents the Bernoulli metric. The metric is averaged over the experiments.
-    :param baseline: File containing the baseline results.
+    :param ege_sr_file: File containing the results of the EGE-SR algorithm.
     :param plot_std: Whether to plot the standard deviation of the Bernoulli metric.
     :param file: The file containing the experimental results.
     :param num_runs: The number of runs of the experiment.
@@ -302,10 +302,10 @@ def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, p
     # algorithm_names = ["MOMAB1", "MOMAB2", "MOMAB3", "MOMAB4", "Nieuwe MOMAB"]
 
     for i, name in enumerate(algorithm_names):
-        rolling_avg = pd.Series(avg_bernoulli_metrics[i]).rolling(window=rolling_avg_window).mean()
         if rolling_avg_window > 1:
+            rolling_avg = pd.Series(avg_bernoulli_metrics[i]).rolling(window=rolling_avg_window).mean()
             plt.plot(rolling_avg, label=f"{name}", color=colors[i])
-            plt.plot(avg_bernoulli_metrics[i], alpha=0.2, color=colors[i])
+            # plt.plot(avg_bernoulli_metrics[i], alpha=0.2, color=colors[i])
         else:
             plt.plot(avg_bernoulli_metrics[i], label=f"{name}")
         if plot_std:
@@ -314,22 +314,15 @@ def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, p
                              avg_bernoulli_metrics[i] + 1.96 * std_bernoulli_metrics[i] / np.sqrt(num_runs),
                              alpha=0.2, color=colors[i])
 
-    if baseline is not None:
-        baseline_df = pd.read_csv(baseline, header=None)
-        baseline_bernoulli_metrics = baseline_df.values[:, 3].reshape(1, num_runs, num_arm_pulls).astype(np.float64)
-        avg_baseline_bernoulli_metrics = np.mean(baseline_bernoulli_metrics, axis=1)
-        std_baseline_bernoulli_metrics = np.std(baseline_bernoulli_metrics, axis=1)
-        rolling_avg = pd.Series(avg_baseline_bernoulli_metrics[0]).rolling(window=rolling_avg_window).mean()
-        if rolling_avg_window > 1:
-            plt.plot(rolling_avg, label="Uniform Sampling", color=colors[-1])
-            plt.plot(avg_baseline_bernoulli_metrics[0], alpha=0.2, color=colors[-1])
-        else:
-            plt.plot(avg_baseline_bernoulli_metrics[0], label="Uniform Sampling")
-        if plot_std:
-            plt.fill_between(range(len(avg_baseline_bernoulli_metrics[0])),
-                             avg_baseline_bernoulli_metrics[0] - 1.96 * std_baseline_bernoulli_metrics[0] / np.sqrt(num_runs),
-                             avg_baseline_bernoulli_metrics[0] + 1.96 * std_baseline_bernoulli_metrics[0] / np.sqrt(num_runs),
-                             alpha=0.2, color="tab:gray")
+    if ege_sr_file is not None:
+        # load the ege_sr results
+        ege_sr_df = pd.read_csv(ege_sr_file, header=None)
+        # Extract columns 2 and 4 from the df
+        ege_sr_bernoulli_timesteps = ege_sr_df.values[:, 2]
+        steps_per_run = int(len(ege_sr_bernoulli_timesteps) / num_runs)
+        ege_sr_bernoulli_timesteps = ege_sr_bernoulli_timesteps[:steps_per_run]
+        ege_sr_bernoulli_metrics = ege_sr_df.values[:, 3].astype(np.float64).reshape(num_runs, steps_per_run).mean(axis=0)
+        plt.plot(ege_sr_bernoulli_timesteps, ege_sr_bernoulli_metrics, label="EGE_SR", color="tab:gray")
 
     plt.ylim(0, 1)
     plt.xlabel("Arm pulls")
@@ -339,11 +332,11 @@ def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, p
     plt.show()
 
 
-def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=False, baseline=None):
+def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=False, ege_sr_file=None):
     """
     Plot the evolution of the Jaccard metric. The Jaccard metric is the Jaccard similarity between the set of Pareto optimal arms and the set of arms recommended by the algorithm.
     The x-axis represents the time steps and the y-axis represents the Jaccard metric. The metric is averaged over the experiments.
-    :param baseline: File containing the baseline results.
+    :param ege_sr_file: File containing the results of the EGE-SR algorithm.
     :param plot_std: Whether to plot the standard deviation of the Jaccard metric.
     :param file: The file containing the experimental results.
     :param num_runs: The number of runs of the experiment.
@@ -373,22 +366,15 @@ def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plo
                              avg_jaccard_metrics[i] + 1.96 * std_jaccard_metrics[i] / np.sqrt(num_runs),
                              alpha=0.2, color=colors[i])
 
-    if baseline is not None:
-        baseline_df = pd.read_csv(baseline, header=None)
-        baseline_jaccard_metrics = baseline_df.values[:, 4].reshape(1, num_runs, num_arm_pulls).astype(np.float64)
-        avg_baseline_jaccard_metrics = np.mean(baseline_jaccard_metrics, axis=1)
-        std_baseline_jaccard_metrics = np.std(baseline_jaccard_metrics, axis=1)
-        rolling_avg = pd.Series(avg_baseline_jaccard_metrics[0]).rolling(window=rolling_avg_window).mean()
-        if rolling_avg_window > 1:
-            plt.plot(rolling_avg, label="Uniform Sampling", color=colors[-1])
-            plt.plot(avg_baseline_jaccard_metrics[0], alpha=0.2, color=colors[-1])
-        else:
-            plt.plot(avg_baseline_jaccard_metrics[0], label="Uniform Sampling")
-        if plot_std:
-            plt.fill_between(range(len(avg_baseline_jaccard_metrics[0])),
-                             avg_baseline_jaccard_metrics[0] - 1.96 * std_baseline_jaccard_metrics[0] / np.sqrt(num_runs),
-                             avg_baseline_jaccard_metrics[0] + 1.96 * std_baseline_jaccard_metrics[0] / np.sqrt(num_runs),
-                             alpha=0.2, color="tab:gray")
+    if ege_sr_file is not None:
+        # load the ege_sr results
+        ege_sr_df = pd.read_csv(ege_sr_file, header=None)
+        # Extract columns 2 and 4 from the df
+        ege_sr_bernoulli_timesteps = ege_sr_df.values[:, 2]
+        steps_per_run = int(len(ege_sr_bernoulli_timesteps) / num_runs)
+        ege_sr_bernoulli_timesteps = ege_sr_bernoulli_timesteps[:steps_per_run]
+        ege_sr_bernoulli_metrics = ege_sr_df.values[:, 4].astype(np.float64).reshape(num_runs, steps_per_run).mean(axis=0)
+        plt.plot(ege_sr_bernoulli_timesteps, ege_sr_bernoulli_metrics, label="EGE_SR", color="tab:gray")
 
     plt.ylim(0, 1)
     plt.xlabel("Time steps")
@@ -460,11 +446,11 @@ def plot_hypervolume(file, num_runs, num_arm_pulls, y_low_lim, y_up_lim, rolling
     plt.show()
 
 
-def plot_mis_id_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=False, baseline=None):
+def plot_mis_id_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=False, ege_sr_file=None):
     """
     Plot the evolution of the mis-identification metric.
     The x-axis represents the time steps and the y-axis represents the mis-identification metric. The metric is averaged over the experiments.
-    :param baseline: File containing the baseline results.
+    :param ege_sr_file: File containing the results of the EGE-SR algorithm.
     :param plot_std: Whether to plot the standard deviation of the mis-identification metric.
     :param file: The file containing the experimental results.
     :param num_runs: The number of runs of the experiment.
@@ -494,22 +480,14 @@ def plot_mis_id_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot
                              avg_mis_id_metrics[i] + 1.96 * std_mis_id_metrics[i] / np.sqrt(num_runs),
                              alpha=0.2, color=colors[i])
 
-    if baseline is not None:
-        baseline_df = pd.read_csv(baseline, header=None)
-        baseline_mis_id_metrics = baseline_df.values[:, 5].reshape(1, num_runs, num_arm_pulls).astype(np.float64)
-        avg_baseline_mis_id_metrics = np.mean(baseline_mis_id_metrics, axis=1)
-        std_baseline_mis_id_metrics = np.std(baseline_mis_id_metrics, axis=1)
-        rolling_avg = pd.Series(avg_baseline_mis_id_metrics[0]).rolling(window=rolling_avg_window).mean()
-        if rolling_avg_window > 1:
-            plt.plot(rolling_avg, label="Uniform Sampling", color=colors[-1])
-            plt.plot(avg_baseline_mis_id_metrics[0], alpha=0.2, color=colors[-1])
-        else:
-            plt.plot(avg_baseline_mis_id_metrics[0], label="Uniform Sampling")
-        if plot_std:
-            plt.fill_between(range(len(avg_baseline_mis_id_metrics[0])),
-                             avg_baseline_mis_id_metrics[0] - 1.96 * std_baseline_mis_id_metrics[0] / np.sqrt(num_runs),
-                             avg_baseline_mis_id_metrics[0] + 1.96 * std_baseline_mis_id_metrics[0] / np.sqrt(num_runs),
-                             alpha=0.2, color="tab:gray")
+    if ege_sr_file is not None:
+        # load the ege_sr results
+        ege_sr_df = pd.read_csv(ege_sr_file, header=None)
+        ege_sr_bernoulli_timesteps = ege_sr_df.values[:, 2]
+        steps_per_run = int(len(ege_sr_bernoulli_timesteps) / num_runs)
+        ege_sr_bernoulli_timesteps = ege_sr_bernoulli_timesteps[:steps_per_run]
+        ege_sr_bernoulli_metrics = ege_sr_df.values[:, 5].astype(np.float64).reshape(num_runs, steps_per_run).mean(axis=0)
+        plt.plot(ege_sr_bernoulli_timesteps, ege_sr_bernoulli_metrics, label="EGE_SR", color="tab:gray")
 
     plt.xlabel("Time steps")
     plt.ylabel("Mis-identification metric")
@@ -561,10 +539,45 @@ def plot_arm_rec_frequencies(file, num_runs, num_arm_pulls, optimal_arms, num_ar
     plt.show()
 
 
+def plot_bernoulli_metric_coarse(file, num_runs, plot_std=False):
+    """
+    Plot the evolution of the Bernoulli metric with coarse time steps.
+    :param plot_std: Whether to plot the standard deviation of the Bernoulli metric.
+    :param file: The file containing the experimental results.
+    :param num_runs: The number of runs of the experiment.
+    :return: None
+    """
+    result_df = pd.read_csv(file, header=None)
+    algorithm_names = result_df[0].unique()
+    num_algorithms = len(algorithm_names)
+    all_steps = result_df.values[:, 2]
+    steps_per_run = int(len(all_steps) / (num_runs * num_algorithms))
+    bernoulli_metrics = result_df.values[:, 3].reshape(num_algorithms, num_runs, steps_per_run).astype(np.float64)
+    all_steps = all_steps[:steps_per_run]
+    avg_bernoulli_metrics = np.mean(bernoulli_metrics, axis=1)
+    std_bernoulli_metrics = np.std(bernoulli_metrics, axis=1)
+    yerr = 1.96 * std_bernoulli_metrics / np.sqrt(num_runs)
+
+    plt.figure(figsize=(8, 6))
+
+    # algorithm_names = ["MOMAB1", "MOMAB2", "MOMAB3", "MOMAB4", "Nieuwe MOMAB"]
+
+    for i, name in enumerate(algorithm_names):
+        plt.errorbar(all_steps, avg_bernoulli_metrics[i], yerr[i], label=f"{name}")
+
+    plt.ylim(0, 1)
+    plt.xlabel("Arm pulls")
+    plt.ylabel("Bernoulli metric")
+    plt.legend()
+    plt.savefig(f"{file}_bernoulli.pdf", format="pdf")
+    plt.show()
+
+
 if __name__ == "__main__":
-    plot_bernoulli_metric("results/EGEvsTTPFTSvsPUCB1vsUniform_Molecules.csv", 100, 9800, plot_std=True, baseline=None, rolling_avg_window=1)
-    plot_jaccard_metric("results/EGEvsTTPFTSvsPUCB1vsUniform_Molecules.csv", 100, 9800, plot_std=True, baseline=None, rolling_avg_window=1)
-    plot_mis_id_metric("results/EGEvsTTPFTSvsPUCB1vsUniform_Molecules.csv", 100, 9800, plot_std=True, baseline=None, rolling_avg_window=1)
+    # plot_bernoulli_metric_coarse("results/EGEvsTTPFTSvsPUCB1vsUniform_Coarse_EgeExp1.csv", 100, plot_std=True)
+    plot_bernoulli_metric("results/TTPFTSvsPUCB1vsUniform_EgeExp1.csv", 100, 5001, plot_std=True, ege_sr_file=None, rolling_avg_window=10)
+    plot_jaccard_metric("results/TTPFTSvsPUCB1vsUniform_EgeExp1.csv", 100, 5001, plot_std=True, ege_sr_file=None, rolling_avg_window=10)
+    plot_mis_id_metric("results/TTPFTSvsPUCB1vsUniform_EgeExp1.csv", 100, 5001, plot_std=True, ege_sr_file=None, rolling_avg_window=10)
     # plot_arm_rec_frequencies("results/baseline_recs.csv", 100, 30_000, [0, 5, 6, 8, 14, 30, 31, 32], 53, "Uniform Sampling")
     # plot_arm_pull_frequencies("results/bandits/test2.csv", 100, 250_000, [0, 1, 2, 3], 20,
     #                           "Linear Scalarized Knowledge Gradient (objectives)", 3)
