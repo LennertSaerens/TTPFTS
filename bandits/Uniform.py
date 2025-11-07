@@ -1,4 +1,5 @@
 import numpy as np
+from paretoset import paretoset
 from bandits.InterfaceMOMABPFI import BaseMOMABAlgorithm
 
 
@@ -16,9 +17,14 @@ class UniformBandit(BaseMOMABAlgorithm):
         self.arm_counts[arm] += 1
         return arm
 
+    # def get_top_arms(self):
+    #     is_strictly_worse = np.all(self.arm_means[:, None, :] < self.arm_means[None, :, :], axis=2)
+    #     pareto_indices = np.where(~np.any(is_strictly_worse, axis=1))[0]
+    #     return pareto_indices
+
     def get_top_arms(self):
-        is_strictly_worse = np.all(self.arm_means[:, None, :] < self.arm_means[None, :, :], axis=2)
-        pareto_indices = np.where(~np.any(is_strictly_worse, axis=1))[0]
+        pareto_mask = paretoset(self.arm_means, sense=["max"] * self.num_objectives)
+        pareto_indices = np.where(pareto_mask)[0]
         return pareto_indices
 
     def learn(self, arm, reward):

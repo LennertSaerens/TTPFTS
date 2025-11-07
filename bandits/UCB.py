@@ -2,6 +2,8 @@ import numpy as np
 import math
 import random
 
+from paretoset import paretoset
+
 
 class PUCB1Bandit:
     """
@@ -27,8 +29,8 @@ class PUCB1Bandit:
             ucb_values = self.arm_means + self.kappa * np.sqrt(
                 (2 * math.log(self.n * pow(self.num_objectives * self.num_arms, 1 / 4))) / self.arm_counts
             )
-            is_strictly_worse = np.all(ucb_values[:, None, :] < ucb_values[None, :, :], axis=2)
-            pareto_indices = np.where(~np.any(is_strictly_worse, axis=1))[0]
+            pareto_mask = paretoset(ucb_values, sense=["max"] * self.num_objectives)
+            pareto_indices = np.where(pareto_mask)[0]
             arm = random.choice(pareto_indices)
         else:
             arm = self.current_init_arm
@@ -37,25 +39,13 @@ class PUCB1Bandit:
         self.n += 1
         return arm
 
-    # def get_top_arms(self):
-    #     """
-    #     Get the arms that are considered to be Pareto optimal by the bandit.
-    #     :return: The top arms.
-    #     """
-    #     ucb_values = self.arm_means + self.kappa * np.sqrt(
-    #         (2 * math.log(self.n * pow(self.num_objectives * self.num_arms, 1 / 4))) / self.itt_arm_counts
-    #     )
-    #     is_strictly_worse = np.all(ucb_values[:, None, :] < ucb_values[None, :, :], axis=2)
-    #     pareto_indices = np.where(~np.any(is_strictly_worse, axis=1))[0]
-    #     return pareto_indices
-
     def get_top_arms(self):
         """
-        get the Pareto optimal arms based on the estimated arm means
+        Get the Pareto optimal arms based on the estimated arm means
         :return: The top arms.
         """
-        is_strictly_worse = np.all(self.arm_means[:, None, :] < self.arm_means[None, :, :], axis=2)
-        pareto_indices = np.where(~np.any(is_strictly_worse, axis=1))[0]
+        pareto_mask = paretoset(self.arm_means, sense=["max"] * self.num_objectives)
+        pareto_indices = np.where(pareto_mask)[0]
         return pareto_indices
 
     def learn(self, arm, reward):
