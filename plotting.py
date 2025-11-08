@@ -575,9 +575,9 @@ def plot_bernoulli_metric_coarse(file, num_runs, plot_std=False):
 
 if __name__ == "__main__":
     # plot_bernoulli_metric_coarse("results/EGEvsTTPFTSvsPUCB1vsUniform_Coarse_EgeExp1.csv", 100, plot_std=True)
-    plot_bernoulli_metric("results/TTPFTSvsPUCB1vsUniform_EgeExp1.csv", 100, 5001, plot_std=True, ege_sr_file=None, rolling_avg_window=10)
-    plot_jaccard_metric("results/TTPFTSvsPUCB1vsUniform_EgeExp1.csv", 100, 5001, plot_std=True, ege_sr_file=None, rolling_avg_window=10)
-    plot_mis_id_metric("results/TTPFTSvsPUCB1vsUniform_EgeExp1.csv", 100, 5001, plot_std=True, ege_sr_file=None, rolling_avg_window=10)
+    plot_bernoulli_metric("results/TTPFTS_NIGvsT_posteriors_EgeExp1.csv", 100, 5001, plot_std=True, ege_sr_file=None, rolling_avg_window=1)
+    plot_jaccard_metric("results/TTPFTS_NIGvsT_posteriors_EgeExp1.csv", 100, 5001, plot_std=True, ege_sr_file=None, rolling_avg_window=1)
+    plot_mis_id_metric("results/TTPFTS_NIGvsT_posteriors_EgeExp1.csv", 100, 5001, plot_std=True, ege_sr_file=None, rolling_avg_window=1)
     # plot_arm_rec_frequencies("results/baseline_recs.csv", 100, 30_000, [0, 5, 6, 8, 14, 30, 31, 32], 53, "Uniform Sampling")
     # plot_arm_pull_frequencies("results/bandits/test2.csv", 100, 250_000, [0, 1, 2, 3], 20,
     #                           "Linear Scalarized Knowledge Gradient (objectives)", 3)
