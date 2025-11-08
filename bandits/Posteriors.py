@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import invgamma, norm
+from scipy.stats import invgamma, norm, t
 from abc import ABC, abstractmethod
 
 
@@ -55,6 +55,40 @@ class NormalIGPosterior(PosteriorBase):
     def sample(self):
         variances = invgamma.rvs(a=self.alpha, scale=self.beta)
         return norm.rvs(loc=self.mu, scale=np.sqrt(variances / self.lambdas))
+
+    def update(self, arm, reward):
+        mu_0 = self.mu[arm]
+        lambda_0 = self.lambdas[arm]
+        self.beta[arm] += 0.5 * (reward - mu_0) ** 2 * (lambda_0 / (lambda_0 + 1))
+        self.mu[arm] = (mu_0 * lambda_0 + reward) / (lambda_0 + 1)
+        self.lambdas[arm] += 1
+        self.alpha[arm] += 0.5
+
+    def get_mean(self):
+        return self.mu
+
+    def reset(self):
+        self.mu = np.zeros((self.num_arms, self.num_objectives))
+        self.lambdas = np.ones((self.num_arms, self.num_objectives))
+        self.alpha = np.full((self.num_arms, self.num_objectives), 2.0)
+        self.beta = np.full((self.num_arms, self.num_objectives), 2.0)
+
+
+class TPosterior(PosteriorBase):
+    def __init__(self, num_arms, num_objectives):
+        self.num_arms = num_arms
+        self.num_objectives = num_objectives
+        self.mu = np.zeros((num_arms, num_objectives))
+        self.lambdas = np.ones((num_arms, num_objectives))  # precision
+        self.alpha = np.full((num_arms, num_objectives), 2.0)
+        self.beta = np.full((num_arms, num_objectives), 2.0)
+
+    def sample(self):
+        # Degrees of freedom for t: 2*alpha
+        df = 2 * self.alpha
+        loc = self.mu
+        scale = np.sqrt(self.beta * (self.lambdas + 1) / (self.alpha * self.lambdas))
+        return t.rvs(df, loc=loc, scale=scale)
 
     def update(self, arm, reward):
         mu_0 = self.mu[arm]
