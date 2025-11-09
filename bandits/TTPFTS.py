@@ -4,7 +4,7 @@ import numpy as np
 from paretoset import paretoset
 
 
-class GenericTTPFTSBandit:
+class TTPFTSBandit:
     def __init__(self, posterior, p):
         self.posterior = posterior
         self.p = p
