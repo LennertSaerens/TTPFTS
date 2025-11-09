@@ -1,6 +1,6 @@
 from tqdm import tqdm
 from bandits.ege_kone import EGE_SH, EGE_SR
-from bandits.TTPFTS import GenericTTPFTSBandit
+from bandits.TTPFTS import TTPFTSBandit
 from bandits.UCB import PUCB1Bandit
 from bandits.Uniform import UniformBandit
 from bandits.Posteriors import NormalIGPosterior, TPosterior
@@ -30,10 +30,9 @@ def run_EGE_experiment(num_runs, max_budget, environment, ege_func, results_file
 
 def run_anytime_experiment(num_runs, max_budget, environment, results_file=None, write=True, step=1):
     algorithms = {
-        # "Uniform": UniformBandit(environment.num_arms, environment.num_objectives),
-        # "PUCB1": PUCB1Bandit(environment.num_arms, environment.num_objectives, kappa=1),
-        "TTPFTS_NIG": GenericTTPFTSBandit(NormalIGPosterior(environment.num_arms, environment.num_objectives), p=0.5),
-        "TTPFTS_T": GenericTTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives), p=0.5),
+        "Uniform": UniformBandit(environment.num_arms, environment.num_objectives),
+        "PUCB1": PUCB1Bandit(environment.num_arms, environment.num_objectives, kappa=1),
+        "TTPFTS": TTPFTSBandit(NormalIGPosterior(environment.num_arms, environment.num_objectives), p=0.5),
     }
 
     for algorithm_name, bandit in algorithms.items():
@@ -81,6 +80,6 @@ if __name__ == "__main__":
         results_file = f"results/TTPFTS_NIGvsT_posteriors_{environment_name}.csv"
         environment = env_dict["environment"]
         max_budget = env_dict["budget"]
-        # run_EGE_experiment(num_runs, max_budget, environment, EGE_SR, results_file=results_file, write=write, step=1)
-        # run_EGE_experiment(num_runs, max_budget, environment, EGE_SH, results_file=results_file, write=write, step=1)
+        run_EGE_experiment(num_runs, max_budget, environment, EGE_SR, results_file=results_file, write=write, step=1)
+        run_EGE_experiment(num_runs, max_budget, environment, EGE_SH, results_file=results_file, write=write, step=1)
         run_anytime_experiment(num_runs, max_budget, environment, results_file=results_file, write=write, step=1)
