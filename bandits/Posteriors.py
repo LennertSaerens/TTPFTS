@@ -75,28 +75,60 @@ class NormalIGPosterior(PosteriorBase):
 
 
 class TPosterior(PosteriorBase):
-    def __init__(self, num_arms, num_objectives):
+    """
+    Posterior based on "Optimality of Thompson Sampling for Gaussian Bandits Depends on Priors" paper by Honda and Takemura.
+    """
+
+    def __init__(self, num_arms, num_objectives, alpha=0):
         self.num_arms = num_arms
         self.num_objectives = num_objectives
+        self.alpha = alpha
         self.mu = np.zeros((num_arms, num_objectives))
-        self.lambdas = np.ones((num_arms, num_objectives))  # precision
-        self.alpha = np.full((num_arms, num_objectives), 2.0)
-        self.beta = np.full((num_arms, num_objectives), 2.0)
+        self.n = np.zeros((num_arms, num_objectives))  # Number of observations per arm-objective
+        self.sum = np.zeros((num_arms, num_objectives))  # Sum of rewards per arm-objective
+        self.S = np.zeros((num_arms, num_objectives))  # Sum of squared deviations per arm-objective
 
     def sample(self):
-        # Degrees of freedom for t: 2*alpha
-        df = 2 * self.alpha
-        loc = self.mu
-        scale = np.sqrt(self.beta * (self.lambdas + 1) / (self.alpha * self.lambdas))
-        return t.rvs(df, loc=loc, scale=scale)
+        nu_df = self.n + (2 * self.alpha) - 1
+        z = t.rvs(df=nu_df)
+        return self.mu + (self.S / np.sqrt(self.n * nu_df)) * z
+
+    def update(self, arm, reward):
+        self.n[arm] += 1
+        self.sum[arm] += reward
+        self.mu[arm] = self.sum[arm] / self.n[arm]
+        self.S[arm] += (reward - self.mu[arm]) ** 2
+
+    def get_mean(self):
+        return self.mu
+
+    def reset(self):
+        self.mu = np.zeros((self.num_arms, self.num_objectives))
+        self.n = np.zeros((self.num_arms, self.num_objectives))
+        self.sum = np.zeros((self.num_arms, self.num_objectives))
+        self.S = np.zeros((self.num_arms, self.num_objectives))
+
+
+class NormalPosterior(PosteriorBase):
+    """
+    Posterior for arms with normal rewards with known variance. (First version)
+    """
+
+    def __init__(self, num_arms, num_objectives, known_variance=0.25):
+        self.num_arms = num_arms
+        self.num_objectives = num_objectives
+        self.known_variance = known_variance
+        self.mu = np.zeros((num_arms, num_objectives))
+        self.lambdas = np.ones((num_arms, num_objectives))
+
+    def sample(self):
+        return norm.rvs(loc=self.mu, scale=np.sqrt(self.known_variance / self.lambdas))
 
     def update(self, arm, reward):
         mu_0 = self.mu[arm]
         lambda_0 = self.lambdas[arm]
-        self.beta[arm] += 0.5 * (reward - mu_0) ** 2 * (lambda_0 / (lambda_0 + 1))
         self.mu[arm] = (mu_0 * lambda_0 + reward) / (lambda_0 + 1)
         self.lambdas[arm] += 1
-        self.alpha[arm] += 0.5
 
     def get_mean(self):
         return self.mu
@@ -104,5 +136,3 @@ class TPosterior(PosteriorBase):
     def reset(self):
         self.mu = np.zeros((self.num_arms, self.num_objectives))
         self.lambdas = np.ones((self.num_arms, self.num_objectives))
-        self.alpha = np.full((self.num_arms, self.num_objectives), 2.0)
-        self.beta = np.full((self.num_arms, self.num_objectives), 2.0)
