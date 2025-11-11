@@ -3,7 +3,7 @@ from bandits.ege_kone import EGE_SH, EGE_SR
 from bandits.TTPFTS import TTPFTSBandit
 from bandits.UCB import PUCB1Bandit
 from bandits.Uniform import UniformBandit
-from bandits.Posteriors import NormalIGPosterior, TPosterior
+from bandits.Posteriors import NormalIGPosterior, TPosterior, NormalPosterior
 from environments import CovBoost, EgeExp1, EgeExp2, EgeExp3, EgeExp4, EgeExp5, EgeExp6, EgeExp7, EgeExp8, N50VS
 
 
@@ -30,9 +30,14 @@ def run_EGE_experiment(num_runs, max_budget, environment, ege_func, results_file
 
 def run_anytime_experiment(num_runs, max_budget, environment, results_file=None, write=True, step=1):
     algorithms = {
-        "Uniform": UniformBandit(environment.num_arms, environment.num_objectives),
-        "PUCB1": PUCB1Bandit(environment.num_arms, environment.num_objectives, kappa=1),
-        "TTPFTS": TTPFTSBandit(NormalIGPosterior(environment.num_arms, environment.num_objectives), p=0.5),
+        # "Uniform": UniformBandit(environment.num_arms, environment.num_objectives),
+        # "PUCB1": PUCB1Bandit(environment.num_arms, environment.num_objectives, kappa=1),
+        "TTPFTS_NIG": TTPFTSBandit(NormalIGPosterior(environment.num_arms, environment.num_objectives)),
+        "TTPFTS_T_Uni": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=-1/2), num_warmup_pulls=4),
+        "TTPFTS_T_Ref": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=0)),
+        "TTPFTS_T_Jef": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=1/2)),
+        "TTPFTS_NKV": TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives)),
+        # "TTPFTS_KV": TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives), p=0.5),
     }
 
     for algorithm_name, bandit in algorithms.items():
@@ -59,9 +64,6 @@ def run_anytime_experiment(num_runs, max_budget, environment, results_file=None,
 if __name__ == "__main__":
     # Set the parameters for the experiments
     num_runs = 100
-    write = True
-    # plt.rcParams.update({'font.family': 'serif'})
-    # plt.rcParams.update({'font.size': 15})
     environments = {
         # "EgeExp1": {"environment": EgeExp1.EgeExp1(), "budget": 5000},
         "EgeExp2": {"environment": EgeExp2.EgeExp2(), "budget": 5000},
@@ -77,9 +79,9 @@ if __name__ == "__main__":
 
     for environment_name, env_dict in environments.items():
         print(f"\nRunning experiments for {environment_name}...")
-        results_file = f"results/TTPFTS_NIGvsT_posteriors_{environment_name}.csv"
+        results_file = f"results_posteriors/TTPFTS_NIGvsT_posteriors_{environment_name}.csv"
         environment = env_dict["environment"]
         max_budget = env_dict["budget"]
-        run_EGE_experiment(num_runs, max_budget, environment, EGE_SR, results_file=results_file, write=write, step=1)
-        run_EGE_experiment(num_runs, max_budget, environment, EGE_SH, results_file=results_file, write=write, step=1)
-        run_anytime_experiment(num_runs, max_budget, environment, results_file=results_file, write=write, step=1)
+        # run_EGE_experiment(num_runs, max_budget, environment, EGE_SR, results_file=results_file, write=write, step=1)
+        # run_EGE_experiment(num_runs, max_budget, environment, EGE_SH, results_file=results_file, write=write, step=1)
+        run_anytime_experiment(num_runs, max_budget, environment, results_file=results_file, write=True, step=1)

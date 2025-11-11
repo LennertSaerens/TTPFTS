@@ -278,7 +278,7 @@ def plot_arm_pulls_single(setup, algorithm_name, optimal_arms, total_pulls):
     plt.show()
 
 
-def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, ege_sr_file=None):
+def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, ege_sr_file=None, save_pdf=False):
     """
     Plot the evolution of the Bernoulli metric. The Bernoulli metric is the fraction of times the algorithm pulls a Pareto optimal arm.
     The x-axis represents the time steps and the y-axis represents the Bernoulli metric. The metric is averaged over the experiments.
@@ -328,11 +328,12 @@ def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, p
     plt.xlabel("Arm pulls")
     plt.ylabel("Bernoulli metric")
     plt.legend()
-    plt.savefig(f"{file}_bernoulli.pdf", format="pdf")
+    if save_pdf:
+        plt.savefig(f"{file}_bernoulli.pdf", format="pdf")
     plt.show()
 
 
-def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, ege_sr_file=None):
+def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, ege_sr_file=None, save_pdf=False):
     """
     Plot the evolution of the Jaccard metric. The Jaccard metric is the Jaccard similarity between the set of Pareto optimal arms and the set of arms recommended by the algorithm.
     The x-axis represents the time steps and the y-axis represents the Jaccard metric. The metric is averaged over the experiments.
@@ -380,7 +381,8 @@ def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plo
     plt.xlabel("Time steps")
     plt.ylabel("Jaccard metric")
     plt.legend(loc='lower right')
-    plt.savefig(f"{file}_jaccard.pdf", format="pdf")
+    if save_pdf:
+        plt.savefig(f"{file}_jaccard.pdf", format="pdf")
     plt.show()
 
 
@@ -446,7 +448,7 @@ def plot_hypervolume(file, num_runs, num_arm_pulls, y_low_lim, y_up_lim, rolling
     plt.show()
 
 
-def plot_mis_id_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, ege_sr_file=None):
+def plot_mis_id_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, ege_sr_file=None, save_pdf=False):
     """
     Plot the evolution of the mis-identification metric.
     The x-axis represents the time steps and the y-axis represents the mis-identification metric. The metric is averaged over the experiments.
@@ -492,7 +494,8 @@ def plot_mis_id_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot
     plt.xlabel("Time steps")
     plt.ylabel("Mis-identification metric")
     plt.legend(loc='best')
-    plt.savefig(f"{file}_mis_id.pdf", format="pdf", bbox_inches='tight')
+    if save_pdf:
+        plt.savefig(f"{file}_mis_id.pdf", format="pdf", bbox_inches='tight')
     plt.show()
 
 
@@ -575,9 +578,9 @@ def plot_bernoulli_metric_coarse(file, num_runs, plot_std=False):
 
 if __name__ == "__main__":
     # plot_bernoulli_metric_coarse("results/EGEvsTTPFTSvsPUCB1vsUniform_Coarse_EgeExp1.csv", 100, plot_std=True)
-    plot_bernoulli_metric("results5000/EGEvsTTPFTSvsPUCB1vsUniform_N50VS.csv", 100, 5001, plot_std=True, ege_sr_file=None, rolling_avg_window=10)
-    plot_jaccard_metric("results5000/EGEvsTTPFTSvsPUCB1vsUniform_N50VS.csv", 100, 5001, plot_std=True, ege_sr_file=None, rolling_avg_window=10)
-    plot_mis_id_metric("results5000/EGEvsTTPFTSvsPUCB1vsUniform_N50VS.csv", 100, 5001, plot_std=True, ege_sr_file=None, rolling_avg_window=10)
+    plot_bernoulli_metric("results5000/EGEvsTTPFTSvsPUCB1vsUniform_N50VS.csv", 100, 5001, rolling_avg_window=10)
+    plot_jaccard_metric("results5000/EGEvsTTPFTSvsPUCB1vsUniform_N50VS.csv", 100, 5001, rolling_avg_window=10)
+    plot_mis_id_metric("results5000/EGEvsTTPFTSvsPUCB1vsUniform_N50VS.csv", 100, 5001, rolling_avg_window=10)
     # plot_arm_rec_frequencies("results/baseline_recs.csv", 100, 30_000, [0, 5, 6, 8, 14, 30, 31, 32], 53, "Uniform Sampling")
     # plot_arm_pull_frequencies("results/bandits/test2.csv", 100, 250_000, [0, 1, 2, 3], 20,
     #                           "Linear Scalarized Knowledge Gradient (objectives)", 3)

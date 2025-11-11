@@ -126,7 +126,7 @@ class NormalPosterior(PosteriorBase):
         return np.random.normal(self.means, self.empirical_variances)
 
     def update(self, arm, reward):
-        self.means[arm] = (self.empirical_variances[arm] * reward + self.known_variances[arm] * self.means[arm]) / self.empirical_variances[arm] + self.known_variances[arm]
+        self.means[arm] = (self.empirical_variances[arm] * reward + self.known_variances[arm] * self.means[arm]) / (self.empirical_variances[arm] + self.known_variances[arm])
         self.empirical_variances[arm] = (self.empirical_variances[arm] * self.known_variances[arm]) / (self.empirical_variances[arm] + self.known_variances[arm])
 
     def get_mean(self):
@@ -136,4 +136,3 @@ class NormalPosterior(PosteriorBase):
         self.means = np.zeros((self.num_arms, self.num_objectives))
         self.known_variances = np.full((self.num_arms, self.num_objectives), self.known_variance, dtype=np.float64)
         self.empirical_variances = np.full((self.num_arms, self.num_objectives), self.known_variance, dtype=np.float64)
-
