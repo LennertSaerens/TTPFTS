@@ -5,12 +5,22 @@ from paretoset import paretoset
 
 
 class TTPFTSBandit:
-    def __init__(self, posterior, p):
+    def __init__(self, posterior, p=0.5, num_warmup_pulls=2):
         self.posterior = posterior
         self.p = p
         self.num_objectives = posterior.num_objectives
+        self.num_warmup_pulls = num_warmup_pulls
+        self.current_warmup_arm = 0
+        self.warmup_pulls = np.zeros(posterior.num_arms, dtype=int)
 
     def choose_arm(self):
+        # Warm-up phase
+        if np.any(self.warmup_pulls < self.num_warmup_pulls):
+            arm = self.current_warmup_arm
+            self.warmup_pulls[arm] += 1
+            self.current_warmup_arm = (self.current_warmup_arm + 1) % self.posterior.num_arms
+            return arm
+        # Main TTP-FTS logic
         samples = self.posterior.sample()
         pareto_mask = paretoset(samples, sense=["max"] * self.num_objectives)
         pareto_indices = np.where(pareto_mask)[0]
