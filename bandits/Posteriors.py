@@ -111,28 +111,29 @@ class TPosterior(PosteriorBase):
 
 class NormalPosterior(PosteriorBase):
     """
-    Posterior for arms with normal rewards with known variance. (First version)
+    Posterior for arms with normal rewards with known variance as described in "Thompson Sampling - An Efficient Method
+     for Searching Ultralarge Synthesis on Demand Databases" by Klarich et al.
     """
-
     def __init__(self, num_arms, num_objectives, known_variance=0.25):
         self.num_arms = num_arms
         self.num_objectives = num_objectives
         self.known_variance = known_variance
-        self.mu = np.zeros((num_arms, num_objectives))
-        self.lambdas = np.ones((num_arms, num_objectives))
+        self.means = np.zeros((self.num_arms, self.num_objectives))
+        self.known_variances = np.full((self.num_arms, self.num_objectives), self.known_variance, dtype=np.float64)
+        self.empirical_variances = np.full((self.num_arms, self.num_objectives), self.known_variance, dtype=np.float64)
 
     def sample(self):
-        return norm.rvs(loc=self.mu, scale=np.sqrt(self.known_variance / self.lambdas))
+        return np.random.normal(self.means, self.empirical_variances)
 
     def update(self, arm, reward):
-        mu_0 = self.mu[arm]
-        lambda_0 = self.lambdas[arm]
-        self.mu[arm] = (mu_0 * lambda_0 + reward) / (lambda_0 + 1)
-        self.lambdas[arm] += 1
+        self.means[arm] = (self.empirical_variances[arm] * reward + self.known_variances[arm] * self.means[arm]) / self.empirical_variances[arm] + self.known_variances[arm]
+        self.empirical_variances[arm] = (self.empirical_variances[arm] * self.known_variances[arm]) / (self.empirical_variances[arm] + self.known_variances[arm])
 
     def get_mean(self):
-        return self.mu
+        return self.means
 
     def reset(self):
-        self.mu = np.zeros((self.num_arms, self.num_objectives))
-        self.lambdas = np.ones((self.num_arms, self.num_objectives))
+        self.means = np.zeros((self.num_arms, self.num_objectives))
+        self.known_variances = np.full((self.num_arms, self.num_objectives), self.known_variance, dtype=np.float64)
+        self.empirical_variances = np.full((self.num_arms, self.num_objectives), self.known_variance, dtype=np.float64)
+
