@@ -20,7 +20,7 @@ class TTPFTSBandit:
             self.warmup_pulls[arm] += 1
             self.current_warmup_arm = (self.current_warmup_arm + 1) % self.posterior.num_arms
             return arm
-        # Main TTP-FTS logic
+        # Main TTPFTS sampling strategy
         samples = self.posterior.sample()
         pareto_mask = paretoset(samples, sense=["max"] * self.num_objectives)
         pareto_indices = np.where(pareto_mask)[0]
@@ -47,3 +47,5 @@ class TTPFTSBandit:
 
     def reset(self):
         self.posterior.reset()
+        self.warmup_pulls = np.zeros(self.posterior.num_arms, dtype=int)
+        self.current_warmup_arm = 0
