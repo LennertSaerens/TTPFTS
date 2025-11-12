@@ -114,13 +114,14 @@ class NormalPosterior(PosteriorBase):
     Posterior for arms with normal rewards with known variance as described in "Thompson Sampling - An Efficient Method
      for Searching Ultralarge Synthesis on Demand Databases" by Klarich et al.
     """
-    def __init__(self, num_arms, num_objectives, known_variance=0.25):
+    def __init__(self, num_arms, num_objectives, known_stds):
         self.num_arms = num_arms
         self.num_objectives = num_objectives
-        self.known_variance = known_variance
+        self.known_stds = np.array(known_stds)
         self.means = np.zeros((self.num_arms, self.num_objectives))
-        self.known_variances = np.full((self.num_arms, self.num_objectives), self.known_variance, dtype=np.float64)
-        self.empirical_variances = np.full((self.num_arms, self.num_objectives), self.known_variance, dtype=np.float64)
+        known_variances = self.known_stds ** 2
+        self.known_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
+        self.empirical_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
 
     def sample(self):
         return np.random.normal(self.means, np.sqrt(self.empirical_variances))
@@ -133,6 +134,7 @@ class NormalPosterior(PosteriorBase):
         return self.means
 
     def reset(self):
+        known_variances = self.known_stds ** 2
         self.means = np.zeros((self.num_arms, self.num_objectives))
-        self.known_variances = np.full((self.num_arms, self.num_objectives), self.known_variance, dtype=np.float64)
-        self.empirical_variances = np.full((self.num_arms, self.num_objectives), self.known_variance, dtype=np.float64)
+        self.known_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
+        self.empirical_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
