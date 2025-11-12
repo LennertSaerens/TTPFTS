@@ -5,7 +5,7 @@ from bandits.ege_kone import EGE_SH, EGE_SR
 from bandits.TTPFTS import TTPFTSBandit
 from bandits.UCB import PUCB1Bandit
 from bandits.Uniform import UniformBandit
-from bandits.Posteriors import NormalIGPosterior, TPosterior
+from bandits.Posteriors import NormalIGPosterior, TPosterior, NormalPosterior
 from environments import CovBoost, EgeExp1, EgeExp2, EgeExp3, EgeExp4, EgeExp5, EgeExp6, EgeExp7, EgeExp8, N50VS
 
 # Mapping strings to classes/functions for argparse compatibility
@@ -49,7 +49,7 @@ def run_anytime_experiment(num_runs, max_budget, environment, algorithms, result
         elif alg == "PUCB1":
             alg_objs[alg] = PUCB1Bandit(environment.num_arms, environment.num_objectives)
         elif alg == "TTPFTS":
-            alg_objs[alg] = TTPFTSBandit(NormalIGPosterior(environment.num_arms, environment.num_objectives))
+            alg_objs[alg] = TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds))
         else:
             continue
     for algorithm_name, bandit in alg_objs.items():
