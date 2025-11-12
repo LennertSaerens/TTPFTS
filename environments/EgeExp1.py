@@ -29,7 +29,7 @@ class EgeExp1(BaseEnvironment):
 
     def __init__(self):
         self.arms = generate_arms()
-        self.stds = 0.25  # Standard deviation for the normal distribution
+        self.stds = [0.25, 0.25]  # Standard deviation for the normal distribution
         pareto_indices = np.arange(10)  # The first 10 arms are Pareto optimal
         reference_point = np.array([1.0, 1.0])
         inverted_arms = [(1 - arm[0], 1 - arm[1]) for arm in self.arms]
@@ -42,7 +42,7 @@ class EgeExp1(BaseEnvironment):
         :return: The reward for the pulled arm.
         """
         mu = self.arms[arm]
-        return [np.random.normal(mu[0], self.stds), np.random.normal(mu[1], self.stds)]
+        return [np.random.normal(mu[0], self.stds[0]), np.random.normal(mu[1], self.stds[1])]
 
     def plot(self):
         """
@@ -55,7 +55,7 @@ class EgeExp1(BaseEnvironment):
 
         # Draw ellipses around Pareto optimal arms
         for i in self.pareto_indices:
-            ellipse = Ellipse(xy=self.arms[i], width=self.stds, height=self.stds, edgecolor='green', facecolor='none', alpha=0.5)
+            ellipse = Ellipse(xy=self.arms[i], width=self.stds[0], height=self.stds[1], edgecolor='green', facecolor='none', alpha=0.5)
             plt.gca().add_patch(ellipse)
 
         plt.xlabel('Objective 1')
