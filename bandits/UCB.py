@@ -11,7 +11,7 @@ class PUCB1Bandit:
     From "Designing multi-objective multi-armed bandits algorithms: a study" by Madalina M. Drugan and Ann Nowe
     """
 
-    def __init__(self, num_arms, num_objectives, kappa):
+    def __init__(self, num_arms, num_objectives, kappa=1):
         self.num_arms = num_arms
         self.num_objectives = num_objectives
         self.kappa = kappa
