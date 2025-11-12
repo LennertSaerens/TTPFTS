@@ -47,9 +47,9 @@ def run_anytime_experiment(num_runs, max_budget, environment, algorithms, result
         if alg == "Uniform":
             alg_objs[alg] = UniformBandit(environment.num_arms, environment.num_objectives)
         elif alg == "PUCB1":
-            alg_objs[alg] = PUCB1Bandit(environment.num_arms, environment.num_objectives, kappa=1)
+            alg_objs[alg] = PUCB1Bandit(environment.num_arms, environment.num_objectives)
         elif alg == "TTPFTS":
-            alg_objs[alg] = TTPFTSBandit(NormalIGPosterior(environment.num_arms, environment.num_objectives), p=0.5)
+            alg_objs[alg] = TTPFTSBandit(NormalIGPosterior(environment.num_arms, environment.num_objectives))
         else:
             continue
     for algorithm_name, bandit in alg_objs.items():

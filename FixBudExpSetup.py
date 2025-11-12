@@ -32,12 +32,11 @@ def run_anytime_experiment(num_runs, max_budget, environment, results_file=None,
     algorithms = {
         # "Uniform": UniformBandit(environment.num_arms, environment.num_objectives),
         # "PUCB1": PUCB1Bandit(environment.num_arms, environment.num_objectives, kappa=1),
-        "TTPFTS_NIG": TTPFTSBandit(NormalIGPosterior(environment.num_arms, environment.num_objectives)),
+        # "TTPFTS_NIG": TTPFTSBandit(NormalIGPosterior(environment.num_arms, environment.num_objectives)),
         "TTPFTS_T_Uni": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=-1/2), num_warmup_pulls=4),
         "TTPFTS_T_Ref": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=0)),
         "TTPFTS_T_Jef": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=1/2)),
-        "TTPFTS_NKV": TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives)),
-        # "TTPFTS_KV": TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives), p=0.5),
+        "TTPFTS_NKV": TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds)),
     }
 
     for algorithm_name, bandit in algorithms.items():
@@ -65,7 +64,7 @@ if __name__ == "__main__":
     # Set the parameters for the experiments
     num_runs = 100
     environments = {
-        # "EgeExp1": {"environment": EgeExp1.EgeExp1(), "budget": 5000},
+        "EgeExp1": {"environment": EgeExp1.EgeExp1(), "budget": 5000},
         "EgeExp2": {"environment": EgeExp2.EgeExp2(), "budget": 5000},
         "EgeExp3": {"environment": EgeExp3.EgeExp3(), "budget": 5000},
         "EgeExp4": {"environment": EgeExp4.EgeExp4(), "budget": 5000},
