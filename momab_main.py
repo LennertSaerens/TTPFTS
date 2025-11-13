@@ -25,6 +25,7 @@ ENVIRONMENTS = {
 
 def run_EGE_experiment(num_runs, max_budget, environment, ege_func, results_file=None, write=True, step=1):
     for experiment in tqdm(range(num_runs), desc=f"Running {ege_func.__name__} experiments", unit="experiment"):
+        environment.reset()
         for budget in range(0, max_budget + 1, step):
             recommended_arms = ege_func(
                 T=budget,
@@ -55,6 +56,7 @@ def run_anytime_experiment(num_runs, max_budget, environment, algorithms, result
     for algorithm_name, bandit in alg_objs.items():
         for experiment in tqdm(range(num_runs), desc=f"Running {algorithm_name} experiments", unit="experiment"):
             bandit.reset()
+            environment.reset()
             for t in range(0, max_budget + 1, step):
                 arm = bandit.choose_arm()
                 reward = environment.pull_arm(arm)
