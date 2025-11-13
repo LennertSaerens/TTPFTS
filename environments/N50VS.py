@@ -18,6 +18,8 @@ class N50VS(BaseEnvironment):
         inverted_arms = [(5 - arm[0], 5 - arm[1]) for arm in self.arms]
         super().__init__(len(self.arms), 2, pareto_indices, inverted_arms, reference_point)
         # Generate uniformly distributed std's between 1 and 2 for each arm and objective
+        self.std_low = std_low
+        self.std_high = std_high
         self.stds = [(np.random.uniform(std_low, std_high), np.random.uniform(std_low, std_high)) for _ in range(self.num_arms)]
 
     def pull_arm(self, arm):
@@ -52,4 +54,4 @@ class N50VS(BaseEnvironment):
 
     def reset(self):
         self.arms = self.optimal_arms + self.suboptimal_arms
-        self.stds = [(np.random.uniform(1, 3), np.random.uniform(1, 3)) for _ in range(self.num_arms)]
+        self.stds = [(np.random.uniform(self.std_low, self.std_high), np.random.uniform(self.std_low, self.std_high)) for _ in range(self.num_arms)]
