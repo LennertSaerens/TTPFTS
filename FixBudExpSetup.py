@@ -9,6 +9,7 @@ from environments import CovBoost, EgeExp1, EgeExp2, EgeExp3, EgeExp4, EgeExp5, 
 
 def run_EGE_experiment(num_runs, max_budget, environment, ege_func, results_file=None, write=True, step=1):
     for experiment in tqdm(range(num_runs), desc=f"Running {ege_func.__name__} experiments", unit="experiment"):
+        environment.reset()
 
         for budget in range(0, max_budget + 1, step):
             recommended_arms = ege_func(
@@ -41,6 +42,7 @@ def run_anytime_experiment(num_runs, max_budget, environment, results_file=None,
 
     for algorithm_name, bandit in algorithms.items():
         for experiment in tqdm(range(num_runs), desc=f"Running {algorithm_name} experiments", unit="experiment"):
+            environment.reset()
             bandit.reset()
 
             for t in range(0, max_budget + 1, step):
@@ -62,7 +64,7 @@ def run_anytime_experiment(num_runs, max_budget, environment, results_file=None,
 
 if __name__ == "__main__":
     # Set the parameters for the experiments
-    num_runs = 100
+    num_runs = 200
     environments = {
         "EgeExp1": {"environment": EgeExp1.EgeExp1(), "budget": 5000},
         "EgeExp2": {"environment": EgeExp2.EgeExp2(), "budget": 5000},
@@ -78,7 +80,7 @@ if __name__ == "__main__":
 
     for environment_name, env_dict in environments.items():
         print(f"\nRunning experiments for {environment_name}...")
-        results_file = f"results_posteriors/TTPFTS_NIGvsT_posteriors_{environment_name}.csv"
+        results_file = f"results_posteriors/KV1vsKV2_{environment_name}.csv"
         environment = env_dict["environment"]
         max_budget = env_dict["budget"]
         # run_EGE_experiment(num_runs, max_budget, environment, EGE_SR, results_file=results_file, write=write, step=1)
