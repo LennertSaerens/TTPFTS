@@ -109,32 +109,71 @@ class TPosterior(PosteriorBase):
         self.S = np.zeros((self.num_arms, self.num_objectives))
 
 
+# class NormalPosterior(PosteriorBase):
+#     """
+#     Posterior for arms with normal rewards with known variance as described in "Thompson Sampling - An Efficient Method
+#      for Searching Ultralarge Synthesis on Demand Databases" by Klarich et al.
+#     """
+#     def __init__(self, num_arms, num_objectives, known_stds):
+#         self.num_arms = num_arms
+#         self.num_objectives = num_objectives
+#         self.means = np.zeros((self.num_arms, self.num_objectives))
+#         self.known_stds = np.array(known_stds)
+#         known_variances = self.known_stds ** 2
+#         self.known_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
+#         self.empirical_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
+#
+#     def sample(self):
+#         return np.random.normal(self.means, np.sqrt(self.empirical_variances))
+#
+#     def update(self, arm, reward):
+#         self.means[arm] = (self.empirical_variances[arm] * reward + self.known_variances[arm] * self.means[arm]) / (self.empirical_variances[arm] + self.known_variances[arm])
+#         self.empirical_variances[arm] = (self.empirical_variances[arm] * self.known_variances[arm]) / (self.empirical_variances[arm] + self.known_variances[arm])
+#
+#     def get_mean(self):
+#         return self.means
+#
+#     def reset(self):
+#         known_variances = self.known_stds ** 2
+#         self.means = np.zeros((self.num_arms, self.num_objectives))
+#         self.known_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
+#         self.empirical_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
+
+
 class NormalPosterior(PosteriorBase):
     """
-    Posterior for arms with normal rewards with known variance as described in "Thompson Sampling - An Efficient Method
-     for Searching Ultralarge Synthesis on Demand Databases" by Klarich et al.
+    Bayesian posterior for normal rewards with known variance, per arm/objective.
     """
     def __init__(self, num_arms, num_objectives, known_stds):
         self.num_arms = num_arms
         self.num_objectives = num_objectives
-        self.known_stds = np.array(known_stds)
-        self.means = np.zeros((self.num_arms, self.num_objectives))
-        known_variances = self.known_stds ** 2
-        self.known_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
-        self.empirical_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
+        self.known_stds = np.full((self.num_arms, self.num_objectives), known_stds, dtype=np.float64)
+
+        # Each arm/objective: track count (n), mean, and posterior variance
+        self.counts = np.zeros((num_arms, num_objectives), dtype=int)
+        self.means = np.zeros((num_arms, num_objectives), dtype=float)
 
     def sample(self):
-        return np.random.normal(self.means, np.sqrt(self.empirical_variances))
+        # Posterior std-dev: known std / sqrt(n) (n >= 1), otherwise infinity
+        stds = np.where(
+            self.counts > 0,
+            self.known_stds / np.sqrt(self.counts),
+            1e6  # Large std-dev for unpulled arms
+        )
+
+        return np.random.normal(self.means, stds)
 
     def update(self, arm, reward):
-        self.means[arm] = (self.empirical_variances[arm] * reward + self.known_variances[arm] * self.means[arm]) / (self.empirical_variances[arm] + self.known_variances[arm])
-        self.empirical_variances[arm] = (self.empirical_variances[arm] * self.known_variances[arm]) / (self.empirical_variances[arm] + self.known_variances[arm])
+        n = self.counts[arm]
+        old_mean = self.means[arm]
+        # Running mean
+        new_mean = (old_mean * n + reward) / (n + 1)
+        self.means[arm] = new_mean
+        self.counts[arm] += 1
 
     def get_mean(self):
         return self.means
 
     def reset(self):
-        known_variances = self.known_stds ** 2
-        self.means = np.zeros((self.num_arms, self.num_objectives))
-        self.known_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
-        self.empirical_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
+        self.counts = np.zeros((self.num_arms, self.num_objectives), dtype=int)
+        self.means = np.zeros((self.num_arms, self.num_objectives), dtype=float)
