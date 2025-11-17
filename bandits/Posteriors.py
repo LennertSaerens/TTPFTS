@@ -17,7 +17,7 @@ class PosteriorBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def reset(self):
+    def reset(self, env_stds):
         raise NotImplementedError
 
 
@@ -38,7 +38,7 @@ class BetaBernoulliPosterior(PosteriorBase):
     def get_mean(self):
         return self.alphas / (self.alphas + self.betas)
 
-    def reset(self):
+    def reset(self, _):
         self.alphas = np.ones((self.num_arms, self.num_objectives))
         self.betas = np.ones((self.num_arms, self.num_objectives))
 
@@ -67,7 +67,7 @@ class NormalIGPosterior(PosteriorBase):
     def get_mean(self):
         return self.mu
 
-    def reset(self):
+    def reset(self, _):
         self.mu = np.zeros((self.num_arms, self.num_objectives))
         self.lambdas = np.ones((self.num_arms, self.num_objectives))
         self.alpha = np.full((self.num_arms, self.num_objectives), 2.0)
@@ -102,7 +102,7 @@ class TPosterior(PosteriorBase):
     def get_mean(self):
         return self.mu
 
-    def reset(self):
+    def reset(self, _):
         self.mu = np.zeros((self.num_arms, self.num_objectives))
         self.n = np.zeros((self.num_arms, self.num_objectives))
         self.sum = np.zeros((self.num_arms, self.num_objectives))
@@ -174,6 +174,8 @@ class NormalPosterior(PosteriorBase):
     def get_mean(self):
         return self.means
 
-    def reset(self):
+    def reset(self, env_stds):
+        self.known_stds = np.full((self.num_arms, self.num_objectives), env_stds, dtype=np.float64)
         self.counts = np.zeros((self.num_arms, self.num_objectives), dtype=int)
         self.means = np.zeros((self.num_arms, self.num_objectives), dtype=float)
+

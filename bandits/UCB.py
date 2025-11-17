@@ -3,15 +3,17 @@ import math
 import random
 
 from paretoset import paretoset
+from bandits.InterfaceMOMABPFI import BaseMOMABAlgorithm
 
 
-class PUCB1Bandit:
+class PUCB1Bandit(BaseMOMABAlgorithm):
     """
     Empirical Pareto UCB1 Bandit
     From "Designing multi-objective multi-armed bandits algorithms: a study" by Madalina M. Drugan and Ann Nowe
     """
 
     def __init__(self, num_arms, num_objectives, kappa=1):
+        super().__init__(num_arms, num_objectives)
         self.num_arms = num_arms
         self.num_objectives = num_objectives
         self.kappa = kappa
@@ -57,7 +59,7 @@ class PUCB1Bandit:
         """
         self.arm_means[arm] += (reward - self.arm_means[arm]) / self.arm_counts[arm]
 
-    def reset(self):
+    def reset(self, _):
         """
         Reset the agent.
         :return: None

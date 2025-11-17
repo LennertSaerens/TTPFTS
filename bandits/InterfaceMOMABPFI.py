@@ -24,6 +24,6 @@ class BaseMOMABAlgorithm(ABC):
         pass
 
     @abstractmethod
-    def reset(self) -> None:
+    def reset(self, env_stds) -> None:
         """Resets the internal state of the algorithm."""
         pass

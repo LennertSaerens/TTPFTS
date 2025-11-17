@@ -25,7 +25,7 @@ class UniformBandit(BaseMOMABAlgorithm):
     def learn(self, arm, reward):
         self.arm_means[arm] += (reward - self.arm_means[arm]) / self.arm_counts[arm]
 
-    def reset(self):
+    def reset(self, _):
         self.arm_means = np.zeros((self.num_arms, self.num_objectives))
         self.arm_counts = np.zeros(self.num_arms)
         self.current_arm = np.random.randint(self.num_arms)

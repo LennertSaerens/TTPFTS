@@ -2,10 +2,12 @@ import random
 
 import numpy as np
 from paretoset import paretoset
+from bandits.InterfaceMOMABPFI import BaseMOMABAlgorithm
 
 
-class TTPFTSBandit:
+class TTPFTSBandit(BaseMOMABAlgorithm):
     def __init__(self, posterior, p=0.5, num_warmup_pulls=2):
+        super().__init__(posterior.num_arms, posterior.num_objectives)
         self.posterior = posterior
         self.p = p
         self.num_objectives = posterior.num_objectives
@@ -45,7 +47,7 @@ class TTPFTSBandit:
     def learn(self, arm, reward):
         self.posterior.update(arm, reward)
 
-    def reset(self):
-        self.posterior.reset()
+    def reset(self, env_stds):
+        self.posterior.reset(env_stds)
         self.warmup_pulls = np.zeros(self.posterior.num_arms, dtype=int)
         self.current_warmup_arm = 0
