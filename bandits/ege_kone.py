@@ -41,9 +41,65 @@ def is_non_dominated(Y: np.ndarray, eps=0.) -> np.ndarray:
     return nd_mask
 
 
+# def EGE_SR(T, K, D, environment):
+#     r"""
+#     Implements EGE SR
+#     :param T: Budget of the algorithm
+#     :param K: Number of arms
+#     :param D: Number of objectives
+#     :param environment: The multi-objective bandit environment
+#     :return: The estimated Pareto optimal arms
+#     """
+#     arms = np.arange(K)
+#     inf = (1 << 31) * 1.
+#     # implementing the SR scheme [cf Audibert et al 2010]
+#     log_K = 1 / 2 + np.sum(1 / np.arange(2, K + 1))
+#     n_ks = np.ceil([0, *(1 / log_K) * (T - K) / (K + 1 - np.arange(1, K))]).astype(int)
+#     total = np.zeros((K, D))
+#     active = np.ones(K, bool)
+#     means = np.empty((K, D), float)
+#     Nc = np.zeros(K, dtype=int)
+#     accepts = []
+#     rejects = []
+#     for r in range(1, K):
+#         num_pulls = n_ks[r] - n_ks[r - 1]
+#         if num_pulls > 0:
+#             for a in arms[active]:
+#                 total[a] += environment.sample([a] * num_pulls).sum(0)
+#                 Nc[a] += num_pulls
+#             means[active] = total[active] / Nc[active, None]
+#         active_idx = arms[active]
+#         Ik = np.eye(active.sum())
+#         index_of = {v: k for k, v in enumerate(active_idx)}
+#         g_i = lambda i: max(m(means[i], means[active]) - inf * Ik[index_of[i]])
+#         f_i = lambda i: min(min(M(means[i], means[active]) + inf * Ik[index_of[i]]),
+#                             min([max(M(means[j], means[i]), 0) + max(g_i(j), 0) for j in active_idx] + inf * Ik[
+#                                 index_of[i]]))
+#         rk, dk, ak = [None] * 3
+#         indices = [-np.inf, -np.inf]
+#         dk = active_idx[np.argmax([g_i(i) for i in active_idx])]
+#         indices[0] = g_i(dk)
+#         ak = active_idx[np.argmax([f_i(i) for i in active_idx])]
+#         indices[1] = f_i(ak)
+#         # Implements the tie-breaking rule
+#         if indices[0] >= indices[1]:
+#             # remove an arm and classify as sub-optimal
+#             rejects += [dk]
+#             rk = dk
+#         else:
+#             #accept an arm as optimal
+#             accepts += [ak]
+#             rk = ak
+#         active[rk] = False
+#     accepts += [*arms[active]]
+#     return accepts
+
+
 def EGE_SR(T, K, D, environment):
-    r"""
-    Implements EGE SR
+    """
+    Vectorized and optimized implementation of EGE-SR.
+    Preserves original algorithm.
+
     :param T: Budget of the algorithm
     :param K: Number of arms
     :param D: Number of objectives
@@ -52,7 +108,6 @@ def EGE_SR(T, K, D, environment):
     """
     arms = np.arange(K)
     inf = (1 << 31) * 1.
-    # implementing the SR scheme [cf Audibert et al 2010]
     log_K = 1 / 2 + np.sum(1 / np.arange(2, K + 1))
     n_ks = np.ceil([0, *(1 / log_K) * (T - K) / (K + 1 - np.arange(1, K))]).astype(int)
     total = np.zeros((K, D))
@@ -61,36 +116,50 @@ def EGE_SR(T, K, D, environment):
     Nc = np.zeros(K, dtype=int)
     accepts = []
     rejects = []
+
     for r in range(1, K):
         num_pulls = n_ks[r] - n_ks[r - 1]
         if num_pulls > 0:
-            for a in arms[active]:
-                total[a] += environment.sample([a] * num_pulls).sum(0)
-                Nc[a] += num_pulls
-            means[active] = total[active] / Nc[active, None]
+            active_idx = arms[active]
+            s = len(active_idx)
+            pulls = np.repeat(active_idx, num_pulls)
+            rewards = environment.sample(pulls)
+            rewards = rewards.reshape(s, num_pulls, D).sum(axis=1)  # shape (s, D)
+            total[active_idx] += rewards
+            Nc[active_idx] += num_pulls
+            means[active] = total[active_idx] / Nc[active_idx, None]
+
         active_idx = arms[active]
-        Ik = np.eye(active.sum())
-        index_of = {v: k for k, v in enumerate(active_idx)}
-        g_i = lambda i: max(m(means[i], means[active]) - inf * Ik[index_of[i]])
-        f_i = lambda i: min(min(M(means[i], means[active]) + inf * Ik[index_of[i]]),
-                            min([max(M(means[j], means[i]), 0) + max(g_i(j), 0) for j in active_idx] + inf * Ik[
-                                index_of[i]]))
-        rk, dk, ak = [None] * 3
-        indices = [-np.inf, -np.inf]
-        dk = active_idx[np.argmax([g_i(i) for i in active_idx])]
-        indices[0] = g_i(dk)
-        ak = active_idx[np.argmax([f_i(i) for i in active_idx])]
-        indices[1] = f_i(ak)
-        # Implements the tie-breaking rule
+        means_active = means[active_idx]
+
+        # Compute pairwise M and m
+        M_matrix = M(means_active[:, None, :], means_active[None, :, :])
+        m_matrix = m(means_active[:, None, :], means_active[None, :, :])
+
+        # Compute g for all arms
+        m_masked = m_matrix.copy()
+        np.fill_diagonal(m_masked, -inf)
+        g_vec = np.max(m_masked, axis=1)
+        # Compute f for all arms
+        M_masked = M_matrix.copy()
+        np.fill_diagonal(M_masked, inf)
+        term1 = np.min(M_masked, axis=1)
+        A = np.maximum(M_matrix, 0.0) + np.maximum(g_vec, 0.0)[:, None]
+        np.fill_diagonal(A, inf)
+        term2 = np.min(A, axis=0)
+        f_vec = np.minimum(term1, term2)
+
+        # Reject/Accept logic
+        g_idx = np.argmax(g_vec)
+        f_idx = np.argmax(f_vec)
+        indices = [g_vec[g_idx], f_vec[f_idx]]
         if indices[0] >= indices[1]:
-            # remove an arm and classify as sub-optimal
-            rejects += [dk]
-            rk = dk
+            rejects.append(active_idx[g_idx])
+            rk = g_idx
         else:
-            #accept an arm as optimal
-            accepts += [ak]
-            rk = ak
-        active[rk] = False
+            accepts.append(active_idx[f_idx])
+            rk = f_idx
+        active[active_idx[rk]] = False
     accepts += [*arms[active]]
     return accepts
 
@@ -156,6 +225,12 @@ def EGE_SH(T, K, D, environment):
     Vectorized and optimized implementation of EGE-SH.
     Preserves original algorithm semantics while reducing Python-level loops
     and repeated calls to environment.sample.
+
+    :param T: Budget of the algorithm
+    :param K: Number of arms
+    :param D: Number of objectives
+    :param environment: The multi-objective bandit environment
+    :return: The estimated Pareto optimal arms
     """
     arms = np.arange(K)
     inf = (1 << 31) * 1.
@@ -217,7 +292,7 @@ def EGE_SH(T, K, D, environment):
         # term2[i] = min_j!=i ( max(M[j,i],0) + max(g[j],0) )
         # Build A where A[j, i] = max(M[j,i],0) + max(g[j],0), then exclude diagonal
         if s > 1:
-            A = np.maximum(M_matrix, 0.0) + np.maximum(g, 0.0)[:, None]  # shape (s, s) transposed to align columns as i
+            A = np.maximum(M_matrix, 0.0) + np.maximum(g, 0.0)[:, None]  # shape (s, s)
             np.fill_diagonal(A, inf)
             term2 = np.min(A, axis=0)
         else:
