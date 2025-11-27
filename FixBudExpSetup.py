@@ -1,3 +1,4 @@
+from pymoo.core import algorithm
 from tqdm import tqdm
 from bandits.ege_kone import EGE_SH, EGE_SR
 from bandits.TTPFTS import TTPFTSBandit
@@ -34,9 +35,9 @@ def run_anytime_experiment(num_runs, max_budget, environment, results_file=None,
         # "Uniform": UniformBandit(environment.num_arms, environment.num_objectives),
         # "PUCB1": PUCB1Bandit(environment.num_arms, environment.num_objectives, kappa=1),
         # "TTPFTS_NIG": TTPFTSBandit(NormalIGPosterior(environment.num_arms, environment.num_objectives)),
-        "TTPFTS_T_Uni": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=-1/2), num_warmup_pulls=4),
-        "TTPFTS_T_Ref": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=0)),
-        "TTPFTS_T_Jef": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=1/2)),
+        # "TTPFTS_T_Uni": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=-1/2), num_warmup_pulls=4),
+        # "TTPFTS_T_Ref": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=0)),
+        # "TTPFTS_T_Jef": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=1/2)),
         "TTPFTS_NKV": TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds)),
     }
 
@@ -46,6 +47,11 @@ def run_anytime_experiment(num_runs, max_budget, environment, results_file=None,
             bandit.reset(environment.stds)
 
             for t in range(0, max_budget + 1, step):
+
+                if algorithm_name == "TTPFTS_NKV" and experiment == 0 and t in [0, 2500, 5000]:
+                    print(f"Logging posteriors at time {t}")
+                    bandit.posterior.log(f"results_posteriors/posteriors/TTPFTS_post_{environment_name}_t{t}.parquet")
+
                 arm = bandit.choose_arm()
                 reward = environment.pull_arm(arm)
                 bandit.learn(arm, reward)
@@ -64,7 +70,7 @@ def run_anytime_experiment(num_runs, max_budget, environment, results_file=None,
 
 if __name__ == "__main__":
     # Set the parameters for the experiments
-    num_runs = 10
+    num_runs = 1
     environments = {
         "EgeExp1": {"environment": EgeExp1.EgeExp1(), "budget": 5000},
         # "EgeExp2": {"environment": EgeExp2.EgeExp2(), "budget": 5000},
@@ -80,8 +86,8 @@ if __name__ == "__main__":
 
     for environment_name, env_dict in environments.items():
         print(f"\nRunning experiments for {environment_name}...")
-        results_file = f"results5000/EGESRvsEGESRfast_{environment_name}.csv"
+        results_file = f"results5000/Uniform_TTPFTS_step100{environment_name}.csv"
         environment = env_dict["environment"]
         max_budget = env_dict["budget"]
         # run_EGE_experiment(num_runs, max_budget, environment, EGE_SR, results_file=results_file, write=True, step=1)
-        # run_anytime_experiment(num_runs, max_budget, environment, results_file=results_file, write=True, step=1)
+        run_anytime_experiment(num_runs, max_budget, environment, results_file=results_file, write=False, step=1)
