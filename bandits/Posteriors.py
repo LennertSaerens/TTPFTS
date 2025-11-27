@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import invgamma, norm, t
 from abc import ABC, abstractmethod
+import pandas as pd
 
 
 class PosteriorBase(ABC):
@@ -18,6 +19,10 @@ class PosteriorBase(ABC):
 
     @abstractmethod
     def reset(self, env_stds):
+        raise NotImplementedError
+
+    @abstractmethod
+    def log(self, file):
         raise NotImplementedError
 
 
@@ -179,3 +184,22 @@ class NormalPosterior(PosteriorBase):
         self.counts = np.zeros((self.num_arms, self.num_objectives), dtype=int)
         self.means = np.zeros((self.num_arms, self.num_objectives), dtype=float)
 
+    def log(self, file):
+        stds = np.where(
+            self.counts > 0,
+            self.known_stds / np.sqrt(self.counts),
+            1e6
+        )
+
+        # Aggregate per arm by averaging over objectives
+        arm_indices = np.arange(self.num_arms)
+        means_lists = [[self.means[i, j] for j in range(self.num_objectives)] for i in range(self.num_arms)]
+        stds_lists = [[stds[i, j] for j in range(self.num_objectives)] for i in range(self.num_arms)]
+
+        df = pd.DataFrame({
+            "arm": arm_indices,
+            "means": means_lists,
+            "stds": stds_lists,
+        })
+
+        df.to_parquet(file, index=False)
