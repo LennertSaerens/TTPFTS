@@ -55,8 +55,8 @@ def run_anytime_experiment(num_runs, max_budget, environment, algorithms, result
             continue
     for algorithm_name, bandit in alg_objs.items():
         for experiment in tqdm(range(num_runs), desc=f"Running {algorithm_name} experiments", unit="experiment"):
-            bandit.reset(environment.stds)
             environment.reset()
+            bandit.reset(environment.stds)
             for t in range(0, max_budget + 1, step):
                 arm = bandit.choose_arm()
                 reward = environment.pull_arm(arm)
