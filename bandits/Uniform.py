@@ -13,8 +13,9 @@ class UniformBandit(BaseMOMABAlgorithm):
         self.current_arm = np.random.randint(num_arms)
 
     def choose_arm(self):
-        arm = np.random.randint(self.num_arms)
+        arm = self.current_arm
         self.arm_counts[arm] += 1
+        self.current_arm = (self.current_arm + 1) % self.num_arms
         return arm
 
     def get_top_arms(self):
