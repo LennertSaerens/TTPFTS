@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import matplotlib.patches as mpatches
+from scipy.stats import multivariate_normal
+import seaborn as sns
 
 from matplotlib.patches import Ellipse, Patch
 
@@ -573,6 +575,192 @@ def plot_bernoulli_metric_coarse(file, num_runs, plot_std=False):
     plt.ylabel("Bernoulli metric")
     plt.legend()
     plt.savefig(f"{file}_bernoulli.pdf", format="pdf")
+    plt.show()
+
+
+def plot_posterior_density_2d(parquet_path, num_samples=5000):
+    """
+    Visualize posterior distributions (2 objectives) per arm as 2D density plots.
+
+    Assumptions:
+    - Parquet file has columns: 'arm', 'means', 'stds'.
+    - 'means' and 'stds' are length-2 lists/arrays: [mean_obj1, mean_obj2], [std_obj1, std_obj2].
+    - Objectives are independent given the posterior, so the joint is a product of 1D normals.
+    """
+    df = pd.read_parquet(parquet_path)
+
+    # Sanity check: require exactly 2 objectives
+    first_means = df["means"].iloc[0]
+    if len(first_means) != 2:
+        raise ValueError(f"Expected exactly 2 objectives, got {len(first_means)}")
+
+    plt.figure(figsize=(8, 6))
+    cmap = sns.color_palette("husl", n_colors=df["arm"].nunique())
+
+    for idx, (arm, row) in enumerate(df.iterrows()):
+        means = np.array(row["means"], dtype=float)   # shape (2,)
+        stds = np.array(row["stds"], dtype=float)     # shape (2,)
+
+        # Sample from the 2D independent Gaussian for this arm
+        samples = np.random.normal(
+            loc=means,
+            scale=stds,
+            size=(num_samples, 2)
+        )
+        x = samples[:, 0]  # objective 1
+        y = samples[:, 1]  # objective 2
+
+        sns.kdeplot(
+            x=x,
+            y=y,
+            levels=5,
+            fill=True,
+            alpha=0.3,
+            color=cmap[idx],
+            label=f"arm {int(row['arm'])}" if idx == 0 else None,  # avoid duplicate legend labels
+        )
+
+    plt.xlabel("Objective 1")
+    plt.ylabel("Objective 2")
+    plt.title("Posterior density over two objectives per arm")
+    # If you want all arms in legend, remove the conditional label logic above and call:
+    # plt.legend(title="Arm")
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_posterior_density_2d_theoretical(parquet_path, grid_size=500):
+    """
+    Plot 2D theoretical Gaussian posterior densities per arm (2 objectives).
+
+    Assumptions
+    ----------
+    - parquet has columns: 'arm', 'means', 'stds'
+    - 'means' and 'stds' are length-2 lists/arrays for the two objectives
+    - objectives are independent, so covariance is diag(stds**2)
+    """
+    df = pd.read_parquet(parquet_path)
+
+    first_means = df["means"].iloc[0]
+    if len(first_means) != 2:
+        raise ValueError(f"Expected exactly 2 objectives, got {len(first_means)}")
+
+    # Collect all means/stds to define a common plotting window
+    mus = np.stack(df["means"].apply(lambda m: np.array(m, dtype=float)).values)    # shape (n_arms, 2)
+    sigmas = np.stack(df["stds"].apply(lambda s: np.array(s, dtype=float)).values)  # shape (n_arms, 2)
+
+    # 4-sigma box across all arms
+    x_min = np.min(mus[:, 0] - 4 * sigmas[:, 0])
+    x_max = np.max(mus[:, 0] + 4 * sigmas[:, 0])
+    y_min = np.min(mus[:, 1] - 4 * sigmas[:, 1])
+    y_max = np.max(mus[:, 1] + 4 * sigmas[:, 1])
+
+    x = np.linspace(x_min, x_max, grid_size)
+    y = np.linspace(y_min, y_max, grid_size)
+    X, Y = np.meshgrid(x, y)
+    pos = np.dstack((X, Y))  # shape (grid, grid, 2)
+
+    plt.figure(figsize=(8, 6))
+    cmap = sns.color_palette("husl", n_colors=df["arm"].nunique())
+
+    for idx, row in df.iterrows():
+        mean = np.array(row["means"], dtype=float)
+        std = np.array(row["stds"], dtype=float)
+        cov = np.diag(std**2)
+
+        rv = multivariate_normal(mean=mean, cov=cov)
+        Z = rv.pdf(pos)
+
+        plt.contour(
+            X,
+            Y,
+            Z,
+            levels=5,
+            colors=cmap[idx],
+            alpha=0.8,
+        )
+
+    plt.xlabel("Objective 1")
+    plt.ylabel("Objective 2")
+    # plt.title("Theoretical 2D Gaussian posterior densities per arm")
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_aggregate_posterior_heatmap_2d(parquet_path, grid_size=200, mode="sum"):
+    """
+    Plot an aggregate 2D theoretical Gaussian posterior heatmap over all arms.
+
+    Parameters
+    ----------
+    parquet_path : str
+        Path to parquet file with columns: 'arm', 'means', 'stds'.
+    grid_size : int
+        Number of grid points per axis for evaluating the density.
+    mode : {"sum", "max", "mean"}
+        How to aggregate per-arm densities:
+        - "sum": sum of densities.
+        - "max": maximum density across arms.
+        - "mean": average density across arms.
+    """
+    df = pd.read_parquet(parquet_path)
+
+    first_means = df["means"].iloc[0]
+    if len(first_means) != 2:
+        raise ValueError(f"Expected exactly 2 objectives, got {len(first_means)}")
+
+    # Collect means/stds to define common plotting window
+    mus = np.stack(df["means"].apply(lambda m: np.array(m, dtype=float)).values)     # (n_arms, 2)
+    sigmas = np.stack(df["stds"].apply(lambda s: np.array(s, dtype=float)).values)   # (n_arms, 2)
+
+    # 4-sigma box across all arms
+    x_min = np.min(mus[:, 0] - 4 * sigmas[:, 0])
+    x_max = np.max(mus[:, 0] + 4 * sigmas[:, 0])
+    y_min = np.min(mus[:, 1] - 4 * sigmas[:, 1])
+    y_max = np.max(mus[:, 1] + 4 * sigmas[:, 1])
+
+    x = np.linspace(x_min, x_max, grid_size)
+    y = np.linspace(y_min, y_max, grid_size)
+    X, Y = np.meshgrid(x, y)
+    pos = np.dstack((X, Y))  # (grid_size, grid_size, 2)
+
+    # Evaluate density for each arm and aggregate
+    agg_Z = None
+    all_Z = []
+
+    for _, row in df.iterrows():
+        mean = np.array(row["means"], dtype=float)
+        std = np.array(row["stds"], dtype=float)
+        cov = np.diag(std**2)
+
+        rv = multivariate_normal(mean=mean, cov=cov)
+        Z = rv.pdf(pos)  # (grid_size, grid_size)
+        all_Z.append(Z)
+
+    all_Z = np.stack(all_Z, axis=0)  # (n_arms, grid_size, grid_size)
+
+    if mode == "sum":
+        agg_Z = np.sum(all_Z, axis=0)
+    elif mode == "max":
+        agg_Z = np.max(all_Z, axis=0)
+    elif mode == "mean":
+        agg_Z = np.mean(all_Z, axis=0)
+    else:
+        raise ValueError("mode must be one of {'sum', 'max', 'mean'}")
+
+    plt.figure(figsize=(8, 6))
+    im = plt.imshow(
+        agg_Z,
+        origin="lower",
+        extent=[x_min, x_max, y_min, y_max],
+        aspect="auto",
+        cmap="viridis",
+    )
+    plt.xlabel("Objective 1")
+    plt.ylabel("Objective 2")
+    plt.title(f"Aggregate posterior density ({mode}) over arms")
+    plt.colorbar(im, label="Aggregated density")
+    plt.tight_layout()
     plt.show()
 
 
