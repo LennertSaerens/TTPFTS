@@ -280,11 +280,12 @@ def plot_arm_pulls_single(setup, algorithm_name, optimal_arms, total_pulls):
     plt.show()
 
 
-def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, ege_sr_file=None, save_pdf=False):
+def plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window=1, plot_std=True,
+                    save_pdf=False):
     """
-    Plot the evolution of the Bernoulli metric. The Bernoulli metric is the fraction of times the algorithm pulls a Pareto optimal arm.
-    The x-axis represents the time steps and the y-axis represents the Bernoulli metric. The metric is averaged over the experiments.
-    :param ege_sr_file: File containing the results of the EGE-SR algorithm.
+    The x-axis represents the arm pulls and the y-axis represents the metric. The metric is averaged over the experiments.
+    :param metric: Which PFI metric to plot.
+    :param save_pdf: Whether to save the plot as a pdf.
     :param plot_std: Whether to plot the standard deviation of the Bernoulli metric.
     :param file: The file containing the experimental results.
     :param num_runs: The number of runs of the experiment.
@@ -292,213 +293,50 @@ def plot_bernoulli_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, p
     :param rolling_avg_window: The window size for the optional rolling average.
     :return: None
     """
+    metric_to_col = {
+        "Bernoulli": 3,
+        "Jaccard": 4,
+        "Misidentification": 5
+    }
+    if metric not in metric_to_col.keys():
+        return RuntimeError(f"Metric type {metric} is not supported")
+    col = metric_to_col[metric]
+
     result_df = pd.read_csv(file, header=None)
     algorithm_names = result_df[0].unique()
     num_algorithms = len(algorithm_names)
-    bernoulli_metrics = result_df.values[:, 3].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
-    avg_bernoulli_metrics = np.mean(bernoulli_metrics, axis=1)
-    std_bernoulli_metrics = np.std(bernoulli_metrics, axis=1)
+    pfi_metrics = result_df.values[:, col].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
+    avg_pfi_metrics = np.mean(pfi_metrics, axis=1)
+    std_pfi_metrics = np.std(pfi_metrics, axis=1)
 
     plt.figure(figsize=(8, 6))
 
-    # algorithm_names = ["MOMAB1", "MOMAB2", "MOMAB3", "MOMAB4", "Nieuwe MOMAB"]
-
     for i, name in enumerate(algorithm_names):
         if rolling_avg_window > 1:
-            rolling_avg = pd.Series(avg_bernoulli_metrics[i]).rolling(window=rolling_avg_window).mean()
+            rolling_avg = pd.Series(avg_pfi_metrics[i]).rolling(window=rolling_avg_window).mean()
             plt.plot(rolling_avg, label=f"{name}", color=colors[i])
-            # plt.plot(avg_bernoulli_metrics[i], alpha=0.2, color=colors[i])
         else:
-            plt.plot(avg_bernoulli_metrics[i], label=f"{name}")
+            plt.plot(avg_pfi_metrics[i], label=f"{name}")
         if plot_std:
-            plt.fill_between(range(len(avg_bernoulli_metrics[i])),
-                             avg_bernoulli_metrics[i] - 1.96 * std_bernoulli_metrics[i] / np.sqrt(num_runs),
-                             avg_bernoulli_metrics[i] + 1.96 * std_bernoulli_metrics[i] / np.sqrt(num_runs),
+            ci = 1.96 * std_pfi_metrics[i] / np.sqrt(num_runs)
+            plt.fill_between(range(len(avg_pfi_metrics[i])),
+                             avg_pfi_metrics[i] - ci,
+                             avg_pfi_metrics[i] + ci,
                              alpha=0.2, color=colors[i])
 
-    if ege_sr_file is not None:
-        # load the ege_sr results
-        ege_sr_df = pd.read_csv(ege_sr_file, header=None)
-        # Extract columns 2 and 4 from the df
-        ege_sr_bernoulli_timesteps = ege_sr_df.values[:, 2]
-        steps_per_run = int(len(ege_sr_bernoulli_timesteps) / num_runs)
-        ege_sr_bernoulli_timesteps = ege_sr_bernoulli_timesteps[:steps_per_run]
-        ege_sr_bernoulli_metrics = ege_sr_df.values[:, 3].astype(np.float64).reshape(num_runs, steps_per_run).mean(axis=0)
-        plt.plot(ege_sr_bernoulli_timesteps, ege_sr_bernoulli_metrics, label="EGE_SR", color="tab:gray")
-
-    plt.ylim(0, 1)
+    if metric in ["Bernoulli", "Jaccard"]:
+        plt.ylim(0, 1)
     plt.xlabel("Arm pulls")
-    plt.ylabel("Bernoulli metric")
+    plt.ylabel(f"{metric} metric")
     plt.legend()
     if save_pdf:
-        plt.savefig(f"{file}_bernoulli.pdf", format="pdf")
+        plt.savefig(f"{file}_{metric}.pdf", format="pdf")
     plt.show()
 
 
-def plot_jaccard_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, ege_sr_file=None, save_pdf=False):
-    """
-    Plot the evolution of the Jaccard metric. The Jaccard metric is the Jaccard similarity between the set of Pareto optimal arms and the set of arms recommended by the algorithm.
-    The x-axis represents the time steps and the y-axis represents the Jaccard metric. The metric is averaged over the experiments.
-    :param ege_sr_file: File containing the results of the EGE-SR algorithm.
-    :param plot_std: Whether to plot the standard deviation of the Jaccard metric.
-    :param file: The file containing the experimental results.
-    :param num_runs: The number of runs of the experiment.
-    :param num_arm_pulls: The number of arm pulls in each run of the experiment.
-    :param rolling_avg_window: The window size for the optional rolling average.
-    :return: None
-    """
-    result_df = pd.read_csv(file, header=None)
-    algorithm_names = result_df[0].unique()
-    num_algorithms = len(algorithm_names)
-    jaccard_metrics = result_df.values[:, 4].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
-    avg_jaccard_metrics = np.mean(jaccard_metrics, axis=1)
-    std_jaccard_metrics = np.std(jaccard_metrics, axis=1)
-
-    plt.figure(figsize=(8, 6))
-
-    for i, name in enumerate(algorithm_names):
-        rolling_avg = pd.Series(avg_jaccard_metrics[i]).rolling(window=rolling_avg_window).mean()
-        if rolling_avg_window > 1:
-            plt.plot(rolling_avg, label=f"{name}", color=colors[i])
-            plt.plot(avg_jaccard_metrics[i], alpha=0.2, color=colors[i])
-        else:
-            plt.plot(avg_jaccard_metrics[i], label=f"{name}")
-        if plot_std:
-            plt.fill_between(range(len(avg_jaccard_metrics[i])),
-                             avg_jaccard_metrics[i] - 1.96 * std_jaccard_metrics[i] / np.sqrt(num_runs),
-                             avg_jaccard_metrics[i] + 1.96 * std_jaccard_metrics[i] / np.sqrt(num_runs),
-                             alpha=0.2, color=colors[i])
-
-    if ege_sr_file is not None:
-        # load the ege_sr results
-        ege_sr_df = pd.read_csv(ege_sr_file, header=None)
-        # Extract columns 2 and 4 from the df
-        ege_sr_bernoulli_timesteps = ege_sr_df.values[:, 2]
-        steps_per_run = int(len(ege_sr_bernoulli_timesteps) / num_runs)
-        ege_sr_bernoulli_timesteps = ege_sr_bernoulli_timesteps[:steps_per_run]
-        ege_sr_bernoulli_metrics = ege_sr_df.values[:, 4].astype(np.float64).reshape(num_runs, steps_per_run).mean(axis=0)
-        plt.plot(ege_sr_bernoulli_timesteps, ege_sr_bernoulli_metrics, label="EGE_SR", color="tab:gray")
-
-    plt.ylim(0, 1)
-    plt.xlabel("Time steps")
-    plt.ylabel("Jaccard metric")
-    plt.legend(loc='lower right')
-    if save_pdf:
-        plt.savefig(f"{file}_jaccard.pdf", format="pdf")
-    plt.show()
-
-
-def plot_hypervolume(file, num_runs, num_arm_pulls, y_low_lim, y_up_lim, rolling_avg_window=1, plot_std=False, baseline=None):
-    """
-    Plot the evolution of the hypervolume metric. The hypervolume metric is the hypervolume of the arms recommended by the algorithm.
-    The x-axis represents the time steps and the y-axis represents the hypervolume metric. The metric is averaged over the experiments.
-    :param y_up_lim: Upper limit of the y-axis.
-    :param y_low_lim: Lower limit of the y-axis.
-    :param baseline: File containing the baseline results.
-    :param plot_std: Whether to plot the standard deviation of the hypervolume metric.
-    :param file: The file containing the experimental results.
-    :param num_runs: The number of runs of the experiment.
-    :param num_arm_pulls: The number of arm pulls in each run of the experiment.
-    :param rolling_avg_window: The window size for the optional rolling average.
-    :return: None
-    """
-    result_df = pd.read_csv(file, header=None)
-    algorithm_names = result_df[0].unique()
-    num_algorithms = len(algorithm_names)
-    hypervolumes = result_df.values[:, 5].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
-    avg_hypervolumes = np.mean(hypervolumes, axis=1)
-    std_hyper_volumes = np.std(hypervolumes, axis=1)
-
-    plt.figure(figsize=(8, 6))
-
-    for i, name in enumerate(algorithm_names):
-        rolling_avg = pd.Series(avg_hypervolumes[i]).rolling(window=rolling_avg_window).mean()
-        if rolling_avg_window > 1:
-            plt.plot(rolling_avg, label=f"{name}", color=colors[i])
-            plt.plot(avg_hypervolumes[i], alpha=0.2, color=colors[i])
-        else:
-            plt.plot(avg_hypervolumes[i], label=f"{name}")
-        if plot_std:
-            plt.fill_between(range(len(avg_hypervolumes[i])),
-                             avg_hypervolumes[i] - 1.96 * std_hyper_volumes[i] / np.sqrt(num_runs),
-                             avg_hypervolumes[i] + 1.96 * std_hyper_volumes[i] / np.sqrt(num_runs),
-                             alpha=0.2, color=colors[i])
-
-    if baseline is not None:
-        baseline_df = pd.read_csv(baseline, header=None)
-        baseline_hypervolumes = baseline_df.values[:, 5].reshape(1, num_runs, num_arm_pulls).astype(np.float64)
-        avg_baseline_hypervolumes = np.mean(baseline_hypervolumes, axis=1)
-        std_baseline_hypervolumes = np.std(baseline_hypervolumes, axis=1)
-        rolling_avg = pd.Series(avg_baseline_hypervolumes[0]).rolling(window=rolling_avg_window).mean()
-        if rolling_avg_window > 1:
-            plt.plot(rolling_avg, label="Uniform Sampling", color=colors[-1])
-            plt.plot(avg_baseline_hypervolumes[0], alpha=0.2, color=colors[-1])
-        else:
-            plt.plot(avg_baseline_hypervolumes[0], label="Uniform Sampling")
-        if plot_std:
-            plt.fill_between(range(len(avg_baseline_hypervolumes[0])),
-                             avg_baseline_hypervolumes[0] - 1.96 * std_baseline_hypervolumes[0] / np.sqrt(num_runs),
-                             avg_baseline_hypervolumes[0] + 1.96 * std_baseline_hypervolumes[0] / np.sqrt(num_runs),
-                             alpha=0.2, color="tab:gray")
-
-    plt.ylim(y_low_lim, y_up_lim)
-
-    plt.xlabel("Time steps")
-    plt.ylabel("Hypervolume metric")
-    plt.legend()
-    plt.savefig(f"{file}_hypervolume.pdf", format="pdf")
-    plt.show()
-
-
-def plot_mis_id_metric(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, ege_sr_file=None, save_pdf=False):
-    """
-    Plot the evolution of the mis-identification metric.
-    The x-axis represents the time steps and the y-axis represents the mis-identification metric. The metric is averaged over the experiments.
-    :param ege_sr_file: File containing the results of the EGE-SR algorithm.
-    :param plot_std: Whether to plot the standard deviation of the mis-identification metric.
-    :param file: The file containing the experimental results.
-    :param num_runs: The number of runs of the experiment.
-    :param num_arm_pulls: The number of arm pulls in each run of the experiment.
-    :param rolling_avg_window: The window size for the optional rolling average.
-    :return: None
-    """
-    result_df = pd.read_csv(file, header=None)
-    algorithm_names = result_df[0].unique()
-    num_algorithms = len(algorithm_names)
-    mis_id_metrics = result_df.values[:, 5].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
-    avg_mis_id_metrics = np.log10(np.mean(mis_id_metrics, axis=1))
-    std_mis_id_metrics = np.std(mis_id_metrics, axis=1)
-
-    plt.figure(figsize=(8, 6))
-
-    for i, name in enumerate(algorithm_names):
-        rolling_avg = pd.Series(avg_mis_id_metrics[i]).rolling(window=rolling_avg_window).mean()
-        if rolling_avg_window > 1:
-            plt.plot(rolling_avg, label=f"{name}", color=colors[i])
-            plt.plot(avg_mis_id_metrics[i], alpha=0.2, color=colors[i])
-        else:
-            plt.plot(avg_mis_id_metrics[i], label=f"{name}")
-        if plot_std:
-            plt.fill_between(range(len(avg_mis_id_metrics[i])),
-                             avg_mis_id_metrics[i] - 1.96 * std_mis_id_metrics[i] / np.sqrt(num_runs),
-                             avg_mis_id_metrics[i] + 1.96 * std_mis_id_metrics[i] / np.sqrt(num_runs),
-                             alpha=0.2, color=colors[i])
-
-    if ege_sr_file is not None:
-        # load the ege_sr results
-        ege_sr_df = pd.read_csv(ege_sr_file, header=None)
-        ege_sr_bernoulli_timesteps = ege_sr_df.values[:, 2]
-        steps_per_run = int(len(ege_sr_bernoulli_timesteps) / num_runs)
-        ege_sr_bernoulli_timesteps = ege_sr_bernoulli_timesteps[:steps_per_run]
-        ege_sr_bernoulli_metrics = ege_sr_df.values[:, 5].astype(np.float64).reshape(num_runs, steps_per_run).mean(axis=0)
-        plt.plot(ege_sr_bernoulli_timesteps, ege_sr_bernoulli_metrics, label="EGE_SR", color="tab:gray")
-
-    plt.xlabel("Time steps")
-    plt.ylabel("Mis-identification metric")
-    plt.legend(loc='best')
-    if save_pdf:
-        plt.savefig(f"{file}_mis_id.pdf", format="pdf", bbox_inches='tight')
-    plt.show()
+def plot_all_pfi_metrics(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, save_pdf=False):
+    for metric in ["Bernoulli", "Jaccard", "Misidentification"]:
+        plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window, plot_std, save_pdf)
 
 
 def plot_arm_pull_frequencies(file, num_runs, num_arm_pulls, optimal_arms, num_arms, algorithm, df_arm_idx):
@@ -544,40 +382,6 @@ def plot_arm_rec_frequencies(file, num_runs, num_arm_pulls, optimal_arms, num_ar
     plt.show()
 
 
-def plot_bernoulli_metric_coarse(file, num_runs, plot_std=False):
-    """
-    Plot the evolution of the Bernoulli metric with coarse time steps.
-    :param plot_std: Whether to plot the standard deviation of the Bernoulli metric.
-    :param file: The file containing the experimental results.
-    :param num_runs: The number of runs of the experiment.
-    :return: None
-    """
-    result_df = pd.read_csv(file, header=None)
-    algorithm_names = result_df[0].unique()
-    num_algorithms = len(algorithm_names)
-    all_steps = result_df.values[:, 2]
-    steps_per_run = int(len(all_steps) / (num_runs * num_algorithms))
-    bernoulli_metrics = result_df.values[:, 3].reshape(num_algorithms, num_runs, steps_per_run).astype(np.float64)
-    all_steps = all_steps[:steps_per_run]
-    avg_bernoulli_metrics = np.mean(bernoulli_metrics, axis=1)
-    std_bernoulli_metrics = np.std(bernoulli_metrics, axis=1)
-    yerr = 1.96 * std_bernoulli_metrics / np.sqrt(num_runs)
-
-    plt.figure(figsize=(8, 6))
-
-    # algorithm_names = ["MOMAB1", "MOMAB2", "MOMAB3", "MOMAB4", "Nieuwe MOMAB"]
-
-    for i, name in enumerate(algorithm_names):
-        plt.errorbar(all_steps, avg_bernoulli_metrics[i], yerr[i], label=f"{name}")
-
-    plt.ylim(0, 1)
-    plt.xlabel("Arm pulls")
-    plt.ylabel("Bernoulli metric")
-    plt.legend()
-    plt.savefig(f"{file}_bernoulli.pdf", format="pdf")
-    plt.show()
-
-
 def plot_posterior_density_2d(parquet_path, num_samples=5000):
     """
     Visualize posterior distributions (2 objectives) per arm as 2D density plots.
@@ -598,8 +402,8 @@ def plot_posterior_density_2d(parquet_path, num_samples=5000):
     cmap = sns.color_palette("husl", n_colors=df["arm"].nunique())
 
     for idx, (arm, row) in enumerate(df.iterrows()):
-        means = np.array(row["means"], dtype=float)   # shape (2,)
-        stds = np.array(row["stds"], dtype=float)     # shape (2,)
+        means = np.array(row["means"], dtype=float)  # shape (2,)
+        stds = np.array(row["stds"], dtype=float)  # shape (2,)
 
         # Sample from the 2D independent Gaussian for this arm
         samples = np.random.normal(
@@ -646,7 +450,7 @@ def plot_posterior_density_2d_theoretical(parquet_path, grid_size=500):
         raise ValueError(f"Expected exactly 2 objectives, got {len(first_means)}")
 
     # Collect all means/stds to define a common plotting window
-    mus = np.stack(df["means"].apply(lambda m: np.array(m, dtype=float)).values)    # shape (n_arms, 2)
+    mus = np.stack(df["means"].apply(lambda m: np.array(m, dtype=float)).values)  # shape (n_arms, 2)
     sigmas = np.stack(df["stds"].apply(lambda s: np.array(s, dtype=float)).values)  # shape (n_arms, 2)
 
     # 4-sigma box across all arms
@@ -666,7 +470,7 @@ def plot_posterior_density_2d_theoretical(parquet_path, grid_size=500):
     for idx, row in df.iterrows():
         mean = np.array(row["means"], dtype=float)
         std = np.array(row["stds"], dtype=float)
-        cov = np.diag(std**2)
+        cov = np.diag(std ** 2)
 
         rv = multivariate_normal(mean=mean, cov=cov)
         Z = rv.pdf(pos)
@@ -710,8 +514,8 @@ def plot_aggregate_posterior_heatmap_2d(parquet_path, grid_size=200, mode="sum")
         raise ValueError(f"Expected exactly 2 objectives, got {len(first_means)}")
 
     # Collect means/stds to define common plotting window
-    mus = np.stack(df["means"].apply(lambda m: np.array(m, dtype=float)).values)     # (n_arms, 2)
-    sigmas = np.stack(df["stds"].apply(lambda s: np.array(s, dtype=float)).values)   # (n_arms, 2)
+    mus = np.stack(df["means"].apply(lambda m: np.array(m, dtype=float)).values)  # (n_arms, 2)
+    sigmas = np.stack(df["stds"].apply(lambda s: np.array(s, dtype=float)).values)  # (n_arms, 2)
 
     # 4-sigma box across all arms
     x_min = np.min(mus[:, 0] - 4 * sigmas[:, 0])
@@ -731,7 +535,7 @@ def plot_aggregate_posterior_heatmap_2d(parquet_path, grid_size=200, mode="sum")
     for _, row in df.iterrows():
         mean = np.array(row["means"], dtype=float)
         std = np.array(row["stds"], dtype=float)
-        cov = np.diag(std**2)
+        cov = np.diag(std ** 2)
 
         rv = multivariate_normal(mean=mean, cov=cov)
         Z = rv.pdf(pos)  # (grid_size, grid_size)
@@ -758,7 +562,7 @@ def plot_aggregate_posterior_heatmap_2d(parquet_path, grid_size=200, mode="sum")
     )
     plt.xlabel("Objective 1")
     plt.ylabel("Objective 2")
-    plt.title(f"Aggregate posterior density ({mode}) over arms")
+    plt.title(f"Aggregate posterior density over arms")
     plt.colorbar(im, label="Aggregated density")
     plt.tight_layout()
     plt.show()
@@ -766,9 +570,7 @@ def plot_aggregate_posterior_heatmap_2d(parquet_path, grid_size=200, mode="sum")
 
 if __name__ == "__main__":
     # plot_bernoulli_metric_coarse("results/EGEvsTTPFTSvsPUCB1vsUniform_Coarse_EgeExp1.csv", 100, plot_std=True)
-    plot_bernoulli_metric("results5000/EGEvsTTPFTSvsPUCB1vsUniform_N50VS.csv", 100, 5001, rolling_avg_window=10)
-    plot_jaccard_metric("results5000/EGEvsTTPFTSvsPUCB1vsUniform_N50VS.csv", 100, 5001, rolling_avg_window=10)
-    plot_mis_id_metric("results5000/EGEvsTTPFTSvsPUCB1vsUniform_N50VS.csv", 100, 5001, rolling_avg_window=10)
     # plot_arm_rec_frequencies("results/baseline_recs.csv", 100, 30_000, [0, 5, 6, 8, 14, 30, 31, 32], 53, "Uniform Sampling")
     # plot_arm_pull_frequencies("results/bandits/test2.csv", 100, 250_000, [0, 1, 2, 3], 20,
     #                           "Linear Scalarized Knowledge Gradient (objectives)", 3)
+    plot_all_pfi_metrics("results/EGEvsTTPFTSvsPUCB1vsUniform_EgeExp1.csv", 100, 5001)
