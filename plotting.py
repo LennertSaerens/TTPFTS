@@ -324,8 +324,10 @@ def plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window=1,
                              avg_pfi_metrics[i] + ci,
                              alpha=0.2, color=colors[i])
 
-    if metric in ["Bernoulli", "Jaccard"]:
+    if metric in ["Beroulli", "Jaccard"]:
         plt.ylim(0, 1)
+    if metric == "Misidentification":
+        plt.yscale("log")
     plt.xlabel("Arm pulls")
     plt.ylabel(f"{metric} metric")
     plt.legend()
