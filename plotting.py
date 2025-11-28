@@ -280,8 +280,7 @@ def plot_arm_pulls_single(setup, algorithm_name, optimal_arms, total_pulls):
     plt.show()
 
 
-def plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window=1, plot_std=True,
-                    save_pdf=False):
+def plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window=1, plot_std=True, save_pdf=False, step=1):
     """
     The x-axis represents the arm pulls and the y-axis represents the metric. The metric is averaged over the experiments.
     :param metric: Which PFI metric to plot.
@@ -299,7 +298,7 @@ def plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window=1,
         "Misidentification": 5
     }
     if metric not in metric_to_col.keys():
-        return RuntimeError(f"Metric type {metric} is not supported")
+        raise RuntimeError(f"Metric type {metric} is not supported")
     col = metric_to_col[metric]
 
     result_df = pd.read_csv(file, header=None)
@@ -309,25 +308,43 @@ def plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window=1,
     avg_pfi_metrics = np.mean(pfi_metrics, axis=1)
     std_pfi_metrics = np.std(pfi_metrics, axis=1)
 
+    # x indices, potentially subsampled
+    x = np.arange(num_arm_pulls)
+    x_step = x[::step]
+
     plt.figure(figsize=(8, 6))
 
     for i, name in enumerate(algorithm_names):
+        y = avg_pfi_metrics[i]
+
+        # apply rolling average if requested
         if rolling_avg_window > 1:
-            rolling_avg = pd.Series(avg_pfi_metrics[i]).rolling(window=rolling_avg_window).mean()
-            plt.plot(rolling_avg, label=f"{name}", color=colors[i])
+            y_series = pd.Series(y).rolling(window=rolling_avg_window).mean()
+            y_vals = y_series.values[::step]
         else:
-            plt.plot(avg_pfi_metrics[i], label=f"{name}")
+            y_vals = y[::step]
+
+        # plot mean curve, using only every `step`-th point
+        plt.plot(x_step, y_vals, label=f"{name}", color=colors[i])
+
         if plot_std:
             ci = 1.96 * std_pfi_metrics[i] / np.sqrt(num_runs)
-            plt.fill_between(range(len(avg_pfi_metrics[i])),
-                             avg_pfi_metrics[i] - ci,
-                             avg_pfi_metrics[i] + ci,
-                             alpha=0.2, color=colors[i])
+            ci_lower = (y - ci)[::step]
+            ci_upper = (y + ci)[::step]
+            plt.fill_between(
+                x_step,
+                ci_lower,
+                ci_upper,
+                alpha=0.2,
+                color=colors[i]
+            )
 
-    if metric in ["Beroulli", "Jaccard"]:
+    if metric in ["Bernoulli", "Jaccard"]:
         plt.ylim(0, 1)
     if metric == "Misidentification":
         plt.yscale("log")
+        plt.yticks(np.logspace(-4, 0, 5))
+
     plt.xlabel("Arm pulls")
     plt.ylabel(f"{metric} metric")
     plt.legend()
@@ -336,9 +353,9 @@ def plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window=1,
     plt.show()
 
 
-def plot_all_pfi_metrics(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, save_pdf=False):
+def plot_all_pfi_metrics(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, save_pdf=False, step=1):
     for metric in ["Bernoulli", "Jaccard", "Misidentification"]:
-        plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window, plot_std, save_pdf)
+        plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window, plot_std, save_pdf, step)
 
 
 def plot_arm_pull_frequencies(file, num_runs, num_arm_pulls, optimal_arms, num_arms, algorithm, df_arm_idx):
