@@ -47,6 +47,8 @@ def uncertainty_quantification(posterior_df):
     pareto_optimal_arms_df = posterior_df.loc[pareto_optimal_idx]
 
     pareto_suboptimal_arms = posterior_df.loc[~pareto_optimal_idx]
+    if pareto_suboptimal_arms.empty:
+        return 0
     pareto_suboptimal_means = np.vstack(pareto_suboptimal_arms["means"].values)
     optimal_suboptimal_pareto_idx = paretoset(
         pareto_suboptimal_means,
