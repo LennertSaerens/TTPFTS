@@ -22,9 +22,7 @@ class BaseEnvironment(ABC):
         :param arms: A list of arm indices to sample.
         :return: A 2D array of rewards for the sampled arms.
         """
-        rewards = []
-        for arm in arms:
-            rewards.append(self.pull_arm(arm))
+        rewards = [self.pull_arm(arm) for arm in arms]
         return np.array(rewards)
 
     def bernoulli_metric(self, recommendation):
