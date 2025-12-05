@@ -6,13 +6,14 @@ import pandas as pd
 import matplotlib.patches as mpatches
 from scipy.stats import multivariate_normal
 import seaborn as sns
+from uncertainty_quantification import uncertainty_quantification
 
 from matplotlib.patches import Ellipse, Patch
 
 # Increase the font size of the plots
-plt.rcParams.update({'font.size': 17})
+# plt.rcParams.update({'font.size': 17})
 # Change the font to a fancy serif font for use in a latex document
-plt.rcParams.update({'font.family': 'serif'})
+# plt.rcParams.update({'font.family': 'serif'})
 # plt.rcParams['figure.constrained_layout.use'] = True
 
 colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:brown", "tab:pink", "tab:gray",
@@ -584,6 +585,57 @@ def plot_aggregate_posterior_heatmap_2d(parquet_path, grid_size=200, mode="sum")
     plt.title(f"Aggregate posterior density over arms")
     plt.colorbar(im, label="Aggregated density")
     plt.tight_layout()
+    plt.show()
+
+
+def plot_uncertainty(uncertainties, timesteps, title):
+    mean_uncertainties = np.mean(uncertainties, axis=0)
+    std_uncertainties = np.std(uncertainties, axis=0)
+
+    plt.figure()
+
+    # Mean line
+    sns.lineplot(x=timesteps, y=mean_uncertainties, color="C0")
+
+    # Shaded std band
+    lower = mean_uncertainties - std_uncertainties
+    upper = mean_uncertainties + std_uncertainties
+    plt.fill_between(timesteps, lower, upper, color="C0", alpha=0.2)
+
+    plt.xlim(0, 5000)
+    plt.title(title)
+    plt.xlabel("Number of arm pulls")
+    plt.ylabel("Uncertainty (Bhattacharyya sum)")
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_uncertainty_grid(env_uncertainties, timesteps):
+    # 5 rows x 2 cols
+    fig, axes = plt.subplots(5, 2, figsize=(12, 16), sharex=True, sharey=False)
+    axes = axes.flatten()
+
+    for idx, (env, uncertainties) in enumerate(env_uncertainties.items()):
+        ax = axes[idx]
+        mean_uncertainties = np.mean(uncertainties, axis=0)
+        std_uncertainties = np.std(uncertainties, axis=0)
+
+        sns.lineplot(x=timesteps, y=mean_uncertainties, color="C0", ax=ax)
+        lower = mean_uncertainties - std_uncertainties
+        upper = mean_uncertainties + std_uncertainties
+        ax.fill_between(timesteps, lower, upper, color="C0", alpha=0.2)
+
+        ax.set_title(env)
+        ax.set_xlim(0, 5000)
+
+    # Remove any unused axes (in case of fewer than 10 envs)
+    for j in range(len(env_uncertainties), len(axes)):
+        fig.delaxes(axes[j])
+
+    fig.suptitle("Uncertainty over Time", y=0.92)
+    fig.text(0.5, 0.04, "Number of arm pulls", ha="center")
+    fig.text(0.04, 0.5, "Uncertainty (Bhattacharyya sum)", va="center", rotation="vertical")
+    plt.tight_layout(rect=[0.05, 0.05, 1, 0.94])
     plt.show()
 
 
