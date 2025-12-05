@@ -59,6 +59,7 @@ def uncertainty_quantification(posterior_df):
 
     # Sum of Bhattacharyya coefficients over all optimal / optimal-suboptimal pairs
     total_bc = 0.0
+    total_comps = 0.0
     for _, opt_row in pareto_optimal_arms_df.iterrows():
         mu_opt = np.array(opt_row["means"])
         std_opt = np.array(opt_row["stds"])
@@ -71,5 +72,6 @@ def uncertainty_quantification(posterior_df):
 
             bc = bhattacharyya_coeff_gaussians(mu_opt, Sigma_opt, mu_sub, Sigma_sub)
             total_bc += bc
+            total_comps += 1
 
-    return total_bc
+    return total_bc / total_comps if total_comps > 0 else 0
