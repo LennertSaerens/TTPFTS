@@ -179,6 +179,14 @@ class NormalPosterior(PosteriorBase):
     def get_mean(self):
         return self.means
 
+    def get_stds(self):
+        stds = np.where(
+            self.counts > 0,
+            self.known_stds / np.sqrt(self.counts),
+            1e6
+        )
+        return stds
+
     def reset(self, env_stds):
         self.known_stds = np.full((self.num_arms, self.num_objectives), env_stds, dtype=np.float64)
         self.counts = np.zeros((self.num_arms, self.num_objectives), dtype=int)
