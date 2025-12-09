@@ -1,6 +1,9 @@
 import numpy as np
 from paretoset import paretoset
+from numba import njit
 
+
+@njit
 def bhattacharyya_coeff_gaussians(mu1, Sigma1, mu2, Sigma2):
     """
     Bhattacharyya coefficient between two multivariate Gaussians.
@@ -21,7 +24,7 @@ def bhattacharyya_coeff_gaussians(mu1, Sigma1, mu2, Sigma2):
     term1 = 0.125 * diff.T @ inv_Sigma @ diff
 
     # Determinant term
-    det_Sigma  = np.linalg.det(Sigma)
+    det_Sigma = np.linalg.det(Sigma)
     det_Sigma1 = np.linalg.det(Sigma1)
     det_Sigma2 = np.linalg.det(Sigma2)
 
@@ -32,9 +35,10 @@ def bhattacharyya_coeff_gaussians(mu1, Sigma1, mu2, Sigma2):
     return BC
 
 
+@njit
 def diag_cov_from_stds(stds):
     stds = np.asarray(stds)
-    return np.diag(stds**2)
+    return np.diag(stds ** 2)
 
 
 def uncertainty_quantification(posterior_df):
