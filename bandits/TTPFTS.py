@@ -63,7 +63,7 @@ class UncertaintyDirectedTTPFTSBandit(BaseMOMABAlgorithm):
       using the current posterior means and posterior stds (diagonal covariances).
     """
 
-    def __init__(self, posterior, p=0.5, num_warmup_pulls=2, large_std=1e6):
+    def __init__(self, posterior, p=0.5, num_warmup_pulls=2, UQ_mode="argmax"):
         """
         posterior: object following your NormalPosterior interface (has .num_arms, .num_objectives,
                    .counts, .known_stds, .means, and methods sample(), update(), get_mean(), reset()).
@@ -72,6 +72,7 @@ class UncertaintyDirectedTTPFTSBandit(BaseMOMABAlgorithm):
         large_std: used for unpulled arms' posterior std (matches your original design).
         """
         super().__init__(posterior.num_arms, posterior.num_objectives)
+        self.UQ_mode = UQ_mode
         self.posterior = posterior
         self.p = p
         self.num_objectives = posterior.num_objectives
@@ -138,11 +139,20 @@ class UncertaintyDirectedTTPFTSBandit(BaseMOMABAlgorithm):
             max_bcs.append(best_bc)
 
         max_bcs = np.array(max_bcs, dtype=float)
-        # choose argmax; if tie, random among top
-        best_val = max_bcs.max()
-        best_positions = np.where(np.isclose(max_bcs, best_val))[0]
-        chosen_pos = random.choice(best_positions)
-        chosen_arm = int(second_front_indices[chosen_pos])
+
+        # Select according to UQ_mode
+        if self.UQ_mode == "argmax":
+            chosen_arm = second_front_indices[np.argmax(max_bcs)]
+        elif self.UQ_mode == "linear":
+            probs = max_bcs / max_bcs.sum()
+            chosen_arm = np.random.choice(second_front_indices, p=probs)
+        elif self.UQ_mode == "softmax":
+            temp = 0.1  # temperature parameter; could be made adjustable
+            exp_bcs = np.exp(max_bcs / temp)
+            probs = exp_bcs / exp_bcs.sum()
+            chosen_arm = np.random.choice(second_front_indices, p=probs)
+        else:
+            raise ValueError(f"Unknown UQ_mode: {self.UQ_mode}")
         return chosen_arm
 
     def get_top_arms(self):
