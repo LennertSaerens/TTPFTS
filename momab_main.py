@@ -2,7 +2,7 @@ import argparse
 from tqdm import tqdm
 import os
 from bandits.ege_kone import EGE_SH, EGE_SR
-from bandits.TTPFTS import TTPFTSBandit
+from bandits.TTPFTS import TTPFTSBandit, UncertaintyDirectedTTPFTSBandit
 from bandits.UCB import PUCB1Bandit
 from bandits.Uniform import UniformBandit
 from bandits.Posteriors import NormalIGPosterior, TPosterior, NormalPosterior
@@ -50,7 +50,7 @@ def run_anytime_experiment(num_runs, max_budget, environment, algorithms, result
         elif alg == "PUCB1":
             alg_objs[alg] = PUCB1Bandit(environment.num_arms, environment.num_objectives)
         elif alg == "TTPFTS":
-            alg_objs[alg] = TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds))
+            alg_objs[alg] = UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), UQ_mode="linear")
         else:
             continue
     for algorithm_name, bandit in alg_objs.items():
