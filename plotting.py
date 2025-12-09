@@ -845,7 +845,7 @@ def plot_all_pfi_metrics_grid_top_legend(
         axes[-1, col].set_xlabel("Arm pulls")
 
     if save_png:
-        plt.savefig(f"/Users/lennertsaerens/Desktop/Internship/PhD/combined_pfi_plots_shadeSTD_step{step}.png", format="png", dpi=300)
+        plt.savefig(f"/Users/lennertsaerens/Desktop/Internship/PhD/combined_pfi_plots_TTPFTSvariants_shadeCI_step{step}.png", format="png", dpi=300)
 
     plt.show()
 
