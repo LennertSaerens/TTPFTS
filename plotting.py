@@ -7,13 +7,14 @@ import matplotlib.patches as mpatches
 from scipy.stats import multivariate_normal
 import seaborn as sns
 from uncertainty_quantification import uncertainty_quantification
+from matplotlib.ticker import ScalarFormatter, NullFormatter
 
 from matplotlib.patches import Ellipse, Patch
 
 # Increase the font size of the plots
-# plt.rcParams.update({'font.size': 17})
+plt.rcParams.update({'font.size': 14})
 # Change the font to a fancy serif font for use in a latex document
-# plt.rcParams.update({'font.family': 'serif'})
+plt.rcParams.update({'font.family': 'serif'})
 # plt.rcParams['figure.constrained_layout.use'] = True
 
 colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:brown", "tab:pink", "tab:gray",
@@ -307,7 +308,7 @@ def plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window=1,
     num_algorithms = len(algorithm_names)
     pfi_metrics = result_df.values[:, col].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
     avg_pfi_metrics = np.mean(pfi_metrics, axis=1)
-    std_pfi_metrics = np.std(pfi_metrics, axis=1)
+    std_pfi_metrics = np.var(pfi_metrics, axis=1)
 
     # x indices, potentially subsampled
     x = np.arange(num_arm_pulls)
@@ -344,11 +345,10 @@ def plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window=1,
         plt.ylim(0, 1)
     if metric == "Misidentification":
         plt.yscale("log")
-        plt.yticks(np.logspace(-4, 0, 5))
 
     plt.xlabel("Arm pulls")
     plt.ylabel(f"{metric} metric")
-    plt.legend()
+    plt.legend(loc="best")
     if save_pdf:
         plt.savefig(f"{file}_{metric}.pdf", format="pdf")
     plt.show()
@@ -636,6 +636,217 @@ def plot_uncertainty_grid(env_uncertainties, timesteps):
     fig.text(0.5, 0.04, "Number of arm pulls", ha="center")
     fig.text(0.04, 0.5, "Uncertainty (Bhattacharyya sum)", va="center", rotation="vertical")
     plt.tight_layout(rect=[0.05, 0.05, 1, 0.94])
+    plt.show()
+
+
+def plot_pfi_metric_ax(
+    ax,
+    file,
+    num_runs,
+    num_arm_pulls,
+    metric,
+    rolling_avg_window=1,
+    plot_std=True,
+    step=1,
+    show_legend=False,
+    ylabel=None,
+    title=None,
+):
+    metric_to_col = {
+        "Bernoulli": 3,
+        "Jaccard": 4,
+        "Misidentification": 5
+    }
+    if metric not in metric_to_col:
+        raise RuntimeError(f"Metric type {metric} is not supported")
+    col = metric_to_col[metric]
+
+    result_df = pd.read_csv(file, header=None)
+    algorithm_names = result_df[0].unique()
+    num_algorithms = len(algorithm_names)
+    pfi_metrics = result_df.values[:, col].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
+    avg_pfi_metrics = np.mean(pfi_metrics, axis=1)
+    std_pfi_metrics = np.std(pfi_metrics, axis=1)
+
+    x = np.arange(num_arm_pulls)
+    x_step = x[::step]
+
+    for i, name in enumerate(algorithm_names):
+        y = avg_pfi_metrics[i]
+
+        if rolling_avg_window > 1:
+            y_series = pd.Series(y).rolling(window=rolling_avg_window).mean()
+            y_vals = y_series.values[::step]
+        else:
+            y_vals = y[::step]
+
+        ax.plot(x_step, y_vals, label=f"{name}", color=colors[i])
+
+        if plot_std:
+            ci = 1.96 * std_pfi_metrics[i] / np.sqrt(num_runs)
+            ci_lower = (y - ci)[::step]
+            ci_upper = (y + ci)[::step]
+            ax.fill_between(
+                x_step,
+                ci_lower,
+                ci_upper,
+                alpha=0.3,
+                color=colors[i]
+            )
+
+    if metric in ["Bernoulli", "Jaccard"]:
+        ax.set_ylim(0, 1)
+    if metric == "Misidentification":
+        ax.set_yscale("log")
+        fmt = ScalarFormatter()
+        fmt.set_scientific(False)
+        ax.yaxis.set_major_formatter(fmt)
+        ax.yaxis.set_minor_formatter(NullFormatter())
+
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
+    if title is not None:
+        ax.set_title(title, fontsize=14)
+
+    if show_legend:
+        ax.legend(loc="best", fontsize=8)
+
+
+def plot_all_pfi_metrics_grid(
+    env_files,
+    env_labels,
+    num_runs,
+    num_arm_pulls,
+    rolling_avg_window=1,
+    plot_std=True,
+    step=1,
+    figsize=(14, 24)
+):
+    metrics = ["Bernoulli", "Jaccard", "Misidentification"]
+    n_env = len(env_files)
+    n_metrics = len(metrics)
+
+    fig, axes = plt.subplots(
+        nrows=n_env,
+        ncols=n_metrics,
+        figsize=figsize,
+        sharex=True
+    )
+
+    # If only one row/col, axes may not be 2D; normalize
+    if n_env == 1:
+        axes = np.array([axes])
+    if n_metrics == 1:
+        axes = axes[:, np.newaxis]
+
+    for row, (file, env_name) in enumerate(zip(env_files, env_labels)):
+        for col, metric in enumerate(metrics):
+            ax = axes[row, col]
+
+            # Y-label on first column only
+            ylabel = env_name if col == 0 else None
+
+            # Column titles on first row
+            title = metric if row == 0 else None
+
+            # Put legend only on top-right subplot (or where you prefer)
+            show_legend = (row == 0 and col == n_metrics - 1)
+
+            plot_pfi_metric_ax(
+                ax=ax,
+                file=file,
+                num_runs=num_runs,
+                num_arm_pulls=num_arm_pulls,
+                metric=metric,
+                rolling_avg_window=rolling_avg_window,
+                plot_std=plot_std,
+                step=step,
+                show_legend=show_legend,
+                ylabel=ylabel,
+                title=title
+            )
+
+    # Common x-label on bottom row
+    for col in range(n_metrics):
+        axes[-1, col].set_xlabel("Arm pulls")
+
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_all_pfi_metrics_grid_top_legend(
+    env_files,
+    env_labels,
+    num_runs,
+    num_arm_pulls,
+    rolling_avg_window=1,
+    plot_std=True,
+    step=1,
+    figsize=(12, 24),
+    save_png=False
+):
+    metrics = ["Bernoulli", "Jaccard", "Misidentification"]
+    n_env = len(env_files)
+    n_metrics = len(metrics)
+
+    fig, axes = plt.subplots(
+        nrows=n_env,
+        ncols=n_metrics,
+        figsize=figsize,
+        sharex=True
+    )
+
+    if n_env == 1:
+        axes = np.array([axes])
+    if n_metrics == 1:
+        axes = axes[:, np.newaxis]
+
+    # Plot, but do NOT show legends inside subplots
+    for row, (file, env_name) in enumerate(zip(env_files, env_labels)):
+        for col, metric in enumerate(metrics):
+            ax = axes[row, col]
+
+            ylabel = env_name if col == 0 else None
+            title = metric if row == 0 else None
+
+            plot_pfi_metric_ax(
+                ax=ax,
+                file=file,
+                num_runs=num_runs,
+                num_arm_pulls=num_arm_pulls,
+                metric=metric,
+                rolling_avg_window=rolling_avg_window,
+                plot_std=plot_std,
+                step=step,
+                show_legend=False,   # <-- no per‑axes legend
+                ylabel=ylabel,
+                title=title
+            )
+
+    # Use one axes (e.g., top-right) to grab handles/labels
+    handles, labels = axes[0, -1].get_legend_handles_labels()
+
+    # Create one horizontal legend at the top center
+    fig.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.98),
+        ncol=min(5, len(labels)),   # up to 5 algorithms per row
+        fontsize=14,
+        frameon=True
+    )
+
+    # Add a little extra top margin for the legend
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+    # Common x-label on bottom row
+    for col in range(n_metrics):
+        axes[-1, col].set_xlabel("Arm pulls")
+
+    if save_png:
+        plt.savefig(f"/Users/lennertsaerens/Desktop/Internship/PhD/combined_pfi_plots_shadeSTD_step{step}.png", format="png", dpi=300)
+
     plt.show()
 
 
