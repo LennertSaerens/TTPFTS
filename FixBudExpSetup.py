@@ -1,7 +1,7 @@
 from pymoo.core import algorithm
 from tqdm import tqdm
 from bandits.ege_kone import EGE_SH, EGE_SR
-from bandits.TTPFTS import TTPFTSBandit, UncertaintyDirectedTTPFTSBandit
+from bandits.TTPFTS import TTPFTSBandit, UncertaintyDirectedTTPFTSBandit, DoubleUncertaintyDirectedTTPFTSBandit
 from bandits.UCB import PUCB1Bandit
 from bandits.Uniform import UniformBandit
 from bandits.Posteriors import NormalIGPosterior, TPosterior, NormalPosterior
@@ -39,9 +39,10 @@ def run_anytime_experiment(num_runs, max_budget, environment, results_file=None,
         # "TTPFTS_T_Ref": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=0)),
         # "TTPFTS_T_Jef": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=1/2)),
         "TTPFTS_Rand": TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds)),
-        "TTPFTS_UQ_argmax": UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), UQ_mode="argmax"),
+        # "TTPFTS_UQ_argmax": UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), UQ_mode="argmax"),
         "TTPFTS_UQ_linear": UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), UQ_mode="linear"),
-        "TTPFTS_UQ_softmax": UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds),UQ_mode="softmax"),
+        "TTPFTS_UQ_double_linear": DoubleUncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), ff_UQ_mode="linear", sf_UQ_mode="linear"),
+        # "TTPFTS_UQ_softmax": UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds),UQ_mode="softmax"),
     }
 
     for algorithm_name, bandit in algorithms.items():
@@ -72,7 +73,7 @@ def run_anytime_experiment(num_runs, max_budget, environment, results_file=None,
 
 if __name__ == "__main__":
     # Set the parameters for the experiments
-    num_runs = 50
+    num_runs = 190
     environments = {
         "EgeExp1": {"environment": EgeExp1.EgeExp1(), "budget": 5000},
         "EgeExp2": {"environment": EgeExp2.EgeExp2(), "budget": 5000},
@@ -90,6 +91,6 @@ if __name__ == "__main__":
         print(f"\nRunning experiments for {environment_name}...")
         environment = env_dict["environment"]
         max_budget = env_dict["budget"]
-        results_file = f"results5000/TTPFTS_Rand_UnDi_{environment_name}_{num_runs}_{max_budget}.csv"
+        results_file = f"results5000/TTPFTS_Rand_UnDi_DoubleUnDi{environment_name}_{100}_{max_budget}.csv"
         # run_EGE_experiment(num_runs, max_budget, environment, EGE_SR, results_file=results_file, write=False, step=1)
         run_anytime_experiment(num_runs, max_budget, environment, results_file=results_file, write=True, step=1)
