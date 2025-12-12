@@ -71,7 +71,7 @@ class BaseEnvironment(ABC):
                 # If the arm is not recommended, check if it is a Pareto optimal arm
                 if arm in self.pareto_indices:
                     mis_identifications += 1
-        return mis_identifications / self.num_arms
+        return np.log10(mis_identifications / self.num_arms)
 
     @abstractmethod
     def plot(self):
