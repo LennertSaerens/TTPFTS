@@ -32,16 +32,16 @@ def run_EGE_experiment(num_runs, max_budget, environment, ege_func, results_file
 
 def run_anytime_experiment(num_runs, max_budget, environment, results_file=None, write=True, step=1):
     algorithms = {
-        # "Uniform": UniformBandit(environment.num_arms, environment.num_objectives),
+        "Uniform": UniformBandit(environment.num_arms, environment.num_objectives),
         # "PUCB1": PUCB1Bandit(environment.num_arms, environment.num_objectives, kappa=1),
         # "TTPFTS_NIG": TTPFTSBandit(NormalIGPosterior(environment.num_arms, environment.num_objectives)),
-        # "TTPFTS_T_Uni": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=-1/2), num_warmup_pulls=4),
+        "TTPFTS_UNI": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=-1/2), num_warmup_pulls=4),
         # "TTPFTS_T_Ref": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=0)),
         # "TTPFTS_T_Jef": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=1/2)),
-        "TTPFTS_Rand": TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds)),
+        "TTPFTS_GKV": TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds)),
         # "TTPFTS_UQ_argmax": UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), UQ_mode="argmax"),
-        "TTPFTS_UQ_linear": UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), UQ_mode="linear"),
-        "TTPFTS_UQ_double_linear": DoubleUncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), ff_UQ_mode="linear", sf_UQ_mode="linear"),
+        # "TTPFTS_UQ_linear": UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), UQ_mode="linear"),
+        # "TTPFTS_UQ_double_linear": DoubleUncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), ff_UQ_mode="linear", sf_UQ_mode="linear"),
         # "TTPFTS_UQ_softmax": UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds),UQ_mode="softmax"),
     }
 
@@ -73,7 +73,7 @@ def run_anytime_experiment(num_runs, max_budget, environment, results_file=None,
 
 if __name__ == "__main__":
     # Set the parameters for the experiments
-    num_runs = 190
+    num_runs = 1
     environments = {
         "EgeExp1": {"environment": EgeExp1.EgeExp1(), "budget": 5000},
         "EgeExp2": {"environment": EgeExp2.EgeExp2(), "budget": 5000},
@@ -83,8 +83,8 @@ if __name__ == "__main__":
         "EgeExp6": {"environment": EgeExp6.EgeExp6(), "budget": 5000},
         "EgeExp7": {"environment": EgeExp7.EgeExp7(), "budget": 5000},
         "EgeExp8": {"environment": EgeExp8.EgeExp8(), "budget": 5000},
-        "N50VS": {"environment": N50VS.N50VS(), "budget": 5000},
-        "CovBoost": {"environment": CovBoost.CovBoost(), "budget": 5000},
+        # "N50VS": {"environment": N50VS.N50VS(), "budget": 5000},
+        # "CovBoost": {"environment": CovBoost.CovBoost(), "budget": 5000},
     }
 
     for environment_name, env_dict in environments.items():
@@ -93,4 +93,4 @@ if __name__ == "__main__":
         max_budget = env_dict["budget"]
         results_file = f"results5000/TTPFTS_Rand_UnDi_DoubleUnDi{environment_name}_{100}_{max_budget}.csv"
         # run_EGE_experiment(num_runs, max_budget, environment, EGE_SR, results_file=results_file, write=False, step=1)
-        run_anytime_experiment(num_runs, max_budget, environment, results_file=results_file, write=True, step=1)
+        run_anytime_experiment(num_runs, max_budget, environment, results_file=results_file, write=False, step=1)

@@ -652,56 +652,50 @@ def plot_pfi_metric_ax(
     ylabel=None,
     title=None,
 ):
-    metric_to_col = {
-        "Bernoulli": 3,
-        "Jaccard": 4,
-        "Misidentification": 5
-    }
-    if metric not in metric_to_col:
-        raise RuntimeError(f"Metric type {metric} is not supported")
-    col = metric_to_col[metric]
-
-    result_df = pd.read_csv(file, header=None)
-    algorithm_names = result_df[0].unique()
-    num_algorithms = len(algorithm_names)
-    pfi_metrics = result_df.values[:, col].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
-    avg_pfi_metrics = np.mean(pfi_metrics, axis=1)
-    std_pfi_metrics = np.std(pfi_metrics, axis=1)
+    df = pd.read_csv(file, header=None, names=["algorithm", "e", "t", "Bernoulli", "Jaccard", "Misidentification"])
+    algorithms = df["algorithm"].unique()
 
     x = np.arange(num_arm_pulls)
     x_step = x[::step]
 
-    for i, name in enumerate(algorithm_names):
-        y = avg_pfi_metrics[i]
+    for i, algorithm in enumerate(algorithms):
+        df_algo = df[df["algorithm"] == algorithm]
 
+        metric_vals = df_algo[metric].values.reshape(num_runs, num_arm_pulls)
+
+        # Compute mean and std over runs
+        mean_vals = np.mean(metric_vals, axis=0)
+        std_vals = np.std(metric_vals, axis=0)
+
+        # Apply rolling average if requested
         if rolling_avg_window > 1:
-            y_series = pd.Series(y).rolling(window=rolling_avg_window).mean()
-            y_vals = y_series.values[::step]
-        else:
-            y_vals = y[::step]
-
-        ax.plot(x_step, y_vals, label=f"{name}", color=colors[i])
-
-        if plot_std:
-            ci = 1.96 * std_pfi_metrics[i] / np.sqrt(num_runs)
-            ci_lower = (y - ci)[::step]
-            ci_upper = (y + ci)[::step]
-            ax.fill_between(
-                x_step,
-                ci_lower,
-                ci_upper,
-                alpha=0.3,
-                color=colors[i]
+            mean_vals = (
+                pd.Series(mean_vals)
+                .rolling(window=rolling_avg_window, min_periods=1)
+                .mean()
+                .values
             )
+
+        mean_plot = mean_vals[::step]
+        ci = 1.96 * std_vals / np.sqrt(num_runs)
+        ci_lower = (mean_vals - ci)[::step]
+        ci_upper = (mean_vals + ci)[::step]
+
+        # Plot main line
+        ax.plot(x_step, mean_plot, label=algorithm)
+
+        # Plot CI band
+        if plot_std:
+            ax.fill_between(x_step, ci_lower, ci_upper, alpha=0.3)
 
     if metric in ["Bernoulli", "Jaccard"]:
         ax.set_ylim(0, 1)
-    if metric == "Misidentification":
-        ax.set_yscale("log")
-        fmt = ScalarFormatter()
-        fmt.set_scientific(False)
-        ax.yaxis.set_major_formatter(fmt)
-        ax.yaxis.set_minor_formatter(NullFormatter())
+    # if metric == "Misidentification":
+    #     ax.set_yscale("log")
+    #     fmt = ScalarFormatter()
+    #     fmt.set_scientific(False)
+    #     ax.yaxis.set_major_formatter(fmt)
+    #     ax.yaxis.set_minor_formatter(NullFormatter())
 
     if ylabel is not None:
         ax.set_ylabel(ylabel)
