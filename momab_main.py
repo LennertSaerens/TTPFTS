@@ -49,8 +49,10 @@ def run_anytime_experiment(num_runs, max_budget, environment, algorithms, result
             alg_objs[alg] = UniformBandit(environment.num_arms, environment.num_objectives)
         elif alg == "PUCB1":
             alg_objs[alg] = PUCB1Bandit(environment.num_arms, environment.num_objectives)
-        elif alg == "TTPFTS":
-            alg_objs[alg] = UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), UQ_mode="linear")
+        elif alg == "TTPFTS_GKV":
+            alg_objs[alg] = TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds))
+        elif alg == "TTPFTS_UNI":
+            alg_objs= TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=-1/2), num_warmup_pulls=4)
         else:
             continue
     for algorithm_name, bandit in alg_objs.items():
@@ -108,7 +110,7 @@ if __name__ == "__main__":
         if "EGE_SH" in algorithms:
             run_EGE_experiment(args.num_runs, max_budget, environment, EGE_SH, results_file=results_file,
                                write=not args.no_write, step=args.step)
-        anytime_algs = [alg for alg in algorithms if alg in ["Uniform", "PUCB1", "TTPFTS"]]
+        anytime_algs = [alg for alg in algorithms if alg in ["Uniform", "PUCB1", "TTPFTS_GKV", "TTPFTS_UNI"]]
         if anytime_algs:
             run_anytime_experiment(args.num_runs, max_budget, environment, anytime_algs, results_file=results_file,
                                    write=not args.no_write, step=args.step)
