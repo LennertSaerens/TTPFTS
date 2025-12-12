@@ -113,6 +113,9 @@ class TPosterior(PosteriorBase):
         self.sum = np.zeros((self.num_arms, self.num_objectives))
         self.S = np.zeros((self.num_arms, self.num_objectives))
 
+    def log(self, file):
+        pass
+
 
 # class NormalPosterior(PosteriorBase):
 #     """
