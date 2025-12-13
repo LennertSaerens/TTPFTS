@@ -652,7 +652,7 @@ def plot_pfi_metric_ax(
     ylabel=None,
     title=None,
 ):
-    df = pd.read_csv(file, header=None, names=["algorithm", "e", "t", "Bernoulli", "Jaccard", "Misidentification"])
+    df = pd.read_csv(file, header=None, names=["algorithm", "e", "t", "Bernoulli", "Jaccard", "Misidentification"], low_memory=False)
     algorithms = df["algorithm"].unique()
 
     x = np.arange(num_arm_pulls)

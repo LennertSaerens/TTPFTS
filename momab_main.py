@@ -52,7 +52,7 @@ def run_anytime_experiment(num_runs, max_budget, environment, algorithms, result
         elif alg == "TTPFTS_GKV":
             alg_objs[alg] = TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds))
         elif alg == "TTPFTS_UNI":
-            alg_objs= TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=-1/2), num_warmup_pulls=4)
+            alg_objs[alg]= TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=-1/2), num_warmup_pulls=4)
         else:
             continue
     for algorithm_name, bandit in alg_objs.items():

@@ -32,13 +32,13 @@ def run_EGE_experiment(num_runs, max_budget, environment, ege_func, results_file
 
 def run_anytime_experiment(num_runs, max_budget, environment, results_file=None, write=True, step=1):
     algorithms = {
-        "Uniform": UniformBandit(environment.num_arms, environment.num_objectives),
+        # "Uniform": UniformBandit(environment.num_arms, environment.num_objectives),
         # "PUCB1": PUCB1Bandit(environment.num_arms, environment.num_objectives, kappa=1),
         # "TTPFTS_NIG": TTPFTSBandit(NormalIGPosterior(environment.num_arms, environment.num_objectives)),
         "TTPFTS_UNI": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=-1/2), num_warmup_pulls=4),
         # "TTPFTS_T_Ref": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=0)),
         # "TTPFTS_T_Jef": TTPFTSBandit(TPosterior(environment.num_arms, environment.num_objectives, alpha=1/2)),
-        "TTPFTS_GKV": TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds)),
+        # "TTPFTS_GKV": TTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds)),
         # "TTPFTS_UQ_argmax": UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), UQ_mode="argmax"),
         # "TTPFTS_UQ_linear": UncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), UQ_mode="linear"),
         # "TTPFTS_UQ_double_linear": DoubleUncertaintyDirectedTTPFTSBandit(NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds), ff_UQ_mode="linear", sf_UQ_mode="linear"),
@@ -52,8 +52,8 @@ def run_anytime_experiment(num_runs, max_budget, environment, results_file=None,
 
             for t in range(0, max_budget + 1, step):
 
-                if algorithm_name == "TTPFTS_NKV" and t % 100 == 0:
-                    bandit.posterior.log(f"results_corr/posteriors/TTPFTS_post_{environment_name}_e{experiment}_t{t}.parquet")
+                # if algorithm_name == "TTPFTS_NKV" and t % 100 == 0:
+                #     bandit.posterior.log(f"results_corr/posteriors/TTPFTS_post_{environment_name}_e{experiment}_t{t}.parquet")
 
                 arm = bandit.choose_arm()
                 reward = environment.pull_arm(arm)
@@ -73,7 +73,7 @@ def run_anytime_experiment(num_runs, max_budget, environment, results_file=None,
 
 if __name__ == "__main__":
     # Set the parameters for the experiments
-    num_runs = 1
+    num_runs = 100
     environments = {
         "EgeExp1": {"environment": EgeExp1.EgeExp1(), "budget": 5000},
         "EgeExp2": {"environment": EgeExp2.EgeExp2(), "budget": 5000},
@@ -91,6 +91,6 @@ if __name__ == "__main__":
         print(f"\nRunning experiments for {environment_name}...")
         environment = env_dict["environment"]
         max_budget = env_dict["budget"]
-        results_file = f"results5000/TTPFTS_Rand_UnDi_DoubleUnDi{environment_name}_{100}_{max_budget}.csv"
+        results_file = f"results5000/{environment_name}_[Uniform_EGE_SH_EGE_SR_TTPFTS]_5000_100.csv"
         # run_EGE_experiment(num_runs, max_budget, environment, EGE_SR, results_file=results_file, write=False, step=1)
-        run_anytime_experiment(num_runs, max_budget, environment, results_file=results_file, write=False, step=1)
+        run_anytime_experiment(num_runs, max_budget, environment, results_file=results_file, write=True, step=1)
