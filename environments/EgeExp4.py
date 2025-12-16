@@ -46,7 +46,7 @@ class EgeExp4(BaseEnvironment):
         mu = self.arms[arm]
         return [np.random.normal(mu[i], self.stds[i]) for i in range(10)]
 
-    def plot(self):
+    def plot(self, save_png=False, save_file=None):
         """
         Plot the arms and the Pareto front.
         """

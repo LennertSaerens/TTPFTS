@@ -41,23 +41,25 @@ class EgeExp6(BaseEnvironment):
         mu = self.arms[arm]
         return [np.random.normal(mu[0], self.stds[0]), np.random.normal(mu[1], self.stds[1])]
 
-    def plot(self):
+    def plot(self, save_png=False, save_file=None):
         """
         Plot the arms and the Pareto front.
         """
-        plt.figure(figsize=(8, 6))
-        plt.scatter(*zip(*self.arms), label='Arms')
-        plt.scatter(*zip(*[self.arms[i] for i in self.pareto_indices]), color='green', label='Pareto Optimal Arms')
+        plt.figure(figsize=(6, 3))
+
+        plt.scatter(*zip(*self.arms), label='Suboptimal Arms')
+        plt.scatter(*zip(*[self.arms[i] for i in self.pareto_indices]), color='green', label='Optimal Arms')
 
         # Draw ellipses around Pareto optimal arms
         for i in self.pareto_indices:
-            ellipse = Ellipse(xy=self.arms[i], width=self.stds[0], height=self.stds[1], edgecolor='green', facecolor='none', alpha=0.5)
+            ellipse = Ellipse(xy=self.arms[i], width=2*self.stds[0], height=2*self.stds[1], edgecolor='green', facecolor='none', alpha=0.5)
             plt.gca().add_patch(ellipse)
 
         plt.xlabel('Objective 1')
         plt.ylabel('Objective 2')
-        # plt.title('EgeExp6 Environment Arms and Pareto Front')
         plt.legend()
         plt.grid()
-        plt.savefig('environments/plots/EgeExp6.pdf', format='pdf')
+        plt.subplots_adjust(bottom=0.2, left=0.15)
+        if save_png and save_file is not None:
+            plt.savefig(save_file, format='png', dpi=300)
         plt.show()

@@ -76,21 +76,23 @@ if __name__ == "__main__":
     num_runs = 100
     environments = {
         "EgeExp1": {"environment": EgeExp1.EgeExp1(), "budget": 5000},
-        "EgeExp2": {"environment": EgeExp2.EgeExp2(), "budget": 5000},
-        "EgeExp3": {"environment": EgeExp3.EgeExp3(), "budget": 5000},
-        "EgeExp4": {"environment": EgeExp4.EgeExp4(), "budget": 5000},
-        "EgeExp5": {"environment": EgeExp5.EgeExp5(), "budget": 5000},
-        "EgeExp6": {"environment": EgeExp6.EgeExp6(), "budget": 5000},
-        "EgeExp7": {"environment": EgeExp7.EgeExp7(), "budget": 5000},
-        "EgeExp8": {"environment": EgeExp8.EgeExp8(), "budget": 5000},
+        # "EgeExp2": {"environment": EgeExp2.EgeExp2(), "budget": 5000},
+        # "EgeExp3": {"environment": EgeExp3.EgeExp3(), "budget": 5000},
+        # "EgeExp4": {"environment": EgeExp4.EgeExp4(), "budget": 5000},
+        # "EgeExp5": {"environment": EgeExp5.EgeExp5(), "budget": 5000},
+        # "EgeExp6": {"environment": EgeExp6.EgeExp6(), "budget": 5000},
+        # "EgeExp7": {"environment": EgeExp7.EgeExp7(), "budget": 5000},
+        # "EgeExp8": {"environment": EgeExp8.EgeExp8(), "budget": 5000},
         # "N50VS": {"environment": N50VS.N50VS(), "budget": 5000},
         # "CovBoost": {"environment": CovBoost.CovBoost(), "budget": 5000},
     }
 
     for environment_name, env_dict in environments.items():
-        print(f"\nRunning experiments for {environment_name}...")
+        # print(f"\nRunning experiments for {environment_name}...")
         environment = env_dict["environment"]
-        max_budget = env_dict["budget"]
-        results_file = f"results5000/{environment_name}_[Uniform_EGE_SH_EGE_SR_TTPFTS]_5000_100.csv"
+        # max_budget = env_dict["budget"]
+        # results_file = f"results5000/{environment_name}_[Uniform_EGE_SH_EGE_SR_TTPFTS]_5000_100.csv"
         # run_EGE_experiment(num_runs, max_budget, environment, EGE_SR, results_file=results_file, write=False, step=1)
-        run_anytime_experiment(num_runs, max_budget, environment, results_file=results_file, write=True, step=1)
+        # run_anytime_experiment(num_runs, max_budget, environment, results_file=results_file, write=True, step=1)
+        print(f"PLOTTING {environment_name}...")
+        environment.plot()
