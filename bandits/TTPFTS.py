@@ -7,6 +7,9 @@ from uncertainty_quantification import diag_cov_from_stds, bhattacharyya_coeff_g
 
 
 class TTPFTSBandit(BaseMOMABAlgorithm):
+    """
+    Top-Two Pareto Fronts Thompson Sampling Bandit
+    """
     def __init__(self, posterior, p=0.5, num_warmup_pulls=2):
         super().__init__(posterior.num_arms, posterior.num_objectives)
         self.posterior = posterior
@@ -54,6 +57,9 @@ class TTPFTSBandit(BaseMOMABAlgorithm):
         self.current_warmup_arm = 0
 
 
+#
+# Future work: First implementation of uncertainty-directed exploration
+#
 class UncertaintyDirectedTTPFTSBandit(BaseMOMABAlgorithm):
     """
     TTP-FTS bandit with uncertainty-directed exploration:
