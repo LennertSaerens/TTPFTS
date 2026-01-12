@@ -1,15 +1,10 @@
-import array
-
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.patches as mpatches
-from scipy.stats import multivariate_normal
 import seaborn as sns
-from uncertainty_quantification import uncertainty_quantification
-from matplotlib.ticker import ScalarFormatter, NullFormatter
-
 from matplotlib.patches import Ellipse, Patch
+from scipy.stats import multivariate_normal
 
 # Increase the font size of the plots
 plt.rcParams.update({'font.size': 14})
@@ -17,10 +12,10 @@ plt.rcParams.update({'font.size': 14})
 plt.rcParams.update({'font.family': 'serif'})
 # plt.rcParams['figure.constrained_layout.use'] = True
 
-# colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:brown", "tab:pink", "tab:gray",
-#           "tab:olive", "tab:cyan", 'black', 'indianred', 'lightcoral', 'moccasin', 'palegoldenrod', 'lemonchiffon',
-#           'palegreen', 'lightcyan',
-#           'paleturquoise', 'darkseagreen', 'lightskyblue', "palevioletred", "pink", "lavenderblush"]
+colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:brown", "tab:pink", "tab:gray",
+          "tab:olive", "tab:cyan", 'black', 'indianred', 'lightcoral', 'moccasin', 'palegoldenrod', 'lemonchiffon',
+          'palegreen', 'lightcyan',
+          'paleturquoise', 'darkseagreen', 'lightskyblue', "palevioletred", "pink", "lavenderblush"]
 
 
 def plot_vaccination_data(df, optimal_arms, annotate=False, connect_optimal_arms=False):
@@ -610,9 +605,13 @@ def plot_uncertainty(uncertainties, timesteps, title):
     plt.show()
 
 
-def plot_uncertainty_grid(env_uncertainties, timesteps):
-    # 5 rows x 2 cols
-    fig, axes = plt.subplots(5, 2, figsize=(12, 16), sharex=True, sharey=False)
+def plot_uncertainty_grid(
+        env_uncertainties,
+        timesteps,
+        save_png=False,
+        save_file=None
+):
+    fig, axes = plt.subplots(2, 4, figsize=(12, 6), sharex=True, sharey=True)
     axes = axes.flatten()
 
     for idx, (env, uncertainties) in enumerate(env_uncertainties.items()):
@@ -620,44 +619,119 @@ def plot_uncertainty_grid(env_uncertainties, timesteps):
         mean_uncertainties = np.mean(uncertainties, axis=0)
         std_uncertainties = np.std(uncertainties, axis=0)
 
-        sns.lineplot(x=timesteps, y=mean_uncertainties, color="C0", ax=ax)
-        lower = mean_uncertainties - std_uncertainties
-        upper = mean_uncertainties + std_uncertainties
-        ax.fill_between(timesteps, lower, upper, color="C0", alpha=0.2)
+        ax.plot(timesteps, mean_uncertainties)
+        ci = 1.96 * std_uncertainties / np.sqrt(uncertainties.shape[0])
+        ci_lower = mean_uncertainties - ci
+        ci_upper = mean_uncertainties + ci
+        ax.fill_between(timesteps, ci_lower, ci_upper, alpha=0.3)
 
-        ax.set_title(env)
+        ax.set_title(env, fontsize=14)
         ax.set_xlim(0, 5000)
+        ax.grid(True)
 
-    # Remove any unused axes (in case of fewer than 10 envs)
-    for j in range(len(env_uncertainties), len(axes)):
-        fig.delaxes(axes[j])
+    fig.text(0.5, 0.04, "Arm Pulls", ha="center")
+    fig.text(0.04, 0.5, "Uncertainty (Bhattacharyya Sum)", va="center", rotation="vertical")
+    plt.tight_layout(rect=[0.05, 0.05, 1, 0.97])
+    if save_png and save_file is not None:
+        plt.savefig(save_file, format="png", dpi=500)
+    plt.show()
 
-    fig.suptitle("Uncertainty over Time", y=0.92)
-    fig.text(0.5, 0.04, "Number of arm pulls", ha="center")
-    fig.text(0.04, 0.5, "Uncertainty (Bhattacharyya sum)", va="center", rotation="vertical")
-    plt.tight_layout(rect=[0.05, 0.05, 1, 0.94])
+
+def plot_uncertainty_all_envs(
+        env_uncertainties,
+        timesteps,
+        set_title=True,
+        save_png=False,
+        save_file=None
+):
+    # Single figure and axes
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    handles = []
+    labels = []
+
+    for env, uncertainties in env_uncertainties.items():
+        # uncertainties: shape (n_runs, n_timesteps)
+        mean_uncertainties = np.mean(uncertainties, axis=0)
+        std_uncertainties = np.std(uncertainties, axis=0)
+
+        # extract number after 'EgeExp'
+        num_label = env.replace("EgeExp", "")
+
+        line, = ax.plot(timesteps, mean_uncertainties, label=env)
+        ci = 1.96 * std_uncertainties / np.sqrt(uncertainties.shape[0])
+        ci_lower = mean_uncertainties - ci
+        ci_upper = mean_uncertainties + ci
+
+        # Use same color as line but with alpha for CI
+        ax.fill_between(
+            timesteps,
+            ci_lower,
+            ci_upper,
+            alpha=0.3,
+            color=line.get_color()
+        )
+
+        handles.append(line)
+        labels.append(num_label)
+
+    if set_title and not save_png:
+        ax.set_title("Uncertainty Across Environments", fontsize=14)
+    ax.set_xlim(0, 5000)
+    ax.set_xlabel("Arm Pulls")
+    ax.set_ylabel("Uncertainty (Bhattacharyya Avg)")
+    ax.grid(True)
+
+    # Place legend outside on the right
+    # bbox_to_anchor (x, y): x>1 pushes it outside to the right
+    ax.legend(handles, labels, title="EgeExp", loc="center left", bbox_to_anchor=(1.02, 0.5), borderaxespad=0.)
+
+    # Adjust layout to make room for legend
+    plt.tight_layout()
+    plt.subplots_adjust(right=0.75)
+
+    if save_png and save_file is not None:
+        plt.savefig(save_file, format="png", dpi=500, bbox_inches="tight")
+
     plt.show()
 
 
 def plot_pfi_metric_ax(
-    ax,
-    file,
-    num_runs,
-    num_arm_pulls,
-    metric,
-    plot_std=True,
-    step=1,
-    show_legend=False,
-    ylabel=None,
-    title=None,
+        ax,
+        file,
+        num_runs,
+        num_arm_pulls,
+        num_arms,
+        metric,
+        plot_std=True,
+        step=1,
+        show_legend=False,
+        ylabel=None,
+        title=None,
 ):
     df = pd.read_csv(file, header=None, names=["algorithm", "e", "t", "Bernoulli", "Jaccard", "Misidentification"], low_memory=False)
-    algorithms = df["algorithm"].unique()
-
-    x = np.arange(num_arm_pulls)
-    x_step = x[::step]
+    algorithms = df["algorithm"].unique()[:4]  # Leave out TTPFTS_GKV in final figure
 
     for i, algorithm in enumerate(algorithms):
+
+        start = num_arms
+        # if algorithm == "TTPFTS_UNI":
+        #     start = num_arms * 4  # each arm is pulled 4 times initially to ensure proper priors
+        # elif algorithm == "EGE_SH":
+        #     temp_n_arms = num_arms
+        #     while temp_n_arms > 1:
+        #         start += temp_n_arms
+        #         temp_n_arms = (temp_n_arms + 1) // 2  # ceiling division for successive halving strategy
+        # elif algorithm == "EGE_SR":
+        #     temp_n_arms = num_arms
+        #     while temp_n_arms > 1:
+        #         start += temp_n_arms
+        #         temp_n_arms -= 1  # successive rejects strategy
+
+        x = np.arange(num_arm_pulls)
+        x_step = x[::step]
+        x_step = x_step[start:]  # The x-values for the plot start here
+
         df_algo = df[df["algorithm"] == algorithm]
 
         metric_vals = df_algo[metric].values.reshape(num_runs, num_arm_pulls)
@@ -671,12 +745,32 @@ def plot_pfi_metric_ax(
         ci_lower = (mean_vals - ci)[::step]
         ci_upper = (mean_vals + ci)[::step]
 
-        # Plot main line
-        ax.plot(x_step, mean_plot, label=algorithm)
+        mean_plot = mean_plot[start:]
+        ci_lower = ci_lower[start:]
+        ci_upper = ci_upper[start:]
+
+        # --- PLOT MAIN LINE ---
+        line = None
+        if algorithm == "TTPFTS_UNI":
+            line, = ax.plot(x_step, mean_plot, label="TTPFTS")
+        elif algorithm == "Uniform":
+            line, = ax.plot(x_step, mean_plot, label="Uniform Sampling")
+        else:
+            line, = ax.plot(x_step, mean_plot, label=algorithm)
+
+        # --- NEW CODE: ADD VERTICAL LINE ---
+        # Get the color of the current line so the vertical line matches
+        color = line.get_color()
+
+        # Draw a dotted line from y=0 up to the start of the mean curve
+        # x_step[0] is the x-coordinate where the curve starts
+        # mean_plot[0] is the y-coordinate where the curve starts
+        if start < num_arm_pulls:
+            ax.vlines(x=x_step[0], ymin=0, ymax=mean_plot[0], colors=color, linestyles='dotted', alpha=0.7)
 
         # Plot CI band
         if plot_std:
-            ax.fill_between(x_step, ci_lower, ci_upper, alpha=0.3)
+            ax.fill_between(x_step, ci_lower, ci_upper, alpha=0.3, color=color)
 
     if metric in ["Bernoulli", "Jaccard"]:
         ax.set_ylim(0, 1)
@@ -770,6 +864,7 @@ def plot_all_pfi_metrics_grid_top_legend(
 def plot_all_jaccard_metrics_grid_top_legend(
     env_files,
     env_labels,
+    env_arms,
     num_runs,
     num_arm_pulls,
     plot_std=True,
@@ -796,15 +891,17 @@ def plot_all_jaccard_metrics_grid_top_legend(
         row = i // 4
         col = i % 4
         ax = axes[row, col]
+        n_arms = env_arms[i]
 
         ylabel = "Jaccard Metric" if col == 0 else None
-        title = env_name
+        title = f"{env_name} (K = {n_arms})"
 
         plot_pfi_metric_ax(
             ax=ax,
             file=file,
             num_runs=num_runs,
             num_arm_pulls=num_arm_pulls,
+            num_arms=n_arms,
             metric="Jaccard",
             plot_std=plot_std,
             step=step,
