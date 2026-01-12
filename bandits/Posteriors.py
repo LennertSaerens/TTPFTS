@@ -114,38 +114,22 @@ class TPosterior(PosteriorBase):
         self.S = np.zeros((self.num_arms, self.num_objectives))
 
     def log(self, file):
-        pass
+        nu_df = self.n + (2 * self.alpha) - 1
+        z = t.rvs(df=nu_df)
+        stds = (self.S / np.sqrt(self.n * nu_df)) * z
 
+        # Aggregate per arm by averaging over objectives
+        arm_indices = np.arange(self.num_arms)
+        means_lists = [[self.mu[i, j] for j in range(self.num_objectives)] for i in range(self.num_arms)]
+        stds_lists = [[stds[i, j] for j in range(self.num_objectives)] for i in range(self.num_arms)]
 
-# class NormalPosterior(PosteriorBase):
-#     """
-#     Posterior for arms with normal rewards with known variance as described in "Thompson Sampling - An Efficient Method
-#      for Searching Ultralarge Synthesis on Demand Databases" by Klarich et al.
-#     """
-#     def __init__(self, num_arms, num_objectives, known_stds):
-#         self.num_arms = num_arms
-#         self.num_objectives = num_objectives
-#         self.means = np.zeros((self.num_arms, self.num_objectives))
-#         self.known_stds = np.array(known_stds)
-#         known_variances = self.known_stds ** 2
-#         self.known_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
-#         self.empirical_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
-#
-#     def sample(self):
-#         return np.random.normal(self.means, np.sqrt(self.empirical_variances))
-#
-#     def update(self, arm, reward):
-#         self.means[arm] = (self.empirical_variances[arm] * reward + self.known_variances[arm] * self.means[arm]) / (self.empirical_variances[arm] + self.known_variances[arm])
-#         self.empirical_variances[arm] = (self.empirical_variances[arm] * self.known_variances[arm]) / (self.empirical_variances[arm] + self.known_variances[arm])
-#
-#     def get_mean(self):
-#         return self.means
-#
-#     def reset(self):
-#         known_variances = self.known_stds ** 2
-#         self.means = np.zeros((self.num_arms, self.num_objectives))
-#         self.known_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
-#         self.empirical_variances = np.full((self.num_arms, self.num_objectives), known_variances, dtype=np.float64)
+        df = pd.DataFrame({
+            "arm": arm_indices,
+            "means": means_lists,
+            "stds": stds_lists,
+        })
+
+        df.to_parquet(file, index=False)
 
 
 class NormalPosterior(PosteriorBase):
