@@ -4,12 +4,10 @@ from pymoo.indicators.hv import HV
 
 
 class BaseEnvironment(ABC):
-    def __init__(self, num_arms: int, num_objectives: int, pareto_indices, inverted_arms, reference_point) -> None:
+    def __init__(self, num_arms: int, num_objectives: int, pareto_indices) -> None:
         self.num_arms = num_arms
         self.num_objectives = num_objectives
         self.pareto_indices = pareto_indices
-        self.inverted_arms = inverted_arms
-        self.reference_point = reference_point
 
     @abstractmethod
     def pull_arm(self, arm: int) -> np.ndarray:
@@ -42,19 +40,6 @@ class BaseEnvironment(ABC):
         return len(set(recommendation).intersection(set(self.pareto_indices))) / len(
             set(recommendation).union(set(self.pareto_indices)))
 
-    def hypervolume_metric(self, recommendation):
-        """
-        Calculate the hypervolume of the recommended arms using pymoo.
-        :param recommendation: The recommended arms.
-        :return: The hypervolume.
-        """
-        if len(recommendation) == 0:
-            return 0
-        F = np.array([self.inverted_arms[arm] for arm in recommendation])
-        ind = HV(ref_point=self.reference_point)
-        hv = ind.do(F)
-        return hv
-
     def mis_id_metric(self, recommendation):
         """
         Calculate the average mis-identification rat over all arms.
@@ -71,7 +56,7 @@ class BaseEnvironment(ABC):
                 # If the arm is not recommended, check if it is a Pareto optimal arm
                 if arm in self.pareto_indices:
                     mis_identifications += 1
-        return np.log10(mis_identifications / self.num_arms)
+        return mis_identifications / self.num_arms
 
     @abstractmethod
     def plot(self):
