@@ -42,20 +42,10 @@ class CovBoost(BaseEnvironment):
     def __init__(self):
         self.arms = generate_arms()
         self.stds = [0.7, 0.83, 1.54]  # Standard deviation for the normal distribution
-        is_strictly_worse = np.all(self.arms[:, None, :] < self.arms[None, :, :], axis=2)
-        pareto_indices = np.where(~np.any(is_strictly_worse, axis=1))[0]
+        pareto_indices = BaseEnvironment._compute_pareto_indices(self.arms)
         reference_point = np.array([1.0, 1.0])
         inverted_arms = [(1 - arm[0], 1 - arm[1]) for arm in self.arms]
         super().__init__(len(self.arms), 3, pareto_indices, inverted_arms, reference_point)
-
-    def pull_arm(self, arm):
-        """
-        Pull the specified arm and return the reward.
-        :param arm: The index of the arm to pull.
-        :return: The reward for the pulled arm.
-        """
-        mu = self.arms[arm]
-        return [np.random.normal(mu[i], self.stds[i]) for i in range(3)]
 
     def plot(self):
         """
