@@ -19,7 +19,7 @@ class BaseMOMABAlgorithm(ABC):
         pass
 
     @abstractmethod
-    def learn(self, arm: int, reward: float) -> None:
+    def learn(self, arm: int, reward: np.ndarray) -> None:
         """Updates the model with the observed reward from the chosen arm."""
         pass
 

@@ -11,7 +11,7 @@ def generate_arms():
     for i in range(1, 5):
         arms.append((0.45 + 0.2 ** i, 0.35 - 0.2 ** i))
         arms.append((0.10 + 0.2 ** i, 0.70 - 0.2 ** i))
-    return arms
+    return np.array(arms)
 
 
 class EgeExp2(BaseEnvironment):
@@ -23,9 +23,5 @@ class EgeExp2(BaseEnvironment):
     """
 
     def __init__(self):
-        self.arms = generate_arms()
-        self.stds = [0.25, 0.25]  # Standard deviation for the normal distribution
         pareto_indices = np.arange(2)  # The first 2 arms are Pareto optimal
-        reference_point = np.array([1.0, 1.0])
-        inverted_arms = [(1 - arm[0], 1 - arm[1]) for arm in self.arms]
-        super().__init__(len(self.arms), 2, pareto_indices, inverted_arms, reference_point)
+        self._init_standard_2obj(generate_arms(), pareto_indices)

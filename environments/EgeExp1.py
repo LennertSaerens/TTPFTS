@@ -5,7 +5,7 @@ from environments.BaseEnvironment import BaseEnvironment
 def generate_arms():
     """
     Generate the arms for the EgeExp1 environment.
-    :return: A list of arms.
+    :return: A numpy array of arms.
     """
     arms1 = [(x ** 2, 1 / (4 * x ** 2)) for x in np.linspace(0.55, 0.95, 10)]
     arms2 = []
@@ -26,15 +26,9 @@ class EgeExp1(BaseEnvironment):
     """
 
     def __init__(self):
-        self.arms = generate_arms()
-        self.stds = [0.25, 0.25]  # Standard deviation for the normal distribution
         pareto_indices = np.arange(10)  # The first 10 arms are Pareto optimal
-        reference_point = np.array([1.0, 1.0])
-        inverted_arms = [(1 - arm[0], 1 - arm[1]) for arm in self.arms]
-        super().__init__(len(self.arms), 2, pareto_indices, inverted_arms, reference_point)
+        self._init_standard_2obj(generate_arms(), pareto_indices)
 
     def reset(self) -> None:
-        """
-        Reset the environment to its initial state.
-        """
         self.arms = generate_arms()
+        self.inverted_arms = 1.0 - self.arms

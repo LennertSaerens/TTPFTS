@@ -5,17 +5,15 @@ from environments.BaseEnvironment import BaseEnvironment
 def generate_arms():
     """
     Generate the arms for the EgeExp3 environment.
-    :return: A list of arms.
+    :return: A numpy array of arms.
     """
     arms = []
-    # Generate the first 20 arms in the range [π/12, 5π/12]
     for i in range(20):
-        angle = np.pi / 12 + i * (np.pi / 3) / 19  # Evenly spaced angles
+        angle = np.pi / 12 + i * (np.pi / 3) / 19
         arms.append((np.cos(angle), np.sin(angle)))
 
-    # Generate the next 180 arms in the range [4π/6, 11π/6]
     for i in range(20, 200):
-        angle = 4 * np.pi / 6 + i * (7 * np.pi / 6) / 179  # Evenly spaced angles
+        angle = 4 * np.pi / 6 + i * (7 * np.pi / 6) / 179
         arms.append((np.cos(angle), np.sin(angle)))
 
     return np.array(arms)
@@ -30,9 +28,5 @@ class EgeExp3(BaseEnvironment):
     """
 
     def __init__(self):
-        self.arms = generate_arms()
-        self.stds = [0.25, 0.25]  # Standard deviation for the normal distribution
         pareto_indices = np.arange(20)  # The first 20 arms are Pareto optimal
-        reference_point = np.array([1.0, 1.0])
-        inverted_arms = [(1 - arm[0], 1 - arm[1]) for arm in self.arms]
-        super().__init__(len(self.arms), 2, pareto_indices, inverted_arms, reference_point)
+        self._init_standard_2obj(generate_arms(), pareto_indices)

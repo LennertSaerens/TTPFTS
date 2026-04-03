@@ -1,37 +1,54 @@
-from abc import ABC, abstractmethod
+from abc import ABC
+from typing import Optional, Sequence, Union
+
 import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
 import numpy as np
+from matplotlib.patches import Ellipse
 from paretoset import paretoset
-from pymoo.indicators.hv import HV
 
 
 class BaseEnvironment(ABC):
-    def __init__(self, num_arms: int, num_objectives: int, pareto_indices,
-                 inverted_arms=None, reference_point=None) -> None:
+    def __init__(self, num_arms: int, num_objectives: int, pareto_indices: np.ndarray,
+                 inverted_arms: Optional[np.ndarray] = None,
+                 reference_point: Optional[np.ndarray] = None) -> None:
         self.num_arms = num_arms
         self.num_objectives = num_objectives
-        self.pareto_indices = pareto_indices
-        self.inverted_arms = inverted_arms
+        self.pareto_indices = np.asarray(pareto_indices)
+        self._pareto_set = set(self.pareto_indices.tolist())
+        self.inverted_arms = np.asarray(inverted_arms) if inverted_arms is not None else None
         self.reference_point = reference_point
 
     @staticmethod
-    def _compute_pareto_indices(self, arms: np.ndarray) -> np.ndarray:
+    def _compute_pareto_indices(arms: np.ndarray) -> np.ndarray:
         """Returns indices of Pareto-optimal arms (no arm is strictly dominated)."""
-        pareto_mask = paretoset(arms, sense=["max"] * self.num_objectives)
-        pareto_indices = np.where(pareto_mask)[0]
-        return pareto_indices
+        num_objectives = arms.shape[1]
+        pareto_mask = paretoset(arms, sense=["max"] * num_objectives)
+        return np.where(pareto_mask)[0]
 
-    def pull_arm(self, arm: int) -> list:
+    def _update_pareto_cache(self) -> None:
+        """Update the cached pareto set after pareto_indices changes."""
+        self._pareto_set = set(self.pareto_indices.tolist())
+
+    def _init_standard_2obj(self, arms: np.ndarray,
+                            pareto_indices: Optional[np.ndarray] = None) -> None:
+        """Common init for standard 2-objective environments with stds=0.25."""
+        self.arms = np.asarray(arms, dtype=np.float64)
+        self.stds = np.array([0.25, 0.25])
+        if pareto_indices is None:
+            pareto_indices = BaseEnvironment._compute_pareto_indices(self.arms)
+        reference_point = np.array([1.0, 1.0])
+        inverted_arms = 1.0 - self.arms
+        BaseEnvironment.__init__(self, len(self.arms), 2, pareto_indices, inverted_arms, reference_point)
+
+    def pull_arm(self, arm: int) -> np.ndarray:
         """Pulls the specified arm and returns a noisy reward vector."""
-        mu = self.arms[arm]
-        return [np.random.normal(mu[i], self.stds[i]) for i in range(self.num_objectives)]
+        return np.random.normal(self.arms[arm], self.stds)
 
     def get_top_arms(self) -> np.ndarray:
         """Returns the arms considered Pareto optimal."""
         return self.pareto_indices
 
-    def learn(self, arm: int, reward: float) -> None:
+    def learn(self, arm: int, reward: np.ndarray) -> None:
         """Updates the model with the observed reward from the chosen arm."""
         pass
 
@@ -39,49 +56,31 @@ class BaseEnvironment(ABC):
         """Resets the environment."""
         pass
 
-    def sample(self, arms):
+    def sample(self, arms: Union[list, np.ndarray]) -> np.ndarray:
         """
         Sample multiple arms at once.
-        :param arms: A list of arm indices to sample.
-        :return: A 2D array of rewards for the sampled arms.
+        :param arms: A list/array of arm indices to sample.
+        :return: A 2D array of rewards of shape (len(arms), num_objectives).
         """
-        rewards = [self.pull_arm(arm) for arm in arms]
-        return np.array(rewards)
+        arms = np.asarray(arms)
+        return np.random.normal(self.arms[arms], self.stds)
 
-    def bernoulli_metric(self, recommendation):
-        """
-        Calculate the Bernoulli metric for the specified arm.
-        :param recommendation: The recommended arms.
-        :return: The Bernoulli metric for the arm.
-        """
-        return int(set(recommendation) == set(self.pareto_indices))
+    def bernoulli_metric(self, recommendation: np.ndarray) -> int:
+        """Returns 1 if the recommendation exactly matches the Pareto set, else 0."""
+        return int(set(recommendation) == self._pareto_set)
 
-    def jaccard_metric(self, recommendation):
-        """
-        Calculate the Jaccard similarity between the recommended arms and the pareto optimal arms.
-        :param recommendation: The recommended arms.
-        :return: The Jaccard similarity.
-        """
-        return len(set(recommendation).intersection(set(self.pareto_indices))) / len(
-            set(recommendation).union(set(self.pareto_indices)))
+    def jaccard_metric(self, recommendation: np.ndarray) -> float:
+        """Jaccard similarity between the recommended arms and the Pareto optimal arms."""
+        rec_set = set(recommendation)
+        return len(rec_set & self._pareto_set) / len(rec_set | self._pareto_set)
 
-    def mis_id_metric(self, recommendation):
-        """
-        Calculate the average mis-identification rate over all arms.
-        :param recommendation: The recommended arms.
-        :return: The average mis-identification rate.
-        """
-        mis_identifications = 0
-        for arm in np.arange(self.num_arms):
-            if arm in recommendation:
-                if arm not in self.pareto_indices:
-                    mis_identifications += 1
-            else:
-                if arm in self.pareto_indices:
-                    mis_identifications += 1
-        return mis_identifications / self.num_arms
+    def mis_id_metric(self, recommendation: np.ndarray) -> float:
+        """Average mis-identification rate over all arms (symmetric difference / total)."""
+        rec_set = set(recommendation)
+        symmetric_diff = rec_set.symmetric_difference(self._pareto_set)
+        return len(symmetric_diff) / self.num_arms
 
-    def plot(self, save_png=False, save_file=None):
+    def plot(self, save_png: bool = False, save_file: Optional[str] = None) -> None:
         """Plot the arms and the Pareto front (default: 2D scatter with uncertainty ellipses)."""
         plt.figure(figsize=(6, 3))
 

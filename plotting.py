@@ -29,7 +29,7 @@ def plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window=1,
     num_algorithms = len(algorithm_names)
     pfi_metrics = result_df.values[:, col].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
     avg_pfi_metrics = np.mean(pfi_metrics, axis=1)
-    std_pfi_metrics = np.var(pfi_metrics, axis=1)
+    std_pfi_metrics = np.std(pfi_metrics, axis=1)
 
     # x indices, potentially subsampled
     x = np.arange(num_arm_pulls)
@@ -85,6 +85,7 @@ def plot_pfi_metric_ax(
         num_runs,
         num_arm_pulls,
         num_arms,
+        num_objs,
         metric,
         plot_std=True,
         step=1,
@@ -92,13 +93,13 @@ def plot_pfi_metric_ax(
         ylabel=None,
         title=None,
 ):
-    df = pd.read_csv(file, header=None, names=["algorithm", "e", "t", "Bernoulli", "Jaccard", "Misidentification"],
+    df = pd.read_csv(file, header=None, names=["algorithm", "e", "t", "Bernoulli", "Jaccard", "Misclassification"],
                      low_memory=False)
-    algorithms = df["algorithm"].unique()[:4]  # Leave out TTPFTS_GKV in final figure
+    algorithms = df["algorithm"].unique()
 
     for i, algorithm in enumerate(algorithms):
 
-        start = num_arms
+        start = int(1.5*num_arms)
 
         x = np.arange(num_arm_pulls)
         x_step = x[::step]
@@ -121,7 +122,6 @@ def plot_pfi_metric_ax(
         ci_lower = ci_lower[start:]
         ci_upper = ci_upper[start:]
 
-        # --- PLOT MAIN LINE ---
         line = None
         if algorithm == "TTPFTS_UNI":
             line, = ax.plot(x_step, mean_plot, label="TTPFTS")
@@ -130,7 +130,6 @@ def plot_pfi_metric_ax(
         else:
             line, = ax.plot(x_step, mean_plot, label=algorithm)
 
-        # --- NEW CODE: ADD VERTICAL LINE ---
         # Get the color of the current line so the vertical line matches
         color = line.get_color()
 
@@ -146,6 +145,8 @@ def plot_pfi_metric_ax(
 
     if metric in ["Bernoulli", "Jaccard"]:
         ax.set_ylim(0, 1)
+    if metric == "Misclassification":
+        ax.set_yscale("log")
 
     ax.grid(True)
 
@@ -163,13 +164,15 @@ def plot_all_pfi_metrics_grid_top_legend(
         env_labels,
         num_runs,
         num_arm_pulls,
+        num_arms,
+        num_objs,
         plot_std=True,
         step=1,
         figsize=(12, 24),
         save_png=False,
         save_file=None
 ):
-    metrics = ["Bernoulli", "Jaccard", "Misidentification"]
+    metrics = ["Bernoulli", "Jaccard", "Misclassification"]
     n_env = len(env_files)
     n_metrics = len(metrics)
 
@@ -187,6 +190,8 @@ def plot_all_pfi_metrics_grid_top_legend(
 
     # Plot, but do NOT show legends inside subplots
     for row, (file, env_name) in enumerate(zip(env_files, env_labels)):
+        n_arms = num_arms[row]
+        n_objs = num_objs[row]
         for col, metric in enumerate(metrics):
             ax = axes[row, col]
 
@@ -198,6 +203,8 @@ def plot_all_pfi_metrics_grid_top_legend(
                 file=file,
                 num_runs=num_runs,
                 num_arm_pulls=num_arm_pulls,
+                num_arms=n_arms,
+                num_objs=n_objs,
                 metric=metric,
                 plot_std=plot_std,
                 step=step,
@@ -237,36 +244,41 @@ def plot_metric_all_envs_grid_top_legend(
         env_files,
         env_labels,
         env_arms,
+        env_objs,
         num_runs,
         num_arm_pulls,
         metric,
         plot_std=True,
         step=1,
-        figsize=(12, 6),
+        figsize=(13, 6),
         save_png=False,
         save_file=None
 ):
     n_env = len(env_files)
-    nrows = n_env // 4
-    ncols = n_env // 2
+    ncols = min(4, n_env)
+    nrows = int(np.ceil(n_env / ncols))
+
+    sharey = False if metric == "Misclassification" else True
 
     fig, axes = plt.subplots(
         nrows=nrows,
         ncols=ncols,
         figsize=figsize,
         sharex=True,
-        sharey=True,
+        sharey=sharey,
+        squeeze=False,
     )
 
     # Plot, but do NOT show legends inside subplots
     for i, (file, env_name) in enumerate(zip(env_files, env_labels)):
-        row = i // 4
-        col = i % 4
+        row = i // ncols
+        col = i % ncols
         ax = axes[row, col]
         n_arms = env_arms[i]
+        n_objs = env_objs[i]
 
         ylabel = f"{metric} Metric" if col == 0 else None
-        title = f"{env_name} (K = {n_arms})"
+        title = f"{env_name} (K = {n_arms}, D = {n_objs})"
 
         plot_pfi_metric_ax(
             ax=ax,
@@ -274,6 +286,7 @@ def plot_metric_all_envs_grid_top_legend(
             num_runs=num_runs,
             num_arm_pulls=num_arm_pulls,
             num_arms=n_arms,
+            num_objs=n_objs,
             metric=metric,
             plot_std=plot_std,
             step=step,

@@ -41,10 +41,10 @@ class CovBoost(BaseEnvironment):
 
     def __init__(self):
         self.arms = generate_arms()
-        self.stds = [0.7, 0.83, 1.54]  # Standard deviation for the normal distribution
+        self.stds = np.array([0.7, 0.83, 1.54])
         pareto_indices = BaseEnvironment._compute_pareto_indices(self.arms)
-        reference_point = np.array([1.0, 1.0])
-        inverted_arms = [(1 - arm[0], 1 - arm[1]) for arm in self.arms]
+        reference_point = np.array([1.0, 1.0, 1.0])
+        inverted_arms = 1.0 - self.arms
         super().__init__(len(self.arms), 3, pareto_indices, inverted_arms, reference_point)
 
     def plot(self):

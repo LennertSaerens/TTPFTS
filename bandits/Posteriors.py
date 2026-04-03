@@ -6,27 +6,29 @@ import pandas as pd
 
 class PosteriorBase(ABC):
     @abstractmethod
-    def sample(self):
+    def sample(self) -> np.ndarray:
         raise NotImplementedError
 
     @abstractmethod
-    def update(self, arm, reward):
+    def update(self, arm: int, reward: np.ndarray) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def get_mean(self):
+    def get_mean(self) -> np.ndarray:
         raise NotImplementedError
 
     @abstractmethod
-    def reset(self, env_stds):
+    def reset(self, env_stds) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def log(self, file):
+    def log(self, file: str) -> None:
         raise NotImplementedError
 
 
 class BetaBernoulliPosterior(PosteriorBase):
+    """Beta-Bernoulli posterior for binary rewards."""
+
     def __init__(self, num_arms, num_objectives):
         self.num_arms = num_arms
         self.num_objectives = num_objectives
@@ -47,8 +49,23 @@ class BetaBernoulliPosterior(PosteriorBase):
         self.alphas = np.ones((self.num_arms, self.num_objectives))
         self.betas = np.ones((self.num_arms, self.num_objectives))
 
+    def log(self, file):
+        means = self.get_mean()
+        # Variance of Beta distribution: alpha*beta / ((alpha+beta)^2 * (alpha+beta+1))
+        total = self.alphas + self.betas
+        variances = (self.alphas * self.betas) / (total ** 2 * (total + 1))
+        stds = np.sqrt(variances)
+        df = pd.DataFrame({
+            "arm": np.arange(self.num_arms),
+            "means": means.tolist(),
+            "stds": stds.tolist(),
+        })
+        df.to_parquet(file, index=False)
+
 
 class NormalIGPosterior(PosteriorBase):
+    """Normal-Inverse-Gamma posterior for Gaussian rewards with unknown variance."""
+
     def __init__(self, num_arms, num_objectives):
         self.num_arms = num_arms
         self.num_objectives = num_objectives
@@ -78,10 +95,25 @@ class NormalIGPosterior(PosteriorBase):
         self.alpha = np.full((self.num_arms, self.num_objectives), 2.0)
         self.beta = np.full((self.num_arms, self.num_objectives), 2.0)
 
+    def log(self, file):
+        # Posterior std: sqrt(beta / (lambdas * (alpha - 1))) when alpha > 1
+        stds = np.where(
+            self.alpha > 1,
+            np.sqrt(self.beta / (self.lambdas * (self.alpha - 1))),
+            1e6
+        )
+        df = pd.DataFrame({
+            "arm": np.arange(self.num_arms),
+            "means": self.mu.tolist(),
+            "stds": stds.tolist(),
+        })
+        df.to_parquet(file, index=False)
+
 
 class TPosterior(PosteriorBase):
     """
-    Posterior based on "Optimality of Thompson Sampling for Gaussian Bandits Depends on Priors" paper by Honda and Takemura.
+    Posterior based on "Optimality of Thompson Sampling for Gaussian Bandits Depends on Priors"
+    paper by Honda and Takemura.
     """
 
     def __init__(self, num_arms, num_objectives, alpha=0):
@@ -89,14 +121,23 @@ class TPosterior(PosteriorBase):
         self.num_objectives = num_objectives
         self.alpha = alpha
         self.mu = np.zeros((num_arms, num_objectives))
-        self.n = np.zeros((num_arms, num_objectives))  # Number of observations per arm-objective
-        self.sum = np.zeros((num_arms, num_objectives))  # Sum of rewards per arm-objective
-        self.S = np.zeros((num_arms, num_objectives))  # Sum of squared deviations per arm-objective
+        self.n = np.zeros((num_arms, num_objectives))
+        self.sum = np.zeros((num_arms, num_objectives))
+        self.S = np.zeros((num_arms, num_objectives))
 
     def sample(self):
-        nu_df = self.n + (2 * self.alpha) - 1
+        # Guard unpulled arms: return large-variance samples
+        pulled = self.n > 0
+        nu_df = np.where(pulled, self.n + (2 * self.alpha) - 1, 1.0)
+        # Clamp degrees of freedom to avoid invalid t-distribution
+        nu_df = np.maximum(nu_df, 0.01)
         z = t.rvs(df=nu_df)
-        return self.mu + (self.S / np.sqrt(self.n * nu_df)) * z
+        scale = np.where(
+            pulled,
+            self.S / np.sqrt(self.n * nu_df),
+            1e6
+        )
+        return self.mu + scale * z
 
     def update(self, arm, reward):
         self.n[arm] += 1
@@ -114,51 +155,40 @@ class TPosterior(PosteriorBase):
         self.S = np.zeros((self.num_arms, self.num_objectives))
 
     def log(self, file):
-        nu_df = self.n + (2 * self.alpha) - 1
-        z = t.rvs(df=nu_df)
-        stds = (self.S / np.sqrt(self.n * nu_df)) * z
-
-        # Aggregate per arm by averaging over objectives
-        arm_indices = np.arange(self.num_arms)
-        means_lists = [[self.mu[i, j] for j in range(self.num_objectives)] for i in range(self.num_arms)]
-        stds_lists = [[stds[i, j] for j in range(self.num_objectives)] for i in range(self.num_arms)]
+        pulled = self.n > 0
+        nu_df = np.where(pulled, self.n + (2 * self.alpha) - 1, 1.0)
+        nu_df = np.maximum(nu_df, 0.01)
+        stds = np.where(pulled, np.sqrt(self.S / (self.n * nu_df)), 1e6)
 
         df = pd.DataFrame({
-            "arm": arm_indices,
-            "means": means_lists,
-            "stds": stds_lists,
+            "arm": np.arange(self.num_arms),
+            "means": self.mu.tolist(),
+            "stds": stds.tolist(),
         })
-
         df.to_parquet(file, index=False)
 
 
 class NormalPosterior(PosteriorBase):
-    """
-    Bayesian posterior for normal rewards with known variance, per arm/objective.
-    """
+    """Bayesian posterior for normal rewards with known variance, per arm/objective."""
+
     def __init__(self, num_arms, num_objectives, known_stds):
         self.num_arms = num_arms
         self.num_objectives = num_objectives
         self.known_stds = np.full((self.num_arms, self.num_objectives), known_stds, dtype=np.float64)
-
-        # Each arm/objective: track count (n), mean, and posterior variance
         self.counts = np.zeros((num_arms, num_objectives), dtype=int)
         self.means = np.zeros((num_arms, num_objectives), dtype=float)
 
     def sample(self):
-        # Posterior std-dev: known std / sqrt(n) (n >= 1), otherwise infinity
         stds = np.where(
             self.counts > 0,
             self.known_stds / np.sqrt(self.counts),
-            1e6  # Large std-dev for unpulled arms
+            1e6
         )
-
         return np.random.normal(self.means, stds)
 
     def update(self, arm, reward):
         n = self.counts[arm]
         old_mean = self.means[arm]
-        # Running mean
         new_mean = (old_mean * n + reward) / (n + 1)
         self.means[arm] = new_mean
         self.counts[arm] += 1
@@ -167,12 +197,11 @@ class NormalPosterior(PosteriorBase):
         return self.means
 
     def get_stds(self):
-        stds = np.where(
+        return np.where(
             self.counts > 0,
             self.known_stds / np.sqrt(self.counts),
             1e6
         )
-        return stds
 
     def reset(self, env_stds):
         self.known_stds = np.full((self.num_arms, self.num_objectives), env_stds, dtype=np.float64)
@@ -180,21 +209,10 @@ class NormalPosterior(PosteriorBase):
         self.means = np.zeros((self.num_arms, self.num_objectives), dtype=float)
 
     def log(self, file):
-        stds = np.where(
-            self.counts > 0,
-            self.known_stds / np.sqrt(self.counts),
-            1e6
-        )
-
-        # Aggregate per arm by averaging over objectives
-        arm_indices = np.arange(self.num_arms)
-        means_lists = [[self.means[i, j] for j in range(self.num_objectives)] for i in range(self.num_arms)]
-        stds_lists = [[stds[i, j] for j in range(self.num_objectives)] for i in range(self.num_arms)]
-
+        stds = self.get_stds()
         df = pd.DataFrame({
-            "arm": arm_indices,
-            "means": means_lists,
-            "stds": stds_lists,
+            "arm": np.arange(self.num_arms),
+            "means": self.means.tolist(),
+            "stds": stds.tolist(),
         })
-
         df.to_parquet(file, index=False)
