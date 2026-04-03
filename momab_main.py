@@ -2,15 +2,15 @@ import argparse
 import csv
 import os
 
-import numpy as np
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
-from bandits.ege_kone import EGE_SH, EGE_SR
+from bandits.Posteriors import TPosterior, NormalPosterior
 from bandits.TTPFTS import TTPFTSBandit
 from bandits.UCB import PUCB1Bandit
 from bandits.Uniform import UniformBandit
-from bandits.Posteriors import NormalIGPosterior, TPosterior, NormalPosterior
+from bandits.ege_kone import EGE_SH, EGE_SR
+from environments.CovBoost import CovBoost
 from environments.EgeExp1 import EgeExp1
 from environments.EgeExp2 import EgeExp2
 from environments.EgeExp3 import EgeExp3
@@ -20,7 +20,6 @@ from environments.EgeExp6 import EgeExp6
 from environments.EgeExp7 import EgeExp7
 from environments.EgeExp8 import EgeExp8
 from environments.N50VS import N50VS
-from environments.CovBoost import CovBoost
 
 CSV_HEADER = ["algorithm", "experiment", "timestep", "bernoulli", "jaccard", "misidentification"]
 
@@ -129,7 +128,7 @@ def _run_single_anytime_experiment(experiment_id, environment, algorithm_name, b
 
 
 def run_anytime_experiment(num_runs, max_budget, environment, algorithms, results_file=None,
-                           write=True, step=1, n_jobs=1):
+                           write=True, step=1):
     alg_objs = {}
     for alg in algorithms:
         if alg == "Uniform":
@@ -224,4 +223,4 @@ if __name__ == "__main__":
         if anytime_algs:
             run_anytime_experiment(args.num_runs, max_budget, environment, anytime_algs,
                                    results_file=results_file, write=not args.no_write,
-                                   step=args.step, n_jobs=args.n_jobs)
+                                   step=args.step)

@@ -129,12 +129,13 @@ class TPosterior(PosteriorBase):
         # Guard unpulled arms: return large-variance samples
         pulled = self.n > 0
         nu_df = np.where(pulled, self.n + (2 * self.alpha) - 1, 1.0)
-        # Clamp degrees of freedom to avoid invalid t-distribution
         nu_df = np.maximum(nu_df, 0.01)
         z = t.rvs(df=nu_df)
+        # Use safe denominators to avoid division-by-zero warnings
+        safe_n = np.where(pulled, self.n, 1.0)
         scale = np.where(
             pulled,
-            self.S / np.sqrt(self.n * nu_df),
+            self.S / np.sqrt(safe_n * nu_df),
             1e6
         )
         return self.mu + scale * z
@@ -158,7 +159,8 @@ class TPosterior(PosteriorBase):
         pulled = self.n > 0
         nu_df = np.where(pulled, self.n + (2 * self.alpha) - 1, 1.0)
         nu_df = np.maximum(nu_df, 0.01)
-        stds = np.where(pulled, np.sqrt(self.S / (self.n * nu_df)), 1e6)
+        safe_n = np.where(pulled, self.n, 1.0)
+        stds = np.where(pulled, np.sqrt(self.S / (safe_n * nu_df)), 1e6)
 
         df = pd.DataFrame({
             "arm": np.arange(self.num_arms),

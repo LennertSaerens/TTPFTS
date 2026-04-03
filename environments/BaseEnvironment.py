@@ -42,7 +42,8 @@ class BaseEnvironment(ABC):
 
     def pull_arm(self, arm: int) -> np.ndarray:
         """Pulls the specified arm and returns a noisy reward vector."""
-        return np.random.normal(self.arms[arm], self.stds)
+        stds = self.stds[arm] if self.stds.ndim > 1 else self.stds
+        return np.random.normal(self.arms[arm], stds)
 
     def get_top_arms(self) -> np.ndarray:
         """Returns the arms considered Pareto optimal."""
@@ -63,7 +64,10 @@ class BaseEnvironment(ABC):
         :return: A 2D array of rewards of shape (len(arms), num_objectives).
         """
         arms = np.asarray(arms)
-        return np.random.normal(self.arms[arms], self.stds)
+        means = self.arms[arms]
+        # Handle per-arm stds (num_arms, num_objectives) vs global stds (num_objectives,)
+        stds = self.stds[arms] if self.stds.ndim > 1 else self.stds
+        return np.random.normal(means, stds)
 
     def bernoulli_metric(self, recommendation: np.ndarray) -> int:
         """Returns 1 if the recommendation exactly matches the Pareto set, else 0."""
