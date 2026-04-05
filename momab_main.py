@@ -6,7 +6,7 @@ from joblib import Parallel, delayed
 from tqdm import tqdm
 
 from bandits.Posteriors import TPosterior, NormalPosterior
-from bandits.TTPFTS import TTPFTSBandit, CPFTSBandit
+from bandits.TTPFTS import TTPFTSBandit, CPFTSBandit, RPFTSBandit
 from bandits.UCB import PUCB1Bandit
 from bandits.Uniform import UniformBandit
 from bandits.ege_kone import EGE_SH, EGE_SR
@@ -149,6 +149,13 @@ def run_anytime_experiment(num_runs, max_budget, environment, algorithms, result
         elif alg == "CPFTS_GKV":
             alg_objs[alg] = CPFTSBandit(
                 NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds))
+        elif alg == "RPFTS_UNI":
+            alg_objs[alg] = RPFTSBandit(
+                TPosterior(environment.num_arms, environment.num_objectives, alpha=-1/2),
+                num_warmup_pulls=4)
+        elif alg == "RPFTS_GKV":
+            alg_objs[alg] = RPFTSBandit(
+                NormalPosterior(environment.num_arms, environment.num_objectives, environment.stds))
 
     completed = _completed_experiments(results_file) if results_file and write else set()
 
@@ -227,7 +234,8 @@ if __name__ == "__main__":
                                results_file=results_file, write=not args.no_write,
                                step=args.step, n_jobs=args.n_jobs)
         anytime_algs = [alg for alg in algorithms if alg in [
-            "Uniform", "PUCB1", "TTPFTS_GKV", "TTPFTS_UNI", "CPFTS_UNI", "CPFTS_GKV"
+            "Uniform", "PUCB1", "TTPFTS_GKV", "TTPFTS_UNI", "CPFTS_UNI", "CPFTS_GKV",
+            "RPFTS_UNI", "RPFTS_GKV"
         ]]
         if anytime_algs:
             run_anytime_experiment(args.num_runs, max_budget, environment, anytime_algs,

@@ -118,3 +118,47 @@ class CPFTSBandit(BaseThompsonParetoBandit):
             if np.random.random() < self.rho:
                 return random.choice(front)
         return random.choice(fronts[-1])
+
+
+class RPFTSBandit(BaseThompsonParetoBandit):
+    """
+    Resampling Pareto Front Thompson Sampling (RPFTS) Bandit.
+
+    With probability rho, selects an arm from the first Pareto front of
+    the posterior samples. Otherwise, resamples all arms until at least
+    one produces a sample that is non-dominated by the original first
+    front, then selects one of those challenging arms.
+    """
+
+    def __init__(self, posterior, rho: float = 0.5, num_warmup_pulls: int = 2,
+                 max_resamples: int = 100_000):
+        super().__init__(posterior, num_warmup_pulls)
+        self.rho = rho
+        self.max_resamples = max_resamples
+
+    def _select_arm(self, samples: np.ndarray) -> int:
+        pareto_mask = paretoset(samples, sense=self._pareto_sense)
+        pareto_indices = np.where(pareto_mask)[0]
+
+        # With probability rho, pick from the first front
+        if np.random.random() < self.rho:
+            return random.choice(pareto_indices)
+
+        # If all arms are on the first front, pick at random
+        if len(pareto_indices) == len(samples):
+            return random.choice(pareto_indices)
+
+        front0_samples = samples[pareto_indices]
+
+        # Resample all arms until a challenger is non-dominated by front 0
+        for _ in range(self.max_resamples):
+            new_samples = self.posterior.sample()
+            combined = np.vstack([front0_samples, new_samples])
+            combined_pareto = paretoset(combined, sense=self._pareto_sense, distinct=False)
+            # Challenger indices are those in the new_samples portion of combined
+            challenger_mask = combined_pareto[len(front0_samples):]
+            if np.any(challenger_mask):
+                return random.choice(np.where(challenger_mask)[0])
+
+        # Fallback after max_resamples: pick any arm at random
+        return random.randint(0, len(samples) - 1)
