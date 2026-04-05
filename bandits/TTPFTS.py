@@ -1,56 +1,120 @@
 import random
+from abc import abstractmethod
 
 import numpy as np
 from paretoset import paretoset
 from bandits.InterfaceMOMABPFI import BaseMOMABAlgorithm
 
 
-class TTPFTSBandit(BaseMOMABAlgorithm):
+def _non_dominated_sort(samples: np.ndarray, sense: list) -> list[np.ndarray]:
     """
-    Top-Two Pareto Fronts Thompson Sampling Bandit
+    Perform non-dominated sorting on samples.
+    Returns a list of fronts, where each front is an array of global arm indices.
+    Front 0 is the first (best) Pareto front, front 1 is the second, etc.
     """
-    def __init__(self, posterior, p=0.5, num_warmup_pulls=2):
+    fronts = []
+    remaining_indices = np.arange(len(samples))
+
+    while len(remaining_indices) > 0:
+        remaining_samples = samples[remaining_indices]
+        pareto_mask = paretoset(remaining_samples, sense=sense, distinct=False)
+        front = remaining_indices[pareto_mask]
+        fronts.append(front)
+        remaining_indices = remaining_indices[~pareto_mask]
+
+    return fronts
+
+
+class BaseThompsonParetoBandit(BaseMOMABAlgorithm):
+    """
+    Base class for Thompson-sampling-based Pareto set identification bandits.
+
+    Provides shared warm-up logic, posterior management, top-arm identification,
+    learning, and reset. Subclasses implement only `_select_arm` to define
+    how an arm is chosen from the posterior samples after warm-up.
+    """
+
+    def __init__(self, posterior, num_warmup_pulls: int = 2):
         super().__init__(posterior.num_arms, posterior.num_objectives)
         self.posterior = posterior
-        self.p = p
         self.num_warmup_pulls = num_warmup_pulls
         self.current_warmup_arm = 0
         self.warmup_pulls = np.zeros(posterior.num_arms, dtype=int)
         self._pareto_sense = ["max"] * posterior.num_objectives
 
-    def choose_arm(self):
-        # Warm-up phase
+    def choose_arm(self) -> int:
+        # Warm-up: round-robin each arm num_warmup_pulls times
         if np.any(self.warmup_pulls < self.num_warmup_pulls):
             arm = self.current_warmup_arm
             self.warmup_pulls[arm] += 1
             self.current_warmup_arm = (self.current_warmup_arm + 1) % self.posterior.num_arms
             return arm
-        # Main TTPFTS sampling strategy
-        samples = self.posterior.sample()
-        pareto_mask = paretoset(samples, sense=self._pareto_sense)
-        pareto_indices = np.where(pareto_mask)[0]
-        if np.random.random() < self.p:
-            return random.choice(pareto_indices)
-        else:
-            non_pareto_indices = np.where(~pareto_mask)[0]
-            if len(non_pareto_indices) == 0:
-                return random.choice(pareto_indices)
-            non_pareto_samples = samples[non_pareto_indices]
-            non_pareto_pareto_mask = paretoset(non_pareto_samples, self._pareto_sense)
-            non_dominated_indices = np.where(non_pareto_pareto_mask)[0]
-            non_dominated_indices = non_pareto_indices[non_dominated_indices]
-            return random.choice(non_dominated_indices)
 
-    def get_top_arms(self):
+        samples = self.posterior.sample()
+        return self._select_arm(samples)
+
+    @abstractmethod
+    def _select_arm(self, samples: np.ndarray) -> int:
+        """Choose an arm given posterior samples (num_arms × num_objectives)."""
+
+    def get_top_arms(self) -> np.ndarray:
         means = self.posterior.get_mean()
         pareto_mask = paretoset(means, sense=self._pareto_sense)
-        pareto_indices = np.where(pareto_mask)[0]
-        return pareto_indices
+        return np.where(pareto_mask)[0]
 
-    def learn(self, arm, reward):
+    def learn(self, arm: int, reward: np.ndarray) -> None:
         self.posterior.update(arm, reward)
 
-    def reset(self, env_stds):
+    def reset(self, env_stds) -> None:
         self.posterior.reset(env_stds)
         self.warmup_pulls = np.zeros(self.posterior.num_arms, dtype=int)
         self.current_warmup_arm = 0
+
+
+class TTPFTSBandit(BaseThompsonParetoBandit):
+    """
+    Top-Two Pareto Fronts Thompson Sampling Bandit.
+
+    Selects an arm from the first Pareto front with probability p,
+    otherwise from the second Pareto front of the posterior samples.
+    """
+
+    def __init__(self, posterior, p: float = 0.5, num_warmup_pulls: int = 2):
+        super().__init__(posterior, num_warmup_pulls)
+        self.p = p
+
+    def _select_arm(self, samples: np.ndarray) -> int:
+        pareto_mask = paretoset(samples, sense=self._pareto_sense)
+        pareto_indices = np.where(pareto_mask)[0]
+
+        if np.random.random() < self.p:
+            return random.choice(pareto_indices)
+
+        non_pareto_indices = np.where(~pareto_mask)[0]
+        if len(non_pareto_indices) == 0:
+            return random.choice(pareto_indices)
+
+        non_pareto_pareto_mask = paretoset(samples[non_pareto_indices], self._pareto_sense)
+        return random.choice(non_pareto_indices[np.where(non_pareto_pareto_mask)[0]])
+
+
+class CPFTSBandit(BaseThompsonParetoBandit):
+    """
+    Cascading Pareto Front Thompson Sampling (CPFTS) Bandit.
+
+    Performs non-dominated sorting on posterior samples and selects an arm
+    via a geometric cascade: front k is chosen with probability
+    rho * (1-rho)^(k-1). The last front is the unconditional fallback.
+    """
+
+    def __init__(self, posterior, rho: float = 0.5, num_warmup_pulls: int = 2):
+        super().__init__(posterior, num_warmup_pulls)
+        self.rho = rho
+
+    def _select_arm(self, samples: np.ndarray) -> int:
+        fronts = _non_dominated_sort(samples, self._pareto_sense)
+
+        for front in fronts[:-1]:
+            if np.random.random() < self.rho:
+                return random.choice(front)
+        return random.choice(fronts[-1])
