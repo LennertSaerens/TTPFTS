@@ -24,8 +24,8 @@ def plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window=1,
         raise RuntimeError(f"Metric type {metric} is not supported")
     col = metric_to_col[metric]
 
-    result_df = pd.read_csv(file, header=None)
-    algorithm_names = result_df[0].unique()
+    result_df = pd.read_csv(file, header=0)
+    algorithm_names = result_df.iloc[:, 0].unique()
     num_algorithms = len(algorithm_names)
     pfi_metrics = result_df.values[:, col].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
     avg_pfi_metrics = np.mean(pfi_metrics, axis=1)
@@ -93,8 +93,8 @@ def plot_pfi_metric_ax(
         ylabel=None,
         title=None,
 ):
-    df = pd.read_csv(file, header=None, names=["algorithm", "e", "t", "Bernoulli", "Jaccard", "Misclassification"],
-                     low_memory=False)
+    df = pd.read_csv(file, header=0, low_memory=False)
+    df.columns = ["algorithm", "e", "t", "Bernoulli", "Jaccard", "Misclassification"]
     algorithms = df["algorithm"].unique()
 
     for i, algorithm in enumerate(algorithms):
@@ -328,57 +328,150 @@ def plot_uncertainty_all_envs(
         timesteps,
         set_title=True,
         save_png=False,
-        save_file=None
+        save_file=None,
+        ylabel="Uncertainty (Bhattacharyya Avg)",
+        title="Uncertainty Across Environments",
+        ax=None,
 ):
-    # Single figure and axes
-    fig, ax = plt.subplots(figsize=(8, 5))
+    """Plot UQ measure evolution over time for multiple environments.
+
+    If *ax* is provided the plot is drawn on that axes (useful for subplots),
+    otherwise a new figure is created.
+    """
+    standalone = ax is None
+    if standalone:
+        fig, ax = plt.subplots(figsize=(8, 5))
 
     handles = []
     labels = []
 
     for env, uncertainties in env_uncertainties.items():
-        # uncertainties: shape (n_runs, n_timesteps)
         mean_uncertainties = np.mean(uncertainties, axis=0)
         std_uncertainties = np.std(uncertainties, axis=0)
 
-        # extract number after 'EgeExp'
         num_label = env.replace("EgeExp", "")
 
         line, = ax.plot(timesteps, mean_uncertainties, label=env)
         ci = 1.96 * std_uncertainties / np.sqrt(uncertainties.shape[0])
-        ci_lower = mean_uncertainties - ci
-        ci_upper = mean_uncertainties + ci
-
-        # Use same color as line but with alpha for CI
         ax.fill_between(
             timesteps,
-            ci_lower,
-            ci_upper,
+            mean_uncertainties - ci,
+            mean_uncertainties + ci,
             alpha=0.3,
-            color=line.get_color()
+            color=line.get_color(),
         )
 
         handles.append(line)
         labels.append(num_label)
 
     if set_title and not save_png:
-        ax.set_title("Uncertainty Across Environments", fontsize=14)
-    ax.set_xlim(0, 5000)
+        ax.set_title(title, fontsize=14)
+    ax.set_xlim(0, max(timesteps))
     ax.set_xlabel("Arm Pulls")
-    ax.set_ylabel("Uncertainty (Bhattacharyya Avg)")
+    ax.set_ylabel(ylabel)
     ax.grid(True)
 
-    # Place legend outside on the right
-    # bbox_to_anchor (x, y): x>1 pushes it outside to the right
-    ax.legend(handles, labels, title="EgeExp", loc="center left", bbox_to_anchor=(1.02, 0.5), borderaxespad=0.)
+    ax.legend(handles, labels, title="EgeExp", loc="center left",
+              bbox_to_anchor=(1.02, 0.5), borderaxespad=0.)
 
-    # Adjust layout to make room for legend
-    plt.tight_layout()
-    plt.subplots_adjust(right=0.75)
+    if standalone:
+        plt.tight_layout()
+        plt.subplots_adjust(right=0.75)
+        if save_png and save_file is not None:
+            plt.savefig(save_file, format="png", dpi=500, bbox_inches="tight")
+        plt.show()
+
+    return handles, labels
+
+
+def plot_uq_comparison(
+        env_measures,
+        timesteps,
+        measure_names=("Bhattacharyya Coeff.", "Symmetric KL-Divergence", "Posterior Entropy"),
+        save_png=False,
+        save_file=None,
+):
+    """
+    Side-by-side time-evolution plots for multiple UQ measures.
+
+    Parameters
+    ----------
+    env_measures : dict[str, dict[str, np.ndarray]]
+        Outer key = measure name, inner key = environment name,
+        value = array of shape (n_runs, n_timesteps).
+    timesteps : array-like
+    measure_names : sequence of str
+    """
+    n_measures = len(measure_names)
+    fig, axes = plt.subplots(1, n_measures, figsize=(6 * n_measures, 5), squeeze=False)
+    axes = axes[0]
+
+    for col, name in enumerate(measure_names):
+        ax = axes[col]
+        for env, vals in env_measures[name].items():
+            mean_v = np.mean(vals, axis=0)
+            std_v = np.std(vals, axis=0)
+            num_label = env.replace("EgeExp", "")
+            line, = ax.plot(timesteps, mean_v, label=num_label)
+            ci = 1.96 * std_v / np.sqrt(vals.shape[0])
+            ax.fill_between(timesteps, mean_v - ci, mean_v + ci, alpha=0.3, color=line.get_color())
+        ax.set_title(name, fontsize=13)
+        ax.set_xlabel("Arm Pulls")
+        ax.set_xlim(0, max(timesteps))
+        ax.grid(True)
+        if col == 0:
+            ax.set_ylabel("Measure Value")
+
+    # Shared legend from last axes
+    handles, labels = axes[-1].get_legend_handles_labels()
+    fig.legend(handles, labels, title="EgeExp", loc="upper center",
+               bbox_to_anchor=(0.5, 1.02), ncol=min(8, len(labels)), fontsize=10, frameon=True)
+    plt.tight_layout(rect=[0, 0, 1, 0.93])
 
     if save_png and save_file is not None:
         plt.savefig(save_file, format="png", dpi=500, bbox_inches="tight")
+    plt.show()
 
+
+def plot_uq_correlation_boxplots(
+        all_envs_corr_dfs,
+        measure_names=("Bhattacharyya Coeff.", "Symmetric KL-Divergence", "Posterior Entropy"),
+        environments=None,
+        save_png=False,
+        save_file=None,
+):
+    """
+    Side-by-side boxplots showing per-experiment correlation between each
+    UQ measure and the Jaccard metric, grouped by environment.
+
+    Parameters
+    ----------
+    all_envs_corr_dfs : dict[str, pd.DataFrame]
+        Key = measure name, value = DataFrame with columns 'jaccard', 'environment'.
+    """
+    import seaborn as sns
+
+    n_measures = len(measure_names)
+    fig, axes = plt.subplots(1, n_measures, figsize=(6 * n_measures, 5), squeeze=False)
+    axes = axes[0]
+
+    for col, name in enumerate(measure_names):
+        ax = axes[col]
+        df = all_envs_corr_dfs[name]
+        sns.boxplot(
+            data=df, x="jaccard", y="environment", hue="environment",
+            orient="h", fill=True, ax=ax,
+        )
+        ax.set_title(name, fontsize=13)
+        ax.set_xlabel("Correlation with Jaccard")
+        if col > 0:
+            ax.set_ylabel("")
+        else:
+            ax.set_ylabel("Environment")
+
+    plt.tight_layout()
+    if save_png and save_file is not None:
+        plt.savefig(save_file, format="png", dpi=500, bbox_inches="tight")
     plt.show()
 
 
