@@ -203,7 +203,7 @@ if __name__ == "__main__":
     parser.add_argument('--n_jobs', type=int, default=1,
                         help='Number of parallel jobs for EGE experiments (default: 1)')
     parser.add_argument('--dist', type=str, default='gaussian',
-                        choices=['gaussian', 'binomial', 'exponential'],
+                        choices=['gaussian', 'bernoulli', 'exponential'],
                         help='Reward distribution family (default: gaussian)')
     args = parser.parse_args()
 

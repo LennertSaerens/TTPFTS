@@ -1,5 +1,5 @@
 from environments.distributions import (
-    RewardDistribution, GaussianReward, BinomialReward, ExponentialReward,
+    RewardDistribution, GaussianReward, BernoulliReward, ExponentialReward,
     make_distributions,
 )
 from environments.BaseEnvironment import BaseEnvironment

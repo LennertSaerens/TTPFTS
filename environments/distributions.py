@@ -57,20 +57,19 @@ class GaussianReward(RewardDistribution):
         return len(self._mean)
 
 
-class BinomialReward(RewardDistribution):
+class BernoulliReward(RewardDistribution):
     """
-    Binomial reward distribution per arm.
+    Bernoulli reward distribution per arm.
 
-    Each objective is sampled independently as Binomial(n, p) / n so that
-    the reward is normalised to [0, 1] and the mean equals p.
+    Each objective is sampled independently as Bernoulli(p), yielding
+    0 or 1 with E[X] = p.  Requires p in [0, 1].
     """
 
-    def __init__(self, n: np.ndarray, p: np.ndarray) -> None:
-        self._n = np.asarray(n, dtype=np.int64)
+    def __init__(self, p: np.ndarray) -> None:
         self._p = np.asarray(p, dtype=np.float64)
 
     def sample(self) -> np.ndarray:
-        return np.random.binomial(self._n, self._p).astype(np.float64) / self._n
+        return (np.random.random(self._p.shape) < self._p).astype(np.float64)
 
     @property
     def mean(self) -> np.ndarray:
@@ -78,7 +77,7 @@ class BinomialReward(RewardDistribution):
 
     @property
     def std(self) -> np.ndarray:
-        return np.sqrt(self._p * (1 - self._p) / self._n)
+        return np.sqrt(self._p * (1 - self._p))
 
     @property
     def num_objectives(self) -> int:
@@ -118,7 +117,7 @@ class ExponentialReward(RewardDistribution):
 
 DISTRIBUTION_REGISTRY = {
     "gaussian": GaussianReward,
-    "binomial": BinomialReward,
+    "bernoulli": BernoulliReward,
     "exponential": ExponentialReward,
 }
 
@@ -128,7 +127,6 @@ def make_distributions(
     dist: str = "gaussian",
     *,
     gaussian_std: float | np.ndarray = 0.25,
-    binomial_n: int = 10,
 ) -> list[RewardDistribution]:
     """
     Build a list of RewardDistribution objects from arm mean vectors.
@@ -138,21 +136,19 @@ def make_distributions(
     arm_means : (num_arms, num_objectives) array
     dist : distribution family name
     gaussian_std : scalar or (num_objectives,) array for Gaussian
-    binomial_n : number of trials per objective for Binomial
     """
     arm_means = np.asarray(arm_means, dtype=np.float64)
     std_arr = np.broadcast_to(np.asarray(gaussian_std, dtype=np.float64), arm_means.shape[1:])
 
     if dist == "gaussian":
         return [GaussianReward(m, std_arr) for m in arm_means]
-    elif dist == "binomial":
-        n_arr = np.full(arm_means.shape[1:], binomial_n, dtype=np.int64)
+    elif dist == "bernoulli":
         if np.any(arm_means < 0) or np.any(arm_means > 1):
             raise ValueError(
-                f"Binomial distribution requires arm means in [0, 1], "
+                f"Bernoulli distribution requires arm means in [0, 1], "
                 f"got range [{arm_means.min():.4f}, {arm_means.max():.4f}]."
             )
-        return [BinomialReward(n_arr, m) for m in arm_means]
+        return [BernoulliReward(m) for m in arm_means]
     elif dist == "exponential":
         if np.any(arm_means <= 0):
             raise ValueError(
