@@ -475,5 +475,68 @@ def plot_uq_correlation_boxplots(
     plt.show()
 
 
+def plot_uq_combined(
+        env_measures,
+        all_envs_corr_dfs,
+        timesteps,
+        measure_names=("Bhattacharyya Coeff.", "Symmetric KL-Divergence", "Posterior Entropy"),
+        figsize=(16, 8),
+        save_png=False,
+        save_file=None,
+):
+    """
+    Combined 2×3 figure: top row = time evolution, bottom row = correlation boxplots.
+    """
+    import seaborn as sns
+
+    n_measures = len(measure_names)
+    fig, axes = plt.subplots(2, n_measures, figsize=figsize,
+                             gridspec_kw={"height_ratios": [1, 1]})
+
+    # ── Top row: time evolution ──
+    for col, name in enumerate(measure_names):
+        ax = axes[0, col]
+        for env, vals in env_measures[name].items():
+            mean_v = np.mean(vals, axis=0)
+            std_v = np.std(vals, axis=0)
+            num_label = env.replace("EgeExp", "")
+            line, = ax.plot(timesteps, mean_v, label=num_label)
+            ci = 1.96 * std_v / np.sqrt(vals.shape[0])
+            ax.fill_between(timesteps, mean_v - ci, mean_v + ci,
+                            alpha=0.3, color=line.get_color())
+        ax.set_title(name, fontsize=13)
+        ax.set_xlim(0, max(timesteps))
+        ax.grid(True)
+        if col == 0:
+            ax.set_ylabel("Measure Value")
+        ax.set_xlabel("")  # suppress x-labels on top row
+
+    # ── Bottom row: correlation boxplots ──
+    for col, name in enumerate(measure_names):
+        ax = axes[1, col]
+        df = all_envs_corr_dfs[name]
+        sns.boxplot(
+            data=df, x="jaccard", y="environment", hue="environment",
+            orient="h", fill=True, ax=ax,
+        )
+        ax.set_xlabel("Correlation with Jaccard")
+        if col > 0:
+            ax.set_ylabel("")
+        else:
+            ax.set_ylabel("Environment")
+
+    # Shared legend from the top-right axes
+    handles, labels = axes[0, -1].get_legend_handles_labels()
+    fig.legend(handles, labels, title="EgeExp", loc="upper center",
+               bbox_to_anchor=(0.5, 1.01), ncol=len(labels),
+               fontsize=10, frameon=True)
+
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+    if save_png and save_file is not None:
+        plt.savefig(save_file, format="png", dpi=500, bbox_inches="tight")
+    plt.show()
+
+
 if __name__ == "__main__":
     plot_all_pfi_metrics("results/EGEvsTTPFTSvsPUCB1vsUniform_EgeExp1.csv", 100, 5001)
