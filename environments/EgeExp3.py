@@ -27,6 +27,7 @@ class EgeExp3(BaseEnvironment):
     For i = 1, ..., 200 we set mu_i = (cos(b_i), sin(b_i))
     """
 
-    def __init__(self):
+    def __init__(self, dist: str = "gaussian"):
+        self.dist = dist
         pareto_indices = np.arange(20)  # The first 20 arms are Pareto optimal
-        self._init_standard_2obj(generate_arms(), pareto_indices)
+        self._init_standard_2obj(generate_arms(), pareto_indices, dist=dist)

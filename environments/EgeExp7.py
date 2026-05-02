@@ -33,5 +33,6 @@ class EgeExp7(BaseEnvironment):
     For i = 16,...,22 we set mu_i = mu_(i-7) - (0,-0.05).
     """
 
-    def __init__(self):
-        self._init_standard_2obj(generate_arms())
+    def __init__(self, dist: str = "gaussian"):
+        self.dist = dist
+        self._init_standard_2obj(generate_arms(), dist=dist)

@@ -1,3 +1,7 @@
+from environments.distributions import (
+    RewardDistribution, GaussianReward, BinomialReward, ExponentialReward,
+    make_distributions,
+)
 from environments.BaseEnvironment import BaseEnvironment
 from environments.EgeExp1 import EgeExp1
 from environments.EgeExp2 import EgeExp2

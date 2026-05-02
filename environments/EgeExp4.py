@@ -1,5 +1,6 @@
 import numpy as np
 from environments.BaseEnvironment import BaseEnvironment
+from environments.distributions import make_distributions
 
 
 def generate_arms():
@@ -19,20 +20,23 @@ class EgeExp4(BaseEnvironment):
     We generate mu_1,...,mu_30 uniformly in [0.2, 0.45]^10 and mu_31,...,mu_50 uniformly in [0.55, 0.75]^10
     """
 
-    def __init__(self):
-        self.arms = generate_arms()
-        self.stds = np.array([0.25] * 10)
-        pareto_indices = BaseEnvironment._compute_pareto_indices(self.arms)
+    def __init__(self, dist: str = "gaussian"):
+        self.dist = dist
+        arm_means = generate_arms()
+        distributions = make_distributions(arm_means, dist=dist, gaussian_std=0.25)
+        pareto_indices = BaseEnvironment._compute_pareto_indices(arm_means)
         reference_point = np.array([1.0] * 10)
-        inverted_arms = 1.0 - self.arms
-        super().__init__(len(self.arms), 10, pareto_indices, inverted_arms, reference_point)
+        inverted_arms = 1.0 - arm_means
+        super().__init__(len(arm_means), 10, pareto_indices, inverted_arms, reference_point,
+                         distributions=distributions)
 
     def plot(self, save_png=False, save_file=None):
         """Cannot plot 10-dimensional arms."""
         pass
 
     def reset(self):
-        self.arms = generate_arms()
-        self.pareto_indices = BaseEnvironment._compute_pareto_indices(self.arms)
+        arm_means = generate_arms()
+        self.distributions = make_distributions(arm_means, dist=self.dist, gaussian_std=0.25)
+        self.pareto_indices = BaseEnvironment._compute_pareto_indices(arm_means)
         self._update_pareto_cache()
-        self.inverted_arms = 1.0 - self.arms
+        self.inverted_arms = 1.0 - arm_means

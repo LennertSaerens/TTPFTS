@@ -202,6 +202,9 @@ if __name__ == "__main__":
     parser.add_argument('--no_write', action='store_true')
     parser.add_argument('--n_jobs', type=int, default=1,
                         help='Number of parallel jobs for EGE experiments (default: 1)')
+    parser.add_argument('--dist', type=str, default='gaussian',
+                        choices=['gaussian', 'binomial', 'exponential'],
+                        help='Reward distribution family (default: gaussian)')
     args = parser.parse_args()
 
     algorithms = [a.strip() for a in args.algorithms.split(',')]
@@ -218,7 +221,11 @@ if __name__ == "__main__":
             print(f"Warning: Environment {env_name} unknown.")
             continue
         env_cls, default_budget = ENVIRONMENTS[env_name]
-        environment = env_cls()
+        try:
+            environment = env_cls(dist=args.dist)
+        except TypeError:
+            # N50VS doesn't accept dist parameter
+            environment = env_cls()
         budget_list = budgets if budgets else [default_budget] * len(environments)
         max_budget = budget_list[i]
         results_file = os.path.join(

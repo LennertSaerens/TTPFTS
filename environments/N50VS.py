@@ -1,5 +1,6 @@
 import numpy as np
 from environments.BaseEnvironment import BaseEnvironment
+from environments.distributions import GaussianReward
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 
@@ -13,29 +14,29 @@ class N50VS(BaseEnvironment):
             (0.5, 3.5), (3.5, 0.5), (2, 2.5), (2.5, 2), (0.5, 1.5), (1.5, 0.5), (1.5, 2), (2, 1.5),
             (0.5, 2.5), (2.5, 0.5), (1, 1.5), (1.5, 1), (1, 2.5), (2.5, 1),
         ] + 10 * [(0.25, 0.25)])
-        self.arms = np.vstack([self.optimal_arms, self.suboptimal_arms])
-        num_arms = len(self.arms)
+        all_arms = np.vstack([self.optimal_arms, self.suboptimal_arms])
+        num_arms = len(all_arms)
         pareto_indices = np.arange(len(self.optimal_arms))
         reference_point = np.array([6, 6])
-        inverted_arms = 5.0 - self.arms
-        super().__init__(num_arms, 2, pareto_indices, inverted_arms, reference_point)
+        inverted_arms = 5.0 - all_arms
         self.std_low = std_low
         self.std_high = std_high
-        self.stds = np.random.uniform(std_low, std_high, size=(self.num_arms, 2))
-
-    def pull_arm(self, arm):
-        """Pull the specified arm and return the reward with per-arm noise."""
-        return np.random.normal(self.arms[arm], self.stds[arm])
+        per_arm_stds = np.random.uniform(std_low, std_high, size=(num_arms, 2))
+        distributions = [GaussianReward(all_arms[i], per_arm_stds[i]) for i in range(num_arms)]
+        super().__init__(num_arms, 2, pareto_indices, inverted_arms, reference_point,
+                         distributions=distributions)
 
     def plot(self, save_png=False, save_file=None):
         """Plot the arms and the Pareto front."""
         plt.figure(figsize=(6, 4))
+        arm_means = self.arms
+        arm_stds = self.stds
 
-        plt.scatter(*zip(*self.arms), label='Suboptimal Arms')
-        plt.scatter(*zip(*[self.arms[i] for i in self.pareto_indices]), color='green', label='Optimal Arms')
+        plt.scatter(*zip(*arm_means), label='Suboptimal Arms')
+        plt.scatter(*zip(*[arm_means[i] for i in self.pareto_indices]), color='green', label='Optimal Arms')
 
         for i in self.pareto_indices:
-            ellipse = Ellipse(xy=self.arms[i], width=2*self.stds[i][0], height=2*self.stds[i][1],
+            ellipse = Ellipse(xy=arm_means[i], width=2*arm_stds[i][0], height=2*arm_stds[i][1],
                               edgecolor='green', facecolor='none', alpha=0.5)
             plt.gca().add_patch(ellipse)
 
@@ -48,5 +49,6 @@ class N50VS(BaseEnvironment):
         plt.show()
 
     def reset(self):
-        self.arms = np.vstack([self.optimal_arms, self.suboptimal_arms])
-        self.stds = np.random.uniform(self.std_low, self.std_high, size=(self.num_arms, 2))
+        all_arms = np.vstack([self.optimal_arms, self.suboptimal_arms])
+        per_arm_stds = np.random.uniform(self.std_low, self.std_high, size=(self.num_arms, 2))
+        self.distributions = [GaussianReward(all_arms[i], per_arm_stds[i]) for i in range(self.num_arms)]

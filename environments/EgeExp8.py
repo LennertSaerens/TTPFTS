@@ -21,5 +21,6 @@ class EgeExp8(BaseEnvironment):
     For i = 1,...,5 we set mu_i = [0.75 - 0.25^i]^2
     """
 
-    def __init__(self):
-        self._init_standard_2obj(generate_arms())
+    def __init__(self, dist: str = "gaussian"):
+        self.dist = dist
+        self._init_standard_2obj(generate_arms(), dist=dist)

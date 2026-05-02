@@ -22,6 +22,7 @@ class EgeExp2(BaseEnvironment):
     for i = 1,...,4 we set mu_(2i+1) = (0.45 + 0.2^i, 0.35 − 0.2^i), mu_(2i+2) = (0.10 + 0.2^i, 0.70 − 0.2^i)
     """
 
-    def __init__(self):
+    def __init__(self, dist: str = "gaussian"):
+        self.dist = dist
         pareto_indices = np.arange(2)  # The first 2 arms are Pareto optimal
-        self._init_standard_2obj(generate_arms(), pareto_indices)
+        self._init_standard_2obj(generate_arms(), pareto_indices, dist=dist)

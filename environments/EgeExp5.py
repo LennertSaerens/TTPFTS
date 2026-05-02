@@ -19,8 +19,9 @@ class EgeExp5(BaseEnvironment):
     We choose mu_1, ..., mu_10 uniformly in [0.2, 0.4]^2 and mu_11, ..., mu_20 uniformly in [0.5, 0.7]^2.
     """
 
-    def __init__(self):
-        self._init_standard_2obj(generate_arms())
+    def __init__(self, dist: str = "gaussian"):
+        self.dist = dist
+        self._init_standard_2obj(generate_arms(), dist=dist)
 
     def reset(self):
-        self._init_standard_2obj(generate_arms())
+        self._init_standard_2obj(generate_arms(), dist=self.dist)

@@ -1,0 +1,165 @@
+"""
+Reward distribution abstractions for multi-objective bandit environments.
+
+Each concrete subclass encapsulates one arm's reward-generation process
+across all objectives, exposing a common interface so that environments
+are agnostic to the underlying distribution family.
+"""
+
+from abc import ABC, abstractmethod
+
+import numpy as np
+
+
+class RewardDistribution(ABC):
+    """Per-arm multi-objective reward distribution."""
+
+    @abstractmethod
+    def sample(self) -> np.ndarray:
+        """Draw one reward vector of shape (num_objectives,)."""
+
+    @property
+    @abstractmethod
+    def mean(self) -> np.ndarray:
+        """Expected reward vector."""
+
+    @property
+    @abstractmethod
+    def std(self) -> np.ndarray:
+        """Standard deviation of reward vector."""
+
+    @property
+    @abstractmethod
+    def num_objectives(self) -> int:
+        ...
+
+
+class GaussianReward(RewardDistribution):
+    """Gaussian (Normal) reward distribution per arm."""
+
+    def __init__(self, mean: np.ndarray, std: np.ndarray) -> None:
+        self._mean = np.asarray(mean, dtype=np.float64)
+        self._std = np.asarray(std, dtype=np.float64)
+
+    def sample(self) -> np.ndarray:
+        return np.random.normal(self._mean, self._std)
+
+    @property
+    def mean(self) -> np.ndarray:
+        return self._mean
+
+    @property
+    def std(self) -> np.ndarray:
+        return self._std
+
+    @property
+    def num_objectives(self) -> int:
+        return len(self._mean)
+
+
+class BinomialReward(RewardDistribution):
+    """
+    Binomial reward distribution per arm.
+
+    Each objective is sampled independently as Binomial(n, p) / n so that
+    the reward is normalised to [0, 1] and the mean equals p.
+    """
+
+    def __init__(self, n: np.ndarray, p: np.ndarray) -> None:
+        self._n = np.asarray(n, dtype=np.int64)
+        self._p = np.asarray(p, dtype=np.float64)
+
+    def sample(self) -> np.ndarray:
+        return np.random.binomial(self._n, self._p).astype(np.float64) / self._n
+
+    @property
+    def mean(self) -> np.ndarray:
+        return self._p.copy()
+
+    @property
+    def std(self) -> np.ndarray:
+        return np.sqrt(self._p * (1 - self._p) / self._n)
+
+    @property
+    def num_objectives(self) -> int:
+        return len(self._p)
+
+
+class ExponentialReward(RewardDistribution):
+    """
+    Exponential reward distribution per arm.
+
+    Each objective is sampled independently as Exponential(scale) where
+    scale = mean.  The standard deviation equals the mean for this family.
+    """
+
+    def __init__(self, scale: np.ndarray) -> None:
+        self._scale = np.asarray(scale, dtype=np.float64)
+
+    def sample(self) -> np.ndarray:
+        return np.random.exponential(self._scale)
+
+    @property
+    def mean(self) -> np.ndarray:
+        return self._scale.copy()
+
+    @property
+    def std(self) -> np.ndarray:
+        return self._scale.copy()
+
+    @property
+    def num_objectives(self) -> int:
+        return len(self._scale)
+
+
+# ---------------------------------------------------------------------------
+# Factory helper
+# ---------------------------------------------------------------------------
+
+DISTRIBUTION_REGISTRY = {
+    "gaussian": GaussianReward,
+    "binomial": BinomialReward,
+    "exponential": ExponentialReward,
+}
+
+
+def make_distributions(
+    arm_means: np.ndarray,
+    dist: str = "gaussian",
+    *,
+    gaussian_std: float | np.ndarray = 0.25,
+    binomial_n: int = 10,
+) -> list[RewardDistribution]:
+    """
+    Build a list of RewardDistribution objects from arm mean vectors.
+
+    Parameters
+    ----------
+    arm_means : (num_arms, num_objectives) array
+    dist : distribution family name
+    gaussian_std : scalar or (num_objectives,) array for Gaussian
+    binomial_n : number of trials per objective for Binomial
+    """
+    arm_means = np.asarray(arm_means, dtype=np.float64)
+    std_arr = np.broadcast_to(np.asarray(gaussian_std, dtype=np.float64), arm_means.shape[1:])
+
+    if dist == "gaussian":
+        return [GaussianReward(m, std_arr) for m in arm_means]
+    elif dist == "binomial":
+        n_arr = np.full(arm_means.shape[1:], binomial_n, dtype=np.int64)
+        if np.any(arm_means < 0) or np.any(arm_means > 1):
+            raise ValueError(
+                f"Binomial distribution requires arm means in [0, 1], "
+                f"got range [{arm_means.min():.4f}, {arm_means.max():.4f}]."
+            )
+        return [BinomialReward(n_arr, m) for m in arm_means]
+    elif dist == "exponential":
+        if np.any(arm_means <= 0):
+            raise ValueError(
+                f"Exponential distribution requires arm means > 0, "
+                f"got min={arm_means.min():.4f}."
+            )
+        return [ExponentialReward(m) for m in arm_means]
+    else:
+        raise ValueError(f"Unknown distribution: {dist!r}. "
+                         f"Available: {list(DISTRIBUTION_REGISTRY)}")

@@ -25,10 +25,11 @@ class EgeExp1(BaseEnvironment):
     mu_11, ..., mu_60 are chosen from {(x, y) \in [0.1, 0.8]^2 | xy <= 0.2}.
     """
 
-    def __init__(self):
+    def __init__(self, dist: str = "gaussian"):
+        self.dist = dist
         pareto_indices = np.arange(10)  # The first 10 arms are Pareto optimal
-        self._init_standard_2obj(generate_arms(), pareto_indices)
+        self._init_standard_2obj(generate_arms(), pareto_indices, dist=dist)
 
     def reset(self) -> None:
-        self.arms = generate_arms()
-        self.inverted_arms = 1.0 - self.arms
+        pareto_indices = np.arange(10)
+        self._init_standard_2obj(generate_arms(), pareto_indices, dist=self.dist)

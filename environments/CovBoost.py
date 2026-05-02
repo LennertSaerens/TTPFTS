@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from environments.BaseEnvironment import BaseEnvironment
+from environments.distributions import make_distributions
 
 
 def generate_arms():
@@ -39,13 +40,16 @@ class CovBoost(BaseEnvironment):
     Bandit setting based on the CovBoost dataset.
     """
 
-    def __init__(self):
-        self.arms = generate_arms()
-        self.stds = np.array([0.7, 0.83, 1.54])
-        pareto_indices = BaseEnvironment._compute_pareto_indices(self.arms)
+    def __init__(self, dist: str = "gaussian"):
+        self.dist = dist
+        arm_means = generate_arms()
+        distributions = make_distributions(arm_means, dist=dist,
+                                           gaussian_std=np.array([0.7, 0.83, 1.54]))
+        pareto_indices = BaseEnvironment._compute_pareto_indices(arm_means)
         reference_point = np.array([1.0, 1.0, 1.0])
-        inverted_arms = 1.0 - self.arms
-        super().__init__(len(self.arms), 3, pareto_indices, inverted_arms, reference_point)
+        inverted_arms = 1.0 - arm_means
+        super().__init__(len(arm_means), 3, pareto_indices, inverted_arms, reference_point,
+                         distributions=distributions)
 
     def plot(self):
         """
