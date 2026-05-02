@@ -5,6 +5,7 @@ from bandits.Uniform import UniformBandit
 from bandits.Posteriors import (
     PosteriorBase,
     BetaBernoulliPosterior,
+    GammaExponentialPosterior,
     NormalIGPosterior,
     TPosterior,
     NormalPosterior,

@@ -63,6 +63,55 @@ class BetaBernoulliPosterior(PosteriorBase):
         df.to_parquet(file, index=False)
 
 
+class GammaExponentialPosterior(PosteriorBase):
+    """Gamma posterior for exponential rewards (conjugate pair).
+
+    Models each arm/objective rate as lambda ~ Gamma(alpha, beta).
+    The reward mean is 1/lambda. Thompson samples are drawn as
+    1 / Gamma(alpha, beta) so that higher means are preferred.
+    """
+
+    def __init__(self, num_arms, num_objectives, alpha0=1.0, beta0=1.0):
+        self.num_arms = num_arms
+        self.num_objectives = num_objectives
+        self._alpha0 = alpha0
+        self._beta0 = beta0
+        self.alpha = np.full((num_arms, num_objectives), alpha0)
+        self.beta = np.full((num_arms, num_objectives), beta0)
+
+    def sample(self):
+        # Sample rate lambda ~ Gamma(alpha, scale=1/beta), return mean = 1/lambda
+        lam = np.random.gamma(self.alpha, 1.0 / self.beta)
+        lam = np.maximum(lam, 1e-12)  # guard against zero
+        return 1.0 / lam
+
+    def update(self, arm, reward):
+        self.alpha[arm] += 1
+        self.beta[arm] += reward
+
+    def get_mean(self):
+        # Posterior mean of 1/lambda = beta / (alpha - 1) for alpha > 1
+        safe_alpha = np.where(self.alpha > 1, self.alpha, 2.0)
+        return np.where(self.alpha > 1, self.beta / (safe_alpha - 1), self.beta)
+
+    def reset(self, _):
+        self.alpha = np.full((self.num_arms, self.num_objectives), self._alpha0)
+        self.beta = np.full((self.num_arms, self.num_objectives), self._beta0)
+
+    def log(self, file):
+        means = self.get_mean()
+        # Variance of 1/lambda ≈ beta^2 / ((alpha-1)^2 * (alpha-2)) for alpha > 2
+        safe_alpha = np.maximum(self.alpha, 2.01)
+        variances = self.beta ** 2 / ((safe_alpha - 1) ** 2 * (safe_alpha - 2))
+        stds = np.sqrt(variances)
+        df = pd.DataFrame({
+            "arm": np.arange(self.num_arms),
+            "means": means.tolist(),
+            "stds": stds.tolist(),
+        })
+        df.to_parquet(file, index=False)
+
+
 class NormalIGPosterior(PosteriorBase):
     """Normal-Inverse-Gamma posterior for Gaussian rewards with unknown variance."""
 
