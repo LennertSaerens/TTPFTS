@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Optional, Sequence, Union
+from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
