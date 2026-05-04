@@ -13,9 +13,9 @@ a conflicting second objective:
 
     lambda_2[i] = max(lambda_1) - lambda_1[i] + noise[i]
 
-where noise ~ N(0, 0.3) with seed 42 for reproducibility.
-The noise creates a non-trivial Pareto set where most arms are dominated
-but a meaningful subset is Pareto-optimal.
+where noise ~ N(0, 0.6) with seed 42 for reproducibility.
+The larger noise creates a more challenging Pareto set where most arms are
+dominated but a meaningful subset is Pareto-optimal with varying conflicts.
 
 Reference: "to investigate strategies that maximize the prevalence of
 certain insect species on farmland, we construct a benchmark environment
@@ -28,7 +28,7 @@ from environments.BaseEnvironment import BaseEnvironment
 from environments.distributions import PoissonReward
 
 _NOISE_SEED = 42
-_NOISE_STD = 0.3
+_NOISE_STD = 0.6  # increased from 0.3 for more challenging Pareto set
 _MIN_LAMBDA = 0.01
 
 
