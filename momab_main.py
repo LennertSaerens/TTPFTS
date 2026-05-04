@@ -5,7 +5,7 @@ import os
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
-from bandits.Posteriors import TPosterior, NormalPosterior, BetaBernoulliPosterior, GammaExponentialPosterior
+from bandits.Posteriors import TPosterior, NormalPosterior, BetaBernoulliPosterior, GammaExponentialPosterior, GammaPoissonPosterior
 from bandits.TTPFTS import TTPFTSBandit, CPFTSBandit, RPFTSBandit
 from bandits.UCB import PUCB1Bandit
 from bandits.Uniform import UniformBandit
@@ -20,6 +20,7 @@ from environments.EgeExp6 import EgeExp6
 from environments.EgeExp7 import EgeExp7
 from environments.EgeExp8 import EgeExp8
 from environments.N50VS import N50VS
+from environments.PoissonExp import PoissonExp
 
 CSV_HEADER = ["algorithm", "experiment", "timestep", "bernoulli", "jaccard", "misidentification"]
 
@@ -34,6 +35,7 @@ ENVIRONMENTS = {
     "EgeExp8": (EgeExp8, 5000),
     "N50VS": (N50VS, 5000),
     "CovBoost": (CovBoost, 5000),
+    "PoissonExp": (PoissonExp, 5000),
 }
 
 
@@ -164,6 +166,10 @@ def run_anytime_experiment(num_runs, max_budget, environment, algorithms, result
             alg_objs[alg] = TTPFTSBandit(
                 GammaExponentialPosterior(environment.num_arms, environment.num_objectives),
                 num_warmup_pulls=0)
+        elif alg == "TTPFTS_POISSON":
+            alg_objs[alg] = TTPFTSBandit(
+                GammaPoissonPosterior(environment.num_arms, environment.num_objectives),
+                num_warmup_pulls=0)
 
     completed = _completed_experiments(results_file) if results_file and write else set()
 
@@ -199,7 +205,7 @@ def _write_results(results_file, rows):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MOMAB Benchmarking Framework")
     parser.add_argument('--algorithms', required=True,
-                        help='Comma-separated list: EGE_SR,EGE_SH,Uniform,PUCB1,TTPFTS_GKV,TTPFTS_UNI,TTPFTS_BETA,TTPFTS_GAMMA')
+                        help='Comma-separated list: EGE_SR,EGE_SH,Uniform,PUCB1,TTPFTS_GKV,TTPFTS_UNI,TTPFTS_BETA,TTPFTS_GAMMA,TTPFTS_POISSON')
     parser.add_argument('--environments', required=True,
                         help='Comma-separated environments: EgeExp1,EgeExp2,CovBoost...')
     parser.add_argument('--budgets', required=False, default=None,
@@ -211,7 +217,7 @@ if __name__ == "__main__":
     parser.add_argument('--n_jobs', type=int, default=1,
                         help='Number of parallel jobs for EGE experiments (default: 1)')
     parser.add_argument('--dist', type=str, default='gaussian',
-                        choices=['gaussian', 'bernoulli', 'exponential'],
+                        choices=['gaussian', 'bernoulli', 'exponential', 'poisson'],
                         help='Reward distribution family (default: gaussian)')
     args = parser.parse_args()
 
@@ -250,7 +256,7 @@ if __name__ == "__main__":
                                step=args.step, n_jobs=args.n_jobs)
         anytime_algs = [alg for alg in algorithms if alg in [
             "Uniform", "PUCB1", "TTPFTS_GKV", "TTPFTS_UNI", "TTPFTS_BETA", "TTPFTS_GAMMA",
-            "CPFTS_UNI", "CPFTS_GKV", "RPFTS_UNI", "RPFTS_GKV"
+            "TTPFTS_POISSON", "CPFTS_UNI", "CPFTS_GKV", "RPFTS_UNI", "RPFTS_GKV"
         ]]
         if anytime_algs:
             run_anytime_experiment(args.num_runs, max_budget, environment, anytime_algs,

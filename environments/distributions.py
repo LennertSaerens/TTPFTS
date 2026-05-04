@@ -111,6 +111,33 @@ class ExponentialReward(RewardDistribution):
         return len(self._scale)
 
 
+class PoissonReward(RewardDistribution):
+    """
+    Poisson reward distribution per arm.
+
+    Each objective is sampled independently as Poisson(lam) where
+    lam is the rate parameter.  E[X] = lam, Var[X] = lam.
+    """
+
+    def __init__(self, lam: np.ndarray) -> None:
+        self._lam = np.asarray(lam, dtype=np.float64)
+
+    def sample(self) -> np.ndarray:
+        return np.random.poisson(self._lam).astype(np.float64)
+
+    @property
+    def mean(self) -> np.ndarray:
+        return self._lam.copy()
+
+    @property
+    def std(self) -> np.ndarray:
+        return np.sqrt(self._lam)
+
+    @property
+    def num_objectives(self) -> int:
+        return len(self._lam)
+
+
 # ---------------------------------------------------------------------------
 # Factory helper
 # ---------------------------------------------------------------------------
@@ -119,6 +146,7 @@ DISTRIBUTION_REGISTRY = {
     "gaussian": GaussianReward,
     "bernoulli": BernoulliReward,
     "exponential": ExponentialReward,
+    "poisson": PoissonReward,
 }
 
 
@@ -156,6 +184,13 @@ def make_distributions(
                 f"got min={arm_means.min():.4f}."
             )
         return [ExponentialReward(m) for m in arm_means]
+    elif dist == "poisson":
+        if np.any(arm_means <= 0):
+            raise ValueError(
+                f"Poisson distribution requires arm means > 0, "
+                f"got min={arm_means.min():.4f}."
+            )
+        return [PoissonReward(m) for m in arm_means]
     else:
         raise ValueError(f"Unknown distribution: {dist!r}. "
                          f"Available: {list(DISTRIBUTION_REGISTRY)}")

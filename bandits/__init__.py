@@ -6,6 +6,7 @@ from bandits.Posteriors import (
     PosteriorBase,
     BetaBernoulliPosterior,
     GammaExponentialPosterior,
+    GammaPoissonPosterior,
     NormalIGPosterior,
     TPosterior,
     NormalPosterior,

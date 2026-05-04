@@ -112,6 +112,51 @@ class GammaExponentialPosterior(PosteriorBase):
         df.to_parquet(file, index=False)
 
 
+class GammaPoissonPosterior(PosteriorBase):
+    """Gamma posterior for Poisson rewards (conjugate pair).
+
+    Models each arm/objective rate as lambda ~ Gamma(alpha, beta).
+    The reward mean IS lambda.  Thompson samples are drawn directly
+    from Gamma(alpha, 1/beta).
+
+    Update rules:  alpha += observed_count,  beta += 1.
+    """
+
+    def __init__(self, num_arms, num_objectives, alpha0=1.0, beta0=1.0):
+        self.num_arms = num_arms
+        self.num_objectives = num_objectives
+        self._alpha0 = alpha0
+        self._beta0 = beta0
+        self.alpha = np.full((num_arms, num_objectives), alpha0)
+        self.beta = np.full((num_arms, num_objectives), beta0)
+
+    def sample(self):
+        return np.random.gamma(self.alpha, 1.0 / self.beta)
+
+    def update(self, arm, reward):
+        self.alpha[arm] += reward
+        self.beta[arm] += 1
+
+    def get_mean(self):
+        return self.alpha / self.beta
+
+    def reset(self, _):
+        self.alpha = np.full((self.num_arms, self.num_objectives), self._alpha0)
+        self.beta = np.full((self.num_arms, self.num_objectives), self._beta0)
+
+    def log(self, file):
+        means = self.get_mean()
+        # Variance of Gamma(alpha, beta) = alpha / beta^2
+        variances = self.alpha / (self.beta ** 2)
+        stds = np.sqrt(variances)
+        df = pd.DataFrame({
+            "arm": np.arange(self.num_arms),
+            "means": means.tolist(),
+            "stds": stds.tolist(),
+        })
+        df.to_parquet(file, index=False)
+
+
 class NormalIGPosterior(PosteriorBase):
     """Normal-Inverse-Gamma posterior for Gaussian rewards with unknown variance."""
 

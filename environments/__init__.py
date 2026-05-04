@@ -1,6 +1,6 @@
 from environments.distributions import (
     RewardDistribution, GaussianReward, BernoulliReward, ExponentialReward,
-    make_distributions,
+    PoissonReward, make_distributions,
 )
 from environments.BaseEnvironment import BaseEnvironment
 from environments.EgeExp1 import EgeExp1
@@ -13,3 +13,4 @@ from environments.EgeExp7 import EgeExp7
 from environments.EgeExp8 import EgeExp8
 from environments.N50VS import N50VS
 from environments.CovBoost import CovBoost
+from environments.PoissonExp import PoissonExp
