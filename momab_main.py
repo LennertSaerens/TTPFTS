@@ -165,11 +165,11 @@ def run_anytime_experiment(num_runs, max_budget, environment, algorithms, result
         elif alg == "TTPFTS_GAMMA":
             alg_objs[alg] = TTPFTSBandit(
                 GammaExponentialPosterior(environment.num_arms, environment.num_objectives),
-                num_warmup_pulls=0)
+                num_warmup_pulls=1)
         elif alg == "TTPFTS_POISSON":
             alg_objs[alg] = TTPFTSBandit(
                 GammaPoissonPosterior(environment.num_arms, environment.num_objectives),
-                num_warmup_pulls=0)
+                num_warmup_pulls=1)
 
     completed = _completed_experiments(results_file) if results_file and write else set()
 

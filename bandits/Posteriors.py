@@ -69,38 +69,49 @@ class GammaExponentialPosterior(PosteriorBase):
     Models each arm/objective rate as lambda ~ Gamma(alpha, beta).
     The reward mean is 1/lambda. Thompson samples are drawn as
     1 / Gamma(alpha, beta) so that higher means are preferred.
+
+    Default prior is the Jeffreys prior: Gamma(alpha0=0, beta0=0),
+    i.e. pi(lambda) proportional to 1/lambda.  This is improper, so at least
+    one warmup pull per arm is required before sampling (use
+    num_warmup_pulls >= 1 in TTPFTS).
     """
 
-    def __init__(self, num_arms, num_objectives, alpha0=1.0, beta0=1.0):
+    def __init__(self, num_arms, num_objectives, alpha0=0.0, beta0=0.0):
         self.num_arms = num_arms
         self.num_objectives = num_objectives
         self._alpha0 = alpha0
         self._beta0 = beta0
         self.alpha = np.full((num_arms, num_objectives), alpha0)
         self.beta = np.full((num_arms, num_objectives), beta0)
+        self._counts = np.zeros((num_arms, num_objectives))
 
     def sample(self):
-        # Sample rate lambda ~ Gamma(alpha, scale=1/beta), return mean = 1/lambda
-        lam = np.random.gamma(self.alpha, 1.0 / self.beta)
-        lam = np.maximum(lam, 1e-12)  # guard against zero
-        return 1.0 / lam
+        pulled = self._counts > 0
+        safe_alpha = np.where(pulled, self.alpha, 1.0)
+        safe_beta = np.where(pulled, self.beta, 1.0)
+        lam = np.random.gamma(safe_alpha, 1.0 / safe_beta)
+        lam = np.maximum(lam, 1e-12)
+        return np.where(pulled, 1.0 / lam, 1e6)
 
     def update(self, arm, reward):
         self.alpha[arm] += 1
         self.beta[arm] += reward
+        self._counts[arm] += 1
 
     def get_mean(self):
+        pulled = self._counts > 0
         # Posterior mean of 1/lambda = beta / (alpha - 1) for alpha > 1
         safe_alpha = np.where(self.alpha > 1, self.alpha, 2.0)
-        return np.where(self.alpha > 1, self.beta / (safe_alpha - 1), self.beta)
+        proper_mean = np.where(self.alpha > 1, self.beta / (safe_alpha - 1), self.beta)
+        return np.where(pulled, proper_mean, 1e6)
 
     def reset(self, _):
         self.alpha = np.full((self.num_arms, self.num_objectives), self._alpha0)
         self.beta = np.full((self.num_arms, self.num_objectives), self._beta0)
+        self._counts = np.zeros((self.num_arms, self.num_objectives))
 
     def log(self, file):
         means = self.get_mean()
-        # Variance of 1/lambda ≈ beta^2 / ((alpha-1)^2 * (alpha-2)) for alpha > 2
         safe_alpha = np.maximum(self.alpha, 2.01)
         variances = self.beta ** 2 / ((safe_alpha - 1) ** 2 * (safe_alpha - 2))
         stds = np.sqrt(variances)
@@ -119,35 +130,48 @@ class GammaPoissonPosterior(PosteriorBase):
     The reward mean IS lambda.  Thompson samples are drawn directly
     from Gamma(alpha, 1/beta).
 
+    Default prior is the Jeffreys prior: Gamma(alpha0=0.5, beta0=0),
+    i.e. pi(lambda) proportional to lambda^(-1/2).  This is improper, so
+    at least one warmup pull per arm is required before sampling (use
+    num_warmup_pulls >= 1 in TTPFTS).
+
     Update rules:  alpha += observed_count,  beta += 1.
     """
 
-    def __init__(self, num_arms, num_objectives, alpha0=1.0, beta0=1.0):
+    def __init__(self, num_arms, num_objectives, alpha0=0.5, beta0=0.0):
         self.num_arms = num_arms
         self.num_objectives = num_objectives
         self._alpha0 = alpha0
         self._beta0 = beta0
         self.alpha = np.full((num_arms, num_objectives), alpha0)
         self.beta = np.full((num_arms, num_objectives), beta0)
+        self._counts = np.zeros((num_arms, num_objectives))
 
     def sample(self):
-        return np.random.gamma(self.alpha, 1.0 / self.beta)
+        pulled = self._counts > 0
+        safe_beta = np.where(pulled, self.beta, 1.0)
+        return np.where(pulled, np.random.gamma(self.alpha, 1.0 / safe_beta), 1e6)
 
     def update(self, arm, reward):
         self.alpha[arm] += reward
         self.beta[arm] += 1
+        self._counts[arm] += 1
 
     def get_mean(self):
-        return self.alpha / self.beta
+        pulled = self._counts > 0
+        safe_beta = np.where(pulled, self.beta, 1.0)
+        return np.where(pulled, self.alpha / safe_beta, 1e6)
 
     def reset(self, _):
         self.alpha = np.full((self.num_arms, self.num_objectives), self._alpha0)
         self.beta = np.full((self.num_arms, self.num_objectives), self._beta0)
+        self._counts = np.zeros((self.num_arms, self.num_objectives))
 
     def log(self, file):
         means = self.get_mean()
-        # Variance of Gamma(alpha, beta) = alpha / beta^2
-        variances = self.alpha / (self.beta ** 2)
+        pulled = self._counts > 0
+        safe_beta = np.where(pulled, self.beta, 1.0)
+        variances = np.where(pulled, self.alpha / (safe_beta ** 2), 1e12)
         stds = np.sqrt(variances)
         df = pd.DataFrame({
             "arm": np.arange(self.num_arms),
