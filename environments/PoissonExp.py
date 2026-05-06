@@ -16,10 +16,6 @@ a conflicting second objective:
 where noise ~ N(0, 0.6) with seed 42 for reproducibility.
 The larger noise creates a more challenging Pareto set where most arms are
 dominated but a meaningful subset is Pareto-optimal with varying conflicts.
-
-Reference: "to investigate strategies that maximize the prevalence of
-certain insect species on farmland, we construct a benchmark environment
-with Poisson distributed reward distributions, with linearly increasing means"
 """
 
 import numpy as np

@@ -43,8 +43,7 @@ class CovBoost(BaseEnvironment):
     def __init__(self, dist: str = "gaussian"):
         self.dist = dist
         arm_means = generate_arms()
-        distributions = make_distributions(arm_means, dist=dist,
-                                           gaussian_std=np.array([0.7, 0.83, 1.54]))
+        distributions = make_distributions(arm_means, dist=dist, gaussian_std=np.array([0.7, 0.83, 1.54]))
         pareto_indices = BaseEnvironment._compute_pareto_indices(arm_means)
         reference_point = np.array([1.0, 1.0, 1.0])
         inverted_arms = 1.0 - arm_means

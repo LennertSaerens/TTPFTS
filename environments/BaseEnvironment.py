@@ -12,7 +12,10 @@ from environments.distributions import (
 
 
 class BaseEnvironment(ABC):
-    def __init__(self, num_arms: int, num_objectives: int, pareto_indices: np.ndarray,
+    def __init__(self,
+                 num_arms: int,
+                 num_objectives: int,
+                 pareto_indices: np.ndarray,
                  inverted_arms: Optional[np.ndarray] = None,
                  reference_point: Optional[np.ndarray] = None,
                  distributions: Optional[list[RewardDistribution]] = None) -> None:
@@ -73,7 +76,8 @@ class BaseEnvironment(ABC):
         """Update the cached pareto set after pareto_indices changes."""
         self._pareto_set = set(self.pareto_indices.tolist())
 
-    def _init_standard_2obj(self, arms: np.ndarray,
+    def _init_standard_2obj(self,
+                            arms: np.ndarray,
                             pareto_indices: Optional[np.ndarray] = None,
                             dist: str = "gaussian") -> None:
         """Common init for standard 2-objective environments with stds=0.25."""
@@ -101,10 +105,6 @@ class BaseEnvironment(ABC):
     def get_top_arms(self) -> np.ndarray:
         """Returns the arms considered Pareto optimal."""
         return self.pareto_indices
-
-    def learn(self, arm: int, reward: np.ndarray) -> None:
-        """Updates the model with the observed reward from the chosen arm."""
-        pass
 
     def reset(self) -> None:
         """Resets the environment."""
