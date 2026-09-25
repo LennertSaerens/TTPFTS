@@ -57,3 +57,48 @@ The script now requests `--mem=24G`. Output size is small (484,800 total rows ac
 - APE on EgeExp3 is still the dominant cost because K=200 and B=685036; after removing short-window warm-up dilution it projects to the largest single cell.
 - The final config, budgets, and algorithms are unchanged; only runtime/resource artifacts were regenerated.
 - The script writes to a hash-suffixed `results_preregistered_final_<config>` directory and logs commit/config hashes for provenance.
+
+## Execution deviation: measured cluster slowdown (job 50464 / 50474)
+
+The projections above assumed a **1.3x** Zen 4 slowdown relative to the local
+development machine. Direct measurement on an idle `node103` during the final
+run showed this assumption was **too optimistic for APE**:
+
+| Quantity | Local | node103 (idle, 1 core) | Ratio |
+|---|---:|---:|---:|
+| APE on EgeExp3, steady state | 4492.8 us/pull | 9033.7 us/pull | **2.01x** |
+
+At 9033.7 us/pull a single EgeExp3 APE repetition takes **103 minutes**, so 100
+repetitions over 25 workers (4 waves) needs ~6.9 hours of pure APE time on an
+otherwise idle node -- already above the 5.02 h estimate that justified the
+12 h limit.
+
+Under the real submission the penalty was larger still. In array job `50464`,
+task 2 (EgeExp3) completed EGE_SR, EGE_SH and Uniform (300/600 shards) by
+18:28, then ran APE for **5h39m without completing a single repetition wave**,
+against the ~103 min/wave idle-node expectation. The additional factor is
+contention: 25 concurrent K=200 APE workers saturate memory bandwidth, and
+SLURM allocated hyperthread siblings (52 logical CPUs for
+`--cpus-per-task=25`), so workers did not each get a dedicated physical core.
+
+Extrapolating, task 2 would have needed roughly 22 hours and would have hit the
+12 h wall clock and been killed. It was therefore cancelled deliberately and
+resubmitted as job `50474` with `--cpus-per-task=50`, `--exclusive` and
+`--time=24:00:00` on `node103`, which halves the number of waves to 2 and
+removes competing jobs from the node.
+
+**No data was lost or recomputed inconsistently.** Atomic per-repetition shards
+made this safe: `needs_recompute` treats a repetition as complete only when its
+shard covers exactly the expected evaluation grid, so the 300 already-complete
+EGE_SR/EGE_SH/Uniform shards were reused unchanged on resume and only APE and
+the two TTPFTS variants were computed by the second job. Seeding is by
+`(master seed, environment, algorithm, repetition)`, so resumed results are
+identical to results from an uninterrupted run.
+
+Lessons recorded for the manuscript's reproducibility section:
+1. Per-core slowdown must be measured on the target node, not assumed; the
+   local-to-Zen 4 factor for this workload is **2.0x**, not 1.3x.
+2. Wall-clock sizing must account for **worker contention and hyperthreading**,
+   not just core count; requesting N CPUs does not guarantee N physical cores.
+3. Atomic shard-level resume is what made a mid-run resource correction
+   scientifically safe rather than a restart from zero.
