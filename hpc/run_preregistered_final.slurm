@@ -14,10 +14,22 @@
 
 set -euo pipefail
 
-REPO_DIR="${REPO_DIR:-$HOME/DENV-Bandits}"
+REPO_DIR="${REPO_DIR:-$HOME/DENV-Bandits-final}"
 CONFIG_PATH="${CONFIG_PATH:-$REPO_DIR/experiments/final_config.json}"
 RESULTS_ROOT="${RESULTS_ROOT:-$REPO_DIR/results_preregistered_final}"
 NUM_RUNS="${NUM_RUNS:-100}"
+
+# Fail immediately and legibly if REPO_DIR points at the wrong tree. Without
+# this, a stale REPO_DIR surfaces only as a confusing ModuleNotFoundError from
+# the config loader, and a scientific run must never start from the wrong
+# source tree.
+for required in "$CONFIG_PATH" "$REPO_DIR/momab_main.py" "$REPO_DIR/experiments/final_config_loader.py"; do
+    if [[ ! -f "$required" ]]; then
+        echo "FATAL: expected file missing: $required" >&2
+        echo "       REPO_DIR=$REPO_DIR -- set REPO_DIR to the preregistered source tree." >&2
+        exit 1
+    fi
+done
 
 # ~/.venv is built on the EasyBuild Python 3.11.5 interpreter. Batch shells do
 # not source /etc/profile, so initialise Lmod and load that exact interpreter
