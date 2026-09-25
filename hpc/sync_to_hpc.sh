@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Sync the committed source tree to the HPC for a preregistered scientific run.
+#
+# Refuses to sync a dirty worktree: the SLURM job records the commit hash as the
+# primary code identifier, so the synced tree must correspond exactly to a
+# commit. Writes SOURCE_PROVENANCE.txt because .git is deliberately not synced.
+set -euo pipefail
+
+REMOTE="${REMOTE:-lsaerens@comopc3.vub.ac.be}"
+REMOTE_DIR="${REMOTE_DIR:-DENV-Bandits-final}"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+DIRTY="$(git status --short | wc -l | tr -d ' ')"
+if [[ "$DIRTY" != "0" ]]; then
+    echo "FATAL: worktree has $DIRTY uncommitted change(s)." >&2
+    git status --short >&2
+    echo "Commit before syncing: the run is identified by its commit hash." >&2
+    exit 1
+fi
+
+COMMIT="$(git rev-parse HEAD)"
+cat > SOURCE_PROVENANCE.txt <<EOF
+commit = ${COMMIT}
+dirty_files = 0
+branch = $(git rev-parse --abbrev-ref HEAD)
+synced_at = $(date -u +%Y-%m-%dT%H:%M:%SZ)
+synced_from = $(hostname)
+EOF
+trap 'rm -f "$REPO_ROOT/SOURCE_PROVENANCE.txt"' EXIT
+
+rsync -az --delete \
+    --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' \
+    --exclude='.venv' --exclude='venv' \
+    --exclude='.idea' --exclude='.vscode' --exclude='.copilot' --exclude='.DS_Store' \
+    --exclude='archive_prepatch' --exclude='archive_provisional' \
+    --exclude='results' --exclude='results5000' --exclude='results_corr' \
+    --exclude='figures' \
+    --exclude='results_preregistered_final*' --exclude='results_pilot*' \
+    ./ "${REMOTE}:~/${REMOTE_DIR}/"
+
+echo "Synced commit ${COMMIT} to ${REMOTE}:~/${REMOTE_DIR}/"

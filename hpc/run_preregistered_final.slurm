@@ -95,8 +95,31 @@ echo "Config:       ${CONFIG_PATH}"
 echo "Config hash:  ${CONFIG_HASH}"
 echo "Results dir:  ${RESULTS_DIR}"
 echo "Run dir:      ${RUN_DIR}"
-echo "Commit:       $(git rev-parse HEAD 2>/dev/null || echo 'n/a')"
-echo "Dirty files:  $(git status --short 2>/dev/null | wc -l | tr -d ' ')"
+# Source provenance. The synced tree has no .git, so prefer the real
+# repository when present and otherwise fall back to SOURCE_PROVENANCE.txt,
+# which is written at sync time from the committed local tree. A scientific
+# run must never report an unknown source revision.
+if git -C "$REPO_DIR" rev-parse HEAD >/dev/null 2>&1; then
+    SOURCE_COMMIT="$(git -C "$REPO_DIR" rev-parse HEAD)"
+    SOURCE_DIRTY="$(git -C "$REPO_DIR" status --short | wc -l | tr -d ' ')"
+elif [[ -f "$REPO_DIR/SOURCE_PROVENANCE.txt" ]]; then
+    SOURCE_COMMIT="$(awk -F'= *' '/^commit/{print $2}' "$REPO_DIR/SOURCE_PROVENANCE.txt")"
+    SOURCE_DIRTY="$(awk -F'= *' '/^dirty_files/{print $2}' "$REPO_DIR/SOURCE_PROVENANCE.txt")"
+else
+    echo "FATAL: cannot determine source commit; refusing to run an unattributable experiment." >&2
+    exit 1
+fi
+if [[ -z "$SOURCE_COMMIT" ]]; then
+    echo "FATAL: empty source commit in provenance record." >&2
+    exit 1
+fi
+if [[ "$SOURCE_DIRTY" != "0" ]]; then
+    echo "FATAL: source tree had $SOURCE_DIRTY uncommitted file(s); commit before a scientific run." >&2
+    exit 1
+fi
+
+echo "Commit:       ${SOURCE_COMMIT}"
+echo "Dirty files:  ${SOURCE_DIRTY}"
 echo "Host:         $(hostname) with $(nproc) CPUs, n_jobs=${N_JOBS}"
 echo "Start:        $(date --iso-8601=seconds)"
 
