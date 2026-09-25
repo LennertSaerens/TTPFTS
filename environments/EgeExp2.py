@@ -1,5 +1,9 @@
 import numpy as np
 from environments.BaseEnvironment import BaseEnvironment
+from environments.distributions import std_from_variance
+
+# Manuscript spec: Gaussian rewards with diagonal covariance sigma^2 I_D, sigma^2=0.25.
+GAUSSIAN_VARIANCE = 0.25
 
 
 def generate_arms():
@@ -25,4 +29,5 @@ class EgeExp2(BaseEnvironment):
     def __init__(self, dist: str = "gaussian"):
         self.dist = dist
         pareto_indices = np.arange(2)  # The first 2 arms are Pareto optimal
-        self._init_standard_2obj(generate_arms(), pareto_indices, dist=dist)
+        self._init_standard_2obj(generate_arms(), pareto_indices, dist=dist,
+                                 gaussian_std=std_from_variance(GAUSSIAN_VARIANCE))

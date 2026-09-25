@@ -1,0 +1,9 @@
+matplotlib
+scipy
+numpy
+tikzplotlib
+joblib
+cython
+numpy
+tqdm
+pandas

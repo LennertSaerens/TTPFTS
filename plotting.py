@@ -1,243 +1,471 @@
+"""Publication plotting utilities for MOMAB Pareto-set-identification results.
+
+New experiment outputs use the tidy, named-column schema from ``runner/schema.py``
+plus a ``RunManifest`` sidecar.  Legacy archive CSV support is intentionally kept
+in a separate reader so publication plotting never silently depends on positional
+renaming for current results.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+from pathlib import Path
+from statistics import NormalDist
+from typing import Mapping, Sequence
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+try:
+    from runner.schema import SCHEMA_COLUMNS
+except Exception:  # pragma: no cover - plotting can still handle legacy archives.
+    SCHEMA_COLUMNS = []
 
-def plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window=1, plot_std=True, save_pdf=False, step=1):
+CANONICAL_METRICS = {
+    "bernoulli": "bernoulli",
+    "Bernoulli": "bernoulli",
+    "jaccard": "jaccard",
+    "Jaccard": "jaccard",
+    "misidentification": "misidentification",
+    "Misidentification": "misidentification",
+    "Misclassification": "misidentification",
+}
+
+METRIC_LABELS = {
+    "bernoulli": "Bernoulli Metric",
+    "jaccard": "Jaccard Metric",
+    "misidentification": "Misidentification Metric",
+}
+
+LEGACY_COLUMNS = ["algorithm", "e", "t", "Bernoulli", "Jaccard", "Misclassification"]
+
+DEFAULT_ALGORITHM_ORDER = [
+    "EGE_SH",
+    "EGE_SR",
+    "Uniform",
+    "APE",
+    "TTPFTS_KNOWN_VAR",
+    "TTPFTS_UNKNOWN_VAR",
+]
+
+DEFAULT_EGE_BUDGETS = {
+    "EgeExp1": 15218,
+    "EgeExp2": 2544,
+    "EgeExp3": 685036,
+    "EgeExp4": 15977,
+    "EgeExp5": 197373,
+    "EgeExp6": 51966,
+    "EgeExp7": 7000,
+    "EgeExp8": 237958,
+}
+
+
+def _canonical_metric(metric: str) -> str:
+    try:
+        return CANONICAL_METRICS[metric]
+    except KeyError as exc:
+        raise RuntimeError(f"Metric type {metric} is not supported") from exc
+
+
+def _infer_environment_from_path(path: str | os.PathLike) -> str | None:
+    match = re.search(r"EgeExp\d+", str(path))
+    return match.group(0) if match else None
+
+
+def _find_manifest_path(files: Sequence[str | os.PathLike], manifest_path: str | os.PathLike | None = None) -> Path | None:
+    if manifest_path is not None:
+        return Path(manifest_path)
+    candidates: list[Path] = []
+    for file in files:
+        p = Path(file)
+        candidates.extend([
+            p.parent / "run" / "manifest.json",
+            p.parent / "manifest.json",
+            p.parent.parent / "run" / "manifest.json",
+            p.parent.parent / "manifest.json",
+        ])
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def read_run_manifest(manifest_path: str | os.PathLike | None) -> dict:
+    """Read a runner ``RunManifest`` JSON sidecar into a plain dictionary."""
+    if manifest_path is None:
+        return {}
+    with open(manifest_path, "r") as f:
+        return json.load(f)
+
+
+def load_tidy_results(file: str | os.PathLike) -> pd.DataFrame:
+    """Load current runner output using named schema columns only.
+
+    This is the publication path for new experiments.  It refuses non-tidy CSVs
+    rather than assigning positional column names, preventing accidental plotting
+    of malformed current data.
     """
-    The x-axis represents the arm pulls and the y-axis represents the metric. The metric is averaged over the experiments.
-    :param metric: Which PFI metric to plot.
-    :param save_pdf: Whether to save the plot as a pdf.
-    :param plot_std: Whether to plot the standard deviation of the Bernoulli metric.
-    :param file: The file containing the experimental results.
-    :param num_runs: The number of runs of the experiment.
-    :param num_arm_pulls: The number of arm pulls in each run of the experiment.
-    :param rolling_avg_window: The window size for the optional rolling average.
-    :return: None
-    """
-    metric_to_col = {
-        "Bernoulli": 3,
-        "Jaccard": 4,
-        "Misidentification": 5
+    df = pd.read_csv(file, header=0, low_memory=False)
+    required = {
+        "environment", "algorithm", "repetition", "arm_pull", "max_budget",
+        "bernoulli", "jaccard", "misidentification",
     }
-    if metric not in metric_to_col.keys():
-        raise RuntimeError(f"Metric type {metric} is not supported")
-    col = metric_to_col[metric]
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"{file} is not a tidy runner CSV; missing columns: {sorted(missing)}")
 
-    result_df = pd.read_csv(file, header=0)
-    algorithm_names = result_df.iloc[:, 0].unique()
-    num_algorithms = len(algorithm_names)
-    pfi_metrics = result_df.values[:, col].reshape(num_algorithms, num_runs, num_arm_pulls).astype(np.float64)
-    avg_pfi_metrics = np.mean(pfi_metrics, axis=1)
-    std_pfi_metrics = np.std(pfi_metrics, axis=1)
+    out = df.loc[:, [
+        "environment", "algorithm", "repetition", "arm_pull", "max_budget",
+        "bernoulli", "jaccard", "misidentification",
+    ]].copy()
+    out["posterior_model"] = df["posterior_model"] if "posterior_model" in df.columns else ""
+    for col in ["repetition", "arm_pull", "max_budget"]:
+        out[col] = pd.to_numeric(out[col], errors="raise").astype(int)
+    for col in ["bernoulli", "jaccard", "misidentification"]:
+        out[col] = pd.to_numeric(out[col], errors="raise").astype(float)
+    return out
 
-    # x indices, potentially subsampled
-    x = np.arange(num_arm_pulls)
-    x_step = x[::step]
 
-    plt.figure(figsize=(8, 6))
+def load_legacy_results(
+    file: str | os.PathLike,
+    *,
+    environment: str | None = None,
+    max_budget: int = 5000,
+) -> pd.DataFrame:
+    """Load archived pre-runner CSVs with the old six-column layout.
 
-    for i, name in enumerate(algorithm_names):
-        y = avg_pfi_metrics[i]
+    This reader is deliberately separate from ``load_tidy_results``.  It accepts
+    the legacy header names when present and, only for archive compatibility,
+    falls back to the historical positional layout.
+    """
+    raw = pd.read_csv(file, header=0, low_memory=False)
+    if set(LEGACY_COLUMNS).issubset(raw.columns):
+        legacy = raw.loc[:, LEGACY_COLUMNS].copy()
+    elif raw.shape[1] == len(LEGACY_COLUMNS):
+        legacy = raw.copy()
+        legacy.columns = LEGACY_COLUMNS
+    else:
+        raise ValueError(f"{file} is neither tidy runner output nor known legacy archive layout")
 
-        # apply rolling average if requested
-        if rolling_avg_window > 1:
-            y_series = pd.Series(y).rolling(window=rolling_avg_window).mean()
-            y_vals = y_series.values[::step]
+    env = environment or _infer_environment_from_path(file) or "legacy"
+    out = pd.DataFrame({
+        "environment": env,
+        "algorithm": legacy["algorithm"].astype(str),
+        "posterior_model": "",
+        "repetition": pd.to_numeric(legacy["e"], errors="raise").astype(int),
+        "arm_pull": pd.to_numeric(legacy["t"], errors="raise").astype(int),
+        "max_budget": int(max_budget),
+        "bernoulli": pd.to_numeric(legacy["Bernoulli"], errors="raise").astype(float),
+        "jaccard": pd.to_numeric(legacy["Jaccard"], errors="raise").astype(float),
+        "misidentification": pd.to_numeric(legacy["Misclassification"], errors="raise").astype(float),
+    })
+    return out
+
+
+def load_results(
+    file: str | os.PathLike,
+    *,
+    legacy: bool = False,
+    environment: str | None = None,
+    legacy_max_budget: int = 5000,
+) -> pd.DataFrame:
+    """Load one result CSV, selecting tidy or explicitly legacy parsing."""
+    if legacy:
+        return load_legacy_results(file, environment=environment, max_budget=legacy_max_budget)
+    return load_tidy_results(file)
+
+
+def _environment_budgets(
+    frames: Sequence[pd.DataFrame],
+    manifest: Mapping | None = None,
+    overrides: Mapping[str, int] | None = None,
+) -> dict[str, int]:
+    budgets: dict[str, int] = {}
+    if manifest and manifest.get("budgets"):
+        budgets.update({str(k): int(v) for k, v in manifest["budgets"].items()})
+    for frame in frames:
+        for env, env_df in frame.groupby("environment", sort=False):
+            values = set(pd.to_numeric(env_df["max_budget"], errors="raise").astype(int).unique())
+            if len(values) == 1:
+                budgets.setdefault(str(env), values.pop())
+    if overrides:
+        budgets.update({str(k): int(v) for k, v in overrides.items()})
+    missing = sorted({str(env) for frame in frames for env in frame["environment"].unique()} - set(budgets))
+    if missing:
+        raise ValueError(f"No max budget available for environment(s): {missing}")
+    return budgets
+
+
+def wilson_interval(successes: int, n: int, confidence: float = 0.95) -> tuple[float, float]:
+    """Wilson score interval for a Bernoulli/binomial mean.
+
+    Used for the binary exact-identification metric.  The implementation is the
+    closed-form score interval, deterministic and independent of scipy.
+    """
+    if n <= 0:
+        return (np.nan, np.nan)
+    z = NormalDist().inv_cdf(0.5 + confidence / 2.0)
+    phat = successes / n
+    denom = 1.0 + z * z / n
+    center = (phat + z * z / (2.0 * n)) / denom
+    half_width = z * np.sqrt((phat * (1.0 - phat) + z * z / (4.0 * n)) / n) / denom
+    return max(0.0, center - half_width), min(1.0, center + half_width)
+
+
+def bounded_mean_interval(values: Sequence[float], confidence: float = 0.95) -> tuple[float, float]:
+    """Normal repetition-level mean interval clipped to the metric's [0, 1] range.
+
+    Jaccard and misidentification are bounded per-repetition metrics but not
+    binary exact-identification indicators.  We therefore aggregate over the
+    actually recorded repetitions at each budget and report mean +/- z*SE,
+    clipped to [0, 1].  No bootstrap randomness is used.
+    """
+    arr = np.asarray(values, dtype=float)
+    n = arr.size
+    if n <= 0:
+        return (np.nan, np.nan)
+    if n == 1:
+        mean = float(arr[0])
+        return max(0.0, mean), min(1.0, mean)
+    z = NormalDist().inv_cdf(0.5 + confidence / 2.0)
+    mean = float(np.mean(arr))
+    se = float(np.std(arr, ddof=1) / np.sqrt(n))
+    return max(0.0, mean - z * se), min(1.0, mean + z * se)
+
+
+def summarize_metric_for_plot(
+    df: pd.DataFrame,
+    metric: str,
+    budgets: Mapping[str, int],
+    *,
+    confidence: float = 0.95,
+) -> pd.DataFrame:
+    """Return plotted means/intervals at recorded budgets only.
+
+    The function groups by environment, algorithm, and raw ``arm_pull`` values
+    present in the CSV; it never interpolates or fills sparse evaluation grids.
+    Normalized x-values are ``arm_pull / environment_max_budget``.  Each plotted
+    environment/algorithm curve must contain its manifest final budget, making
+    the endpoint exactly 1.0.
+    """
+    metric_key = _canonical_metric(metric)
+    rows: list[dict] = []
+    group_cols = ["environment", "algorithm", "arm_pull"]
+    for (env, algorithm, arm_pull), group in df.groupby(group_cols, sort=True):
+        max_budget = int(budgets[str(env)])
+        if int(arm_pull) > max_budget:
+            raise AssertionError(f"{env}/{algorithm} arm_pull={arm_pull} exceeds max_budget={max_budget}")
+        values = group[metric_key].astype(float).to_numpy()
+        n = int(values.size)
+        mean = float(np.mean(values)) if n else np.nan
+        if metric_key == "bernoulli":
+            lower, upper = wilson_interval(int(np.sum(values)), n, confidence=confidence)
         else:
-            y_vals = y[::step]
-
-        # plot mean curve, using only every `step`-th point
-        plt.plot(x_step, y_vals, label=f"{name}")
-
-        if plot_std:
-            ci = 1.96 * std_pfi_metrics[i] / np.sqrt(num_runs)
-            ci_lower = (y - ci)[::step]
-            ci_upper = (y + ci)[::step]
-            plt.fill_between(
-                x_step,
-                ci_lower,
-                ci_upper,
-                alpha=0.2,
+            lower, upper = bounded_mean_interval(values, confidence=confidence)
+        rows.append({
+            "environment": str(env),
+            "algorithm": str(algorithm),
+            "metric": metric_key,
+            "arm_pull": int(arm_pull),
+            "max_budget": max_budget,
+            "normalized_budget": float(int(arm_pull) / max_budget) if max_budget else 0.0,
+            "mean": mean,
+            "lower": lower,
+            "upper": upper,
+            "n": n,
+        })
+    summary = pd.DataFrame(rows).sort_values(["environment", "algorithm", "arm_pull"]).reset_index(drop=True)
+    for (env, algorithm), curve in summary.groupby(["environment", "algorithm"], sort=False):
+        final = float(curve["normalized_budget"].max())
+        if final != 1.0:
+            raise AssertionError(
+                f"Final normalized budget for {env}/{algorithm} is {final}, expected exactly 1.0"
             )
+    return summary
 
-    if metric in ["Bernoulli", "Jaccard"]:
-        plt.ylim(0, 1)
-    if metric == "Misidentification":
-        plt.yscale("log")
 
-    plt.xlabel("Arm pulls")
-    plt.ylabel(f"{metric} metric")
-    plt.legend(loc="best")
+def _algorithm_sort_key(name: str, order: Sequence[str]) -> tuple[int, str]:
+    try:
+        return (order.index(name), name)
+    except ValueError:
+        if "_p" in name:
+            try:
+                return (len(order), f"{float(name.split('_p')[-1]):.12g}")
+            except ValueError:
+                pass
+        return (len(order), name)
+
+
+def _algorithm_label(name: str, format_legend_p: bool = False) -> str:
+    if format_legend_p and "_p" in name:
+        try:
+            return f"p = {float(name.split('_p')[-1])}"
+        except ValueError:
+            pass
+    return name
+
+
+def plot_pfi_metric(file, num_runs=None, num_arm_pulls=None, metric="Jaccard", rolling_avg_window=1,
+                    plot_std=True, save_pdf=False, step=1, *, manifest_path=None, legacy=False,
+                    show=True):
+    """Plot one metric from a single tidy CSV or explicit legacy archive CSV."""
+    df = load_results(file, legacy=legacy)
+    manifest = read_run_manifest(_find_manifest_path([file], manifest_path))
+    budgets = _environment_budgets([df], manifest)
+    metric_key = _canonical_metric(metric)
+    summary = summarize_metric_for_plot(df, metric_key, budgets)
+    fig, ax = plt.subplots(figsize=(8, 6))
+    algorithms = sorted(summary["algorithm"].unique(), key=lambda x: _algorithm_sort_key(x, DEFAULT_ALGORITHM_ORDER))
+    for algorithm in algorithms:
+        curve = summary[summary["algorithm"] == algorithm]
+        line, = ax.plot(curve["normalized_budget"], curve["mean"], label=_algorithm_label(algorithm))
+        if plot_std:
+            ax.fill_between(curve["normalized_budget"], curve["lower"], curve["upper"], alpha=0.18,
+                            color=line.get_color())
+    ax.set_xlabel("Normalized Budget")
+    ax.set_ylabel(METRIC_LABELS[metric_key])
+    ax.grid(True, alpha=0.22, linewidth=0.55)
+    ax.legend(loc="best")
+    if metric_key in {"bernoulli", "jaccard"}:
+        ax.set_ylim(0, 1)
     if save_pdf:
-        plt.savefig(f"{file}_{metric}.pdf", format="pdf")
-    plt.show()
+        fig.savefig(f"{file}_{metric_key}.pdf", format="pdf")
+    if show:
+        plt.show()
+    return fig, ax, summary
 
 
-def plot_all_pfi_metrics(file, num_runs, num_arm_pulls, rolling_avg_window=1, plot_std=True, save_pdf=False, step=1):
-    for metric in ["Bernoulli", "Jaccard", "Misidentification"]:
-        plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window, plot_std, save_pdf, step)
+def plot_all_pfi_metrics(file, num_runs=None, num_arm_pulls=None, rolling_avg_window=1,
+                         plot_std=True, save_pdf=False, step=1, **kwargs):
+    return [
+        plot_pfi_metric(file, num_runs, num_arm_pulls, metric, rolling_avg_window, plot_std, save_pdf, step, **kwargs)
+        for metric in ["Bernoulli", "Jaccard", "Misidentification"]
+    ]
 
 
 def plot_pfi_metric_ax(
         ax,
         file,
-        num_runs,
-        num_arm_pulls,
-        num_arms,
-        num_objs,
-        metric,
+        num_runs=None,
+        num_arm_pulls=None,
+        num_arms=None,
+        num_objs=None,
+        metric="Jaccard",
         plot_std=True,
         step=1,
         show_legend=False,
         ylabel=None,
         title=None,
+        cmap=None,
+        format_legend_p=False,
+        exclude_algs=None,
+        sort_algs=True,
+        *,
+        manifest_path=None,
+        legacy=False,
+        environment_budget=None,
+        algorithm_order: Sequence[str] = DEFAULT_ALGORITHM_ORDER,
+        return_table=False,
 ):
-    df = pd.read_csv(file, header=0, low_memory=False)
-    df.columns = ["algorithm", "e", "t", "Bernoulli", "Jaccard", "Misclassification"]
-    algorithms = df["algorithm"].unique()
+    """Plot the publication metric curve for one subplot.
+
+    X-values are normalized by the environment's manifest max budget, intervals
+    are pointwise Wilson (Bernoulli) or bounded repetition-level normal intervals
+    (Jaccard/misidentification), and only budgets recorded in the CSV are drawn.
+    """
+    df = load_results(file, legacy=legacy)
+    manifest = read_run_manifest(_find_manifest_path([file], manifest_path))
+    overrides = None
+    if environment_budget is not None:
+        env = str(df["environment"].iloc[0])
+        overrides = {env: int(environment_budget)}
+    budgets = _environment_budgets([df], manifest, overrides)
+    summary = summarize_metric_for_plot(df, metric, budgets)
+
+    algorithms = list(summary["algorithm"].unique())
+    if exclude_algs:
+        algorithms = [alg for alg in algorithms if alg not in set(exclude_algs)]
+    if sort_algs:
+        algorithms = sorted(algorithms, key=lambda x: _algorithm_sort_key(x, algorithm_order))
 
     for i, algorithm in enumerate(algorithms):
-
-        start = int(1.5*num_arms)
-
-        x = np.arange(num_arm_pulls)
-        x_step = x[::step]
-        x_step = x_step[start:]  # The x-values for the plot start here
-
-        df_algo = df[df["algorithm"] == algorithm]
-
-        metric_vals = df_algo[metric].values.reshape(num_runs, num_arm_pulls)
-
-        # Compute mean and std over runs
-        mean_vals = np.mean(metric_vals, axis=0)
-        std_vals = np.std(metric_vals, axis=0)
-
-        mean_plot = mean_vals[::step]
-        ci = 1.96 * std_vals / np.sqrt(num_runs)
-        ci_lower = (mean_vals - ci)[::step]
-        ci_upper = (mean_vals + ci)[::step]
-
-        mean_plot = mean_plot[start:]
-        ci_lower = ci_lower[start:]
-        ci_upper = ci_upper[start:]
-
-        line = None
-        if algorithm == "TTPFTS_UNI":
-            line, = ax.plot(x_step, mean_plot, label="TTPFTS")
-        elif algorithm == "Uniform":
-            line, = ax.plot(x_step, mean_plot, label="Uniform Sampling")
-        else:
-            line, = ax.plot(x_step, mean_plot, label=algorithm)
-
-        # Get the color of the current line so the vertical line matches
-        color = line.get_color()
-
-        # Draw a dotted line from y=0 up to the start of the mean curve
-        # x_step[0] is the x-coordinate where the curve starts
-        # mean_plot[0] is the y-coordinate where the curve starts
-        if start < num_arm_pulls:
-            ax.vlines(x=x_step[0], ymin=0, ymax=mean_plot[0], colors=color, linestyles='dotted', alpha=0.7)
-
-        # Plot CI band
+        curve = summary[summary["algorithm"] == algorithm]
+        if step and step > 1:
+            # Downsample displayed rows only; never synthesize missing observations.
+            raw_stride = np.maximum(1, np.median(np.diff(curve["arm_pull"])) if len(curve) > 1 else 1)
+            row_stride = max(1, int(step // raw_stride))
+            curve = curve.iloc[::row_stride]
+            if curve["normalized_budget"].iloc[-1] != 1.0:
+                curve = pd.concat([curve, summary[(summary["algorithm"] == algorithm) &
+                                                  (summary["normalized_budget"] == 1.0)]], ignore_index=True)
+                curve = curve.drop_duplicates(subset=["environment", "algorithm", "arm_pull"]).sort_values("arm_pull")
+        line_color = cmap(i / max(1, len(algorithms) - 1)) if cmap is not None else None
+        label = _algorithm_label(algorithm, format_legend_p=format_legend_p)
+        line, = ax.plot(curve["normalized_budget"], curve["mean"], label=label, color=line_color)
         if plot_std:
-            ax.fill_between(x_step, ci_lower, ci_upper, alpha=0.3, color=color)
+            ax.fill_between(curve["normalized_budget"], curve["lower"], curve["upper"],
+                            alpha=0.18, color=line.get_color(), linewidth=0)
 
-    if metric in ["Bernoulli", "Jaccard"]:
+    metric_key = _canonical_metric(metric)
+    ax.set_xlim(0, 1)
+    if metric_key in {"bernoulli", "jaccard"}:
         ax.set_ylim(0, 1)
-    if metric == "Misclassification":
-        ax.set_yscale("log")
-
-    ax.grid(True)
+    elif metric_key == "misidentification":
+        ax.set_ylim(bottom=0)
+    ax.grid(True, alpha=0.22, linewidth=0.55)
 
     if ylabel is not None:
         ax.set_ylabel(ylabel)
     if title is not None:
         ax.set_title(title, fontsize=14)
-
     if show_legend:
         ax.legend(loc="best", fontsize=8)
+    if return_table:
+        return summary
+    return None
+
+
+def _read_grid_frames(env_files, env_labels, *, legacy=False, legacy_max_budget=5000):
+    frames = []
+    for file, env in zip(env_files, env_labels):
+        frames.append(load_results(file, legacy=legacy, environment=env, legacy_max_budget=legacy_max_budget))
+    return frames
 
 
 def plot_all_pfi_metrics_grid_top_legend(
         env_files,
         env_labels,
-        num_runs,
-        num_arm_pulls,
-        num_arms,
-        num_objs,
+        num_runs=None,
+        num_arm_pulls=None,
+        num_arms=None,
+        num_objs=None,
         plot_std=True,
         step=1,
         figsize=(12, 24),
         save_png=False,
-        save_file=None
+        save_file=None,
+        cmap=None,
+        format_legend_p=False,
+        *,
+        manifest_path=None,
+        environment_budgets=None,
+        table_file=None,
+        legacy=False,
+        show=True,
 ):
-    metrics = ["Bernoulli", "Jaccard", "Misclassification"]
-    n_env = len(env_files)
-    n_metrics = len(metrics)
-
-    fig, axes = plt.subplots(
-        nrows=n_env,
-        ncols=n_metrics,
-        figsize=figsize,
-        sharex=True
-    )
-
-    if n_env == 1:
-        axes = np.array([axes])
-    if n_metrics == 1:
-        axes = axes[:, np.newaxis]
-
-    # Plot, but do NOT show legends inside subplots
-    for row, (file, env_name) in enumerate(zip(env_files, env_labels)):
-        n_arms = num_arms[row]
-        n_objs = num_objs[row]
-        for col, metric in enumerate(metrics):
-            ax = axes[row, col]
-
-            ylabel = env_name if col == 0 else None
-            title = metric if row == 0 else None
-
-            plot_pfi_metric_ax(
-                ax=ax,
-                file=file,
-                num_runs=num_runs,
-                num_arm_pulls=num_arm_pulls,
-                num_arms=n_arms,
-                num_objs=n_objs,
-                metric=metric,
-                plot_std=plot_std,
-                step=step,
-                show_legend=False,  # <-- no per‑axes legend
-                ylabel=ylabel,
-                title=title
-            )
-
-    # Use one axes (e.g., top-right) to grab handles/labels
-    handles, labels = axes[0, -1].get_legend_handles_labels()
-
-    # Create one horizontal legend at the top center
-    fig.legend(
-        handles,
-        labels,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 0.98),
-        ncol=min(5, len(labels)),  # up to 5 algorithms per row
-        fontsize=14,
-        frameon=True
-    )
-
-    # Add a little extra top margin for the legend
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
-
-    # Common x-label on bottom row
-    for col in range(n_metrics):
-        axes[-1, col].set_xlabel("Arm pulls")
-
-    if save_png and save_file is not None:
-        plt.savefig(save_file, format="png", dpi=300)
-
-    plt.show()
+    outputs = []
+    for metric in ["Bernoulli", "Jaccard", "Misidentification"]:
+        outputs.append(plot_metric_all_envs_grid_top_legend(
+            env_files, env_labels, num_arms or [None] * len(env_files), num_objs or [None] * len(env_files),
+            num_runs, num_arm_pulls, metric, plot_std=plot_std, step=step, figsize=figsize,
+            save_png=save_png, save_file=(None if save_file is None else f"{Path(save_file).with_suffix('')}_{_canonical_metric(metric)}.png"),
+            cmap=cmap, format_legend_p=format_legend_p, manifest_path=manifest_path,
+            environment_budgets=environment_budgets, table_file=table_file, legacy=legacy, show=show,
+        ))
+    return outputs
 
 
 def plot_metric_all_envs_grid_top_legend(
@@ -245,21 +473,46 @@ def plot_metric_all_envs_grid_top_legend(
         env_labels,
         env_arms,
         env_objs,
-        num_runs,
-        num_arm_pulls,
-        metric,
+        num_runs=None,
+        num_arm_pulls=None,
+        metric="Jaccard",
         plot_std=True,
         step=1,
         figsize=(13, 6),
         save_png=False,
-        save_file=None
+        save_file=None,
+        cmap=None,
+        format_legend_p=False,
+        exclude_algs=None,
+        sort_algs=True,
+        *,
+        manifest_path=None,
+        environment_budgets=None,
+        table_file=None,
+        legacy=False,
+        legacy_max_budget=5000,
+        algorithm_order: Sequence[str] = DEFAULT_ALGORITHM_ORDER,
+        show=True,
 ):
+    """Plot a 2x4 publication grid with shared labels and top framed legend.
+
+    Returns ``(fig, axes, plotted_table)``.  When ``save_png`` is true the figure
+    is saved at publication resolution (500 dpi).  ``plotted_table`` can also be
+    written as CSV via ``table_file`` and contains means, interval bounds, and
+    sample counts for every plotted point.
+    """
+    metric_key = _canonical_metric(metric)
     n_env = len(env_files)
     ncols = min(4, n_env)
     nrows = int(np.ceil(n_env / ncols))
 
-    sharey = False if metric == "Misclassification" else True
+    frames = _read_grid_frames(env_files, env_labels, legacy=legacy, legacy_max_budget=legacy_max_budget)
+    manifest = read_run_manifest(_find_manifest_path(env_files, manifest_path))
+    budgets = _environment_budgets(frames, manifest, environment_budgets)
+    combined = pd.concat(frames, ignore_index=True)
+    full_summary = summarize_metric_for_plot(combined, metric_key, budgets)
 
+    sharey = False if metric_key == "misidentification" else True
     fig, axes = plt.subplots(
         nrows=nrows,
         ncols=ncols,
@@ -269,59 +522,82 @@ def plot_metric_all_envs_grid_top_legend(
         squeeze=False,
     )
 
-    # Plot, but do NOT show legends inside subplots
-    for i, (file, env_name) in enumerate(zip(env_files, env_labels)):
+    plotted_tables: list[pd.DataFrame] = []
+    for i, env_name in enumerate(env_labels):
         row = i // ncols
         col = i % ncols
         ax = axes[row, col]
-        n_arms = env_arms[i]
-        n_objs = env_objs[i]
+        n_arms = env_arms[i] if env_arms is not None else None
+        n_objs = env_objs[i] if env_objs is not None else None
+        title = f"{env_name}" if n_arms is None or n_objs is None else f"{env_name}"
+        ax.set_title(title, fontsize=14)
 
-        ylabel = f"{metric} Metric" if col == 0 else None
-        title = f"{env_name} (K = {n_arms}, D = {n_objs})"
+        env_summary = full_summary[full_summary["environment"] == env_name]
+        algorithms = list(env_summary["algorithm"].unique())
+        if exclude_algs:
+            algorithms = [alg for alg in algorithms if alg not in set(exclude_algs)]
+        if sort_algs:
+            algorithms = sorted(algorithms, key=lambda x: _algorithm_sort_key(x, algorithm_order))
+        for alg_idx, algorithm in enumerate(algorithms):
+            curve = env_summary[env_summary["algorithm"] == algorithm].sort_values("arm_pull")
+            if curve.empty:
+                continue
+            if step and step > 1:
+                raw_stride = np.maximum(1, np.median(np.diff(curve["arm_pull"])) if len(curve) > 1 else 1)
+                row_stride = max(1, int(step // raw_stride))
+                shown = curve.iloc[::row_stride].copy()
+                if shown["normalized_budget"].iloc[-1] != 1.0:
+                    shown = pd.concat([shown, curve[curve["normalized_budget"] == 1.0]], ignore_index=True)
+                    shown = shown.drop_duplicates(subset=["environment", "algorithm", "arm_pull"]).sort_values("arm_pull")
+            else:
+                shown = curve
+            color = cmap(alg_idx / max(1, len(algorithms) - 1)) if cmap is not None else None
+            line, = ax.plot(shown["normalized_budget"], shown["mean"],
+                            label=_algorithm_label(algorithm, format_legend_p), color=color)
+            if plot_std:
+                ax.fill_between(shown["normalized_budget"], shown["lower"], shown["upper"],
+                                alpha=0.18, color=line.get_color(), linewidth=0)
+            plotted_tables.append(shown)
+        ax.set_xlim(0, 1)
+        if metric_key in {"bernoulli", "jaccard"}:
+            ax.set_ylim(0, 1)
+        elif metric_key == "misidentification":
+            ax.set_ylim(bottom=0)
+        ax.grid(True, alpha=0.22, linewidth=0.55)
 
-        plot_pfi_metric_ax(
-            ax=ax,
-            file=file,
-            num_runs=num_runs,
-            num_arm_pulls=num_arm_pulls,
-            num_arms=n_arms,
-            num_objs=n_objs,
-            metric=metric,
-            plot_std=plot_std,
-            step=step,
-            show_legend=False,  # <-- no per‑axes legend
-            ylabel=ylabel,
-            title=title
-        )
+    for j in range(n_env, nrows * ncols):
+        axes[j // ncols, j % ncols].set_visible(False)
 
-    # Use one axes (e.g., top-right) to grab handles/labels
-    handles, labels = axes[0, -1].get_legend_handles_labels()
-
-    # Create one horizontal legend at the top center
+    handles, labels = [], []
+    for ax in axes.flat:
+        h, l = ax.get_legend_handles_labels()
+        for handle, label in zip(h, l):
+            if label not in labels:
+                handles.append(handle)
+                labels.append(label)
     fig.legend(
         handles,
         labels,
         loc="upper center",
         bbox_to_anchor=(0.5, 0.98),
-        ncol=min(5, len(labels)),  # up to 5 algorithms per row
-        fontsize=14,
-        frameon=True
+        ncol=min(6, max(1, len(labels))),
+        fontsize=12,
+        frameon=True,
     )
+    fig.supxlabel("Normalized Budget", y=0.035)
+    fig.supylabel(METRIC_LABELS[metric_key], x=0.02)
+    fig.tight_layout(rect=[0.045, 0.055, 1, 0.86])
 
-    # Add a little extra top margin for the legend
-    plt.tight_layout(rect=[0, 0, 1, 0.91])
-    fig.subplots_adjust(bottom=0.1)
-
-    # Common x-label on bottom row
-    for col in range(ncols):
-        axes[-1, col].set_xlabel("Arm Pulls")
-
+    plotted_table = pd.concat(plotted_tables, ignore_index=True) if plotted_tables else pd.DataFrame()
+    if table_file is not None:
+        Path(table_file).parent.mkdir(parents=True, exist_ok=True)
+        plotted_table.to_csv(table_file, index=False)
     if save_png and save_file is not None:
-        plt.savefig(save_file, format="png", dpi=500)
-
-    plt.show()
-
+        Path(save_file).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(save_file, format="png", dpi=500, bbox_inches="tight")
+    if show:
+        plt.show()
+    return fig, axes, plotted_table
 
 def plot_uncertainty_all_envs(
         env_uncertainties,

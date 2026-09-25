@@ -1,0 +1,69 @@
+{
+  "master_seed": 0,
+  "spawn_order": [
+    "EgeExp1",
+    "EgeExp4",
+    "EgeExp5"
+  ],
+  "note": "Frozen once from MASTER_SEED via SeedSequence(MASTER_SEED).spawn(3) in spawn_order, without seed-shopping. Re-running freeze_instances.py must reproduce byte-identical CSVs (see CHECKSUMS.sha256).",
+  "environments": {
+    "EgeExp1": {
+      "num_arms": 60,
+      "num_objectives": 2,
+      "csv_file": "EgeExp1_arms.csv",
+      "pareto_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "sha256": "3a5da82f60c1e74172fbf5c516776e23d9740a581956d922d762634f6932552b"
+    },
+    "EgeExp4": {
+      "num_arms": 50,
+      "num_objectives": 10,
+      "csv_file": "EgeExp4_arms.csv",
+      "pareto_indices": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49
+      ],
+      "sha256": "65f9bdad7bf99a2efa2e7eacb187a730b5a50d33f9a647826aa2b52fc55aa2db"
+    },
+    "EgeExp5": {
+      "num_arms": 20,
+      "num_objectives": 2,
+      "csv_file": "EgeExp5_arms.csv",
+      "pareto_indices": [
+        12,
+        14,
+        17,
+        18
+      ],
+      "sha256": "07837f676daacbf30e8a04ad9f985945fb73be97ff8895178eb39d00499ec7df"
+    }
+  }
+}

@@ -1,4 +1,37 @@
+# Experiment outputs (large, regenerated; archived separately when needed)
 /results/
 /results5000/
+/results_corr/
+/results_preregistered_final*/
+/figures/
 
+# Bulk archived evidence: preserved on disk and on the HPC with SHA-256
+# manifests, but far too large for git (~2.2 GB). Exclude the heavy payload
+# directories file-by-file so the small manifests/inventories stay tracked and
+# the archives remain independently verifiable.
+/archive_prepatch/results/**
+/archive_prepatch/figures/**
+/archive_provisional/hpc_job_49697/results/**
+/archive_provisional/hpc_job_49697/logs/**
+
+# Raw result CSVs are outputs, not source. Frozen benchmark instances and
+# generated audit reports are scientific evidence and ARE tracked (negated
+# below), because reproducibility depends on them.
 *.csv
+!environments/instances/*.csv
+!environments/reports/*.csv
+!experiments/reports/*.csv
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Editor / OS cruft
+.idea/
+.vscode/
+.DS_Store
+.copilot/
+
+# Virtualenvs
+.venv/
+venv/

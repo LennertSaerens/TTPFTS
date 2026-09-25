@@ -59,6 +59,30 @@ def bhattacharyya_coeff_diag(mu1, var1, mu2, var2):
 
 
 @njit
+def find_max_overlap_pair(F1_indices, F2_indices, means, vars):
+    """
+    Finds the pair of arms (i, j) with i in F1_indices and j in F2_indices
+    that maximizes the Bhattacharyya coefficient (overlap).
+    Returns (best_i, best_j).
+    """
+    max_bc = -1.0
+    best_i = -1
+    best_j = -1
+    
+    for i_idx in range(len(F1_indices)):
+        i = F1_indices[i_idx]
+        for j_idx in range(len(F2_indices)):
+            j = F2_indices[j_idx]
+            bc = bhattacharyya_coeff_diag(means[i], vars[i], means[j], vars[j])
+            if bc > max_bc:
+                max_bc = bc
+                best_i = i
+                best_j = j
+                
+    return best_i, best_j
+
+
+@njit
 def kl_divergence_diag(mu1, var1, mu2, var2):
     """
     Symmetric KL-divergence (Jensen divergence) between two diagonal Gaussians.

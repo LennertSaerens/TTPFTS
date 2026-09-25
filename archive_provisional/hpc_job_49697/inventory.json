@@ -1,0 +1,584 @@
+{
+  "classification": "provisional; structurally complete but superseded by APE/reward/posterior revisions",
+  "logs": [
+    {
+      "budget_runs_seed": "5000   Runs: 100   Seed: 0",
+      "commit": "1cfc48abfbb8e25722c1e3ac8aadf828ad5e16aa",
+      "done": "Mon  3 Aug 19:14:14 CEST 2026",
+      "environment": "EgeExp1",
+      "file": "egeexp-main-49697_1.out",
+      "host": "node103 with 1 CPUs, n_jobs=16",
+      "source_hash": "f62a0377d10fb874",
+      "start": "Mon  3 Aug 18:22:43 CEST 2026"
+    },
+    {
+      "budget_runs_seed": "5000   Runs: 100   Seed: 0",
+      "commit": "1cfc48abfbb8e25722c1e3ac8aadf828ad5e16aa",
+      "done": "Mon  3 Aug 19:04:08 CEST 2026",
+      "environment": "EgeExp2",
+      "file": "egeexp-main-49697_2.out",
+      "host": "node103 with 1 CPUs, n_jobs=16",
+      "source_hash": "f62a0377d10fb874",
+      "start": "Mon  3 Aug 18:22:43 CEST 2026"
+    },
+    {
+      "budget_runs_seed": "5000   Runs: 100   Seed: 0",
+      "commit": "1cfc48abfbb8e25722c1e3ac8aadf828ad5e16aa",
+      "done": "Mon  3 Aug 22:27:17 CEST 2026",
+      "environment": "EgeExp3",
+      "file": "egeexp-main-49697_3.out",
+      "host": "node103 with 1 CPUs, n_jobs=16",
+      "source_hash": "f62a0377d10fb874",
+      "start": "Mon  3 Aug 18:22:43 CEST 2026"
+    },
+    {
+      "budget_runs_seed": "5000   Runs: 100   Seed: 0",
+      "commit": "1cfc48abfbb8e25722c1e3ac8aadf828ad5e16aa",
+      "done": "Mon  3 Aug 19:13:53 CEST 2026",
+      "environment": "EgeExp4",
+      "file": "egeexp-main-49697_4.out",
+      "host": "node103 with 1 CPUs, n_jobs=16",
+      "source_hash": "f62a0377d10fb874",
+      "start": "Mon  3 Aug 18:22:43 CEST 2026"
+    },
+    {
+      "budget_runs_seed": "5000   Runs: 100   Seed: 0",
+      "commit": "1cfc48abfbb8e25722c1e3ac8aadf828ad5e16aa",
+      "done": "Mon  3 Aug 19:06:11 CEST 2026",
+      "environment": "EgeExp5",
+      "file": "egeexp-main-49697_5.out",
+      "host": "node103 with 1 CPUs, n_jobs=16",
+      "source_hash": "f62a0377d10fb874",
+      "start": "Mon  3 Aug 18:22:43 CEST 2026"
+    },
+    {
+      "budget_runs_seed": "5000   Runs: 100   Seed: 0",
+      "commit": "1cfc48abfbb8e25722c1e3ac8aadf828ad5e16aa",
+      "done": "Mon  3 Aug 19:04:49 CEST 2026",
+      "environment": "EgeExp6",
+      "file": "egeexp-main-49697_6.out",
+      "host": "node103 with 1 CPUs, n_jobs=16",
+      "source_hash": "f62a0377d10fb874",
+      "start": "Mon  3 Aug 18:22:43 CEST 2026"
+    },
+    {
+      "budget_runs_seed": "5000   Runs: 100   Seed: 0",
+      "commit": "1cfc48abfbb8e25722c1e3ac8aadf828ad5e16aa",
+      "done": "Mon  3 Aug 19:05:44 CEST 2026",
+      "environment": "EgeExp7",
+      "file": "egeexp-main-49697_7.out",
+      "host": "node103 with 1 CPUs, n_jobs=16",
+      "source_hash": "f62a0377d10fb874",
+      "start": "Mon  3 Aug 18:22:43 CEST 2026"
+    },
+    {
+      "budget_runs_seed": "5000   Runs: 100   Seed: 0",
+      "commit": "1cfc48abfbb8e25722c1e3ac8aadf828ad5e16aa",
+      "done": "Mon  3 Aug 19:03:43 CEST 2026",
+      "environment": "EgeExp8",
+      "file": "egeexp-main-49697_8.out",
+      "host": "node103 with 1 CPUs, n_jobs=16",
+      "source_hash": "f62a0377d10fb874",
+      "start": "Mon  3 Aug 18:22:43 CEST 2026"
+    }
+  ],
+  "results": [
+    {
+      "algorithms": [
+        {
+          "algorithm": "APE",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SH",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SR",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "TTPFTS_UNI",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "Uniform",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        }
+      ],
+      "bytes": 105035718,
+      "file": "EgeExp1_TTPFTS_UNI_Uniform_EGE_SR_EGE_SH_APE_5000_100.csv",
+      "rows": 2500500
+    },
+    {
+      "algorithms": [
+        {
+          "algorithm": "APE",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SH",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SR",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "TTPFTS_UNI",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "Uniform",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        }
+      ],
+      "bytes": 67995865,
+      "file": "EgeExp2_TTPFTS_UNI_Uniform_EGE_SR_EGE_SH_APE_5000_100.csv",
+      "rows": 2500500
+    },
+    {
+      "algorithms": [
+        {
+          "algorithm": "APE",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SH",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SR",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "TTPFTS_UNI",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "Uniform",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        }
+      ],
+      "bytes": 97987979,
+      "file": "EgeExp3_TTPFTS_UNI_Uniform_EGE_SR_EGE_SH_APE_5000_100.csv",
+      "rows": 2500500
+    },
+    {
+      "algorithms": [
+        {
+          "algorithm": "APE",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SH",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SR",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "TTPFTS_UNI",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "Uniform",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        }
+      ],
+      "bytes": 69435793,
+      "file": "EgeExp4_TTPFTS_UNI_Uniform_EGE_SR_EGE_SH_APE_5000_100.csv",
+      "rows": 2500500
+    },
+    {
+      "algorithms": [
+        {
+          "algorithm": "APE",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SH",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SR",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "TTPFTS_UNI",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "Uniform",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        }
+      ],
+      "bytes": 76800733,
+      "file": "EgeExp5_TTPFTS_UNI_Uniform_EGE_SR_EGE_SH_APE_5000_100.csv",
+      "rows": 2500500
+    },
+    {
+      "algorithms": [
+        {
+          "algorithm": "APE",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SH",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SR",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "TTPFTS_UNI",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "Uniform",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        }
+      ],
+      "bytes": 65208217,
+      "file": "EgeExp6_TTPFTS_UNI_Uniform_EGE_SR_EGE_SH_APE_5000_100.csv",
+      "rows": 2500500
+    },
+    {
+      "algorithms": [
+        {
+          "algorithm": "APE",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SH",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SR",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "TTPFTS_UNI",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "Uniform",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        }
+      ],
+      "bytes": 95197611,
+      "file": "EgeExp7_TTPFTS_UNI_Uniform_EGE_SR_EGE_SH_APE_5000_100.csv",
+      "rows": 2500500
+    },
+    {
+      "algorithms": [
+        {
+          "algorithm": "APE",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SH",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "EGE_SR",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "TTPFTS_UNI",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        },
+        {
+          "algorithm": "Uniform",
+          "duplicate_keys": 0,
+          "max_repetition": 99,
+          "max_timestep": 5000,
+          "min_repetition": 0,
+          "min_timestep": 0,
+          "repetitions": 100,
+          "rows": 500100,
+          "unique_timesteps": 5001
+        }
+      ],
+      "bytes": 68596737,
+      "file": "EgeExp8_TTPFTS_UNI_Uniform_EGE_SR_EGE_SH_APE_5000_100.csv",
+      "rows": 2500500
+    }
+  ],
+  "slurm_job": "49697"
+}

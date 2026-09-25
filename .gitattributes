@@ -1,0 +1,8 @@
+# Frozen benchmark instances and generated audit reports are checksummed
+# scientific evidence (environments/instances/CHECKSUMS.sha256, manifest.json).
+# Git's automatic CRLF<->LF normalisation would rewrite their bytes on
+# checkout and invalidate those hashes on a fresh clone, so keep them
+# byte-exact.
+environments/instances/*.csv -text
+environments/reports/*.csv   -text
+experiments/reports/*.csv    -text

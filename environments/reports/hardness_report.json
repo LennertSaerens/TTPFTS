@@ -1,0 +1,200 @@
+{
+  "reward_covariance_checks": [
+    {
+      "env": "EgeExp1",
+      "std_min": 0.5,
+      "std_max": 0.5,
+      "expected_std": 0.5,
+      "expected_variance": 0.25,
+      "pass": true
+    },
+    {
+      "env": "EgeExp2",
+      "std_min": 0.5,
+      "std_max": 0.5,
+      "expected_std": 0.5,
+      "expected_variance": 0.25,
+      "pass": true
+    },
+    {
+      "env": "EgeExp3",
+      "std_min": 0.5,
+      "std_max": 0.5,
+      "expected_std": 0.5,
+      "expected_variance": 0.25,
+      "pass": true
+    },
+    {
+      "env": "EgeExp4",
+      "std_min": 0.5,
+      "std_max": 0.5,
+      "expected_std": 0.5,
+      "expected_variance": 0.25,
+      "pass": true
+    },
+    {
+      "env": "EgeExp5",
+      "std_min": 0.5,
+      "std_max": 0.5,
+      "expected_std": 0.5,
+      "expected_variance": 0.25,
+      "pass": true
+    },
+    {
+      "env": "EgeExp6",
+      "std_min": 0.5,
+      "std_max": 0.5,
+      "expected_std": 0.5,
+      "expected_variance": 0.25,
+      "pass": true
+    },
+    {
+      "env": "EgeExp7",
+      "std_min": 0.5,
+      "std_max": 0.5,
+      "expected_std": 0.5,
+      "expected_variance": 0.25,
+      "pass": true
+    },
+    {
+      "env": "EgeExp8",
+      "std_min": 0.5,
+      "std_max": 0.5,
+      "expected_std": 0.5,
+      "expected_variance": 0.25,
+      "pass": true
+    }
+  ],
+  "frozen_instance_checks": [
+    {
+      "env": "EgeExp1",
+      "stable_across_reset": true,
+      "identical_across_new_instantiations": true,
+      "matches_frozen_csv": true,
+      "pass": true
+    },
+    {
+      "env": "EgeExp4",
+      "stable_across_reset": true,
+      "identical_across_new_instantiations": true,
+      "matches_frozen_csv": true,
+      "pass": true
+    },
+    {
+      "env": "EgeExp5",
+      "stable_across_reset": true,
+      "identical_across_new_instantiations": true,
+      "matches_frozen_csv": true,
+      "pass": true
+    }
+  ],
+  "hardness_summary": [
+    {
+      "env": "EgeExp1",
+      "num_arms": 60,
+      "num_pareto_arms": 10,
+      "pareto_sets_match": true,
+      "gaps_match_direct_vs_lemma": true,
+      "max_abs_gap_mismatch": 0.0,
+      "num_zero_gap_arms": 0,
+      "zero_gap_arm_indices": [],
+      "hardness_H": 15217.761905127338,
+      "current_flat_budget": 5000,
+      "budget_change_vs_5000": 10217.761905127338
+    },
+    {
+      "env": "EgeExp2",
+      "num_arms": 10,
+      "num_pareto_arms": 2,
+      "pareto_sets_match": true,
+      "gaps_match_direct_vs_lemma": true,
+      "max_abs_gap_mismatch": 0.0,
+      "num_zero_gap_arms": 0,
+      "zero_gap_arm_indices": [],
+      "hardness_H": 2543.757464180128,
+      "current_flat_budget": 5000,
+      "budget_change_vs_5000": -2456.242535819872
+    },
+    {
+      "env": "EgeExp3",
+      "num_arms": 200,
+      "num_pareto_arms": 20,
+      "pareto_sets_match": true,
+      "gaps_match_direct_vs_lemma": true,
+      "max_abs_gap_mismatch": 0.0,
+      "num_zero_gap_arms": 0,
+      "zero_gap_arm_indices": [],
+      "hardness_H": 685035.7311624396,
+      "current_flat_budget": 5000,
+      "budget_change_vs_5000": 680035.7311624396
+    },
+    {
+      "env": "EgeExp4",
+      "num_arms": 50,
+      "num_pareto_arms": 20,
+      "pareto_sets_match": true,
+      "gaps_match_direct_vs_lemma": true,
+      "max_abs_gap_mismatch": 0.0,
+      "num_zero_gap_arms": 0,
+      "zero_gap_arm_indices": [],
+      "hardness_H": 15977.302550933024,
+      "current_flat_budget": 5000,
+      "budget_change_vs_5000": 10977.302550933024
+    },
+    {
+      "env": "EgeExp5",
+      "num_arms": 20,
+      "num_pareto_arms": 4,
+      "pareto_sets_match": true,
+      "gaps_match_direct_vs_lemma": true,
+      "max_abs_gap_mismatch": 0.0,
+      "num_zero_gap_arms": 0,
+      "zero_gap_arm_indices": [],
+      "hardness_H": 197372.62411816468,
+      "current_flat_budget": 5000,
+      "budget_change_vs_5000": 192372.62411816468
+    },
+    {
+      "env": "EgeExp6",
+      "num_arms": 10,
+      "num_pareto_arms": 10,
+      "pareto_sets_match": true,
+      "gaps_match_direct_vs_lemma": true,
+      "max_abs_gap_mismatch": 0.0,
+      "num_zero_gap_arms": 0,
+      "zero_gap_arm_indices": [],
+      "hardness_H": 51966.414556165895,
+      "current_flat_budget": 5000,
+      "budget_change_vs_5000": 46966.414556165895
+    },
+    {
+      "env": "EgeExp7",
+      "num_arms": 22,
+      "num_pareto_arms": 8,
+      "pareto_sets_match": true,
+      "gaps_match_direct_vs_lemma": true,
+      "max_abs_gap_mismatch": 0.0,
+      "num_zero_gap_arms": 0,
+      "zero_gap_arm_indices": [],
+      "hardness_H": 6999.999999999998,
+      "current_flat_budget": 5000,
+      "budget_change_vs_5000": 1999.9999999999982
+    },
+    {
+      "env": "EgeExp8",
+      "num_arms": 5,
+      "num_pareto_arms": 1,
+      "pareto_sets_match": true,
+      "gaps_match_direct_vs_lemma": true,
+      "max_abs_gap_mismatch": 0.0,
+      "num_zero_gap_arms": 0,
+      "zero_gap_arm_indices": [],
+      "hardness_H": 237957.54388692294,
+      "current_flat_budget": 5000,
+      "budget_change_vs_5000": 232957.54388692294
+    }
+  ],
+  "gate2_reward_covariance_pass": true,
+  "gate2_frozen_instance_pass": true,
+  "gate3_pareto_and_hardness_pass": true
+}

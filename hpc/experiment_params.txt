@@ -1,0 +1,27 @@
+# HPC Experiment Parameters
+# Format: ENV DIST ALGORITHMS
+# One line per SLURM array task
+EgeExp1 gaussian TTPFTS_UNI,Uniform,EGE_SH,EGE_SR
+EgeExp2 gaussian TTPFTS_UNI,Uniform,EGE_SH,EGE_SR
+EgeExp3 gaussian TTPFTS_UNI,Uniform,EGE_SH,EGE_SR
+EgeExp4 gaussian TTPFTS_UNI,Uniform,EGE_SH,EGE_SR
+EgeExp5 gaussian TTPFTS_UNI,Uniform,EGE_SH,EGE_SR
+EgeExp6 gaussian TTPFTS_UNI,Uniform,EGE_SH,EGE_SR
+EgeExp7 gaussian TTPFTS_UNI,Uniform,EGE_SH,EGE_SR
+EgeExp8 gaussian TTPFTS_UNI,Uniform,EGE_SH,EGE_SR
+EgeExp1 bernoulli TTPFTS_BETA,Uniform,EGE_SH,EGE_SR
+EgeExp2 bernoulli TTPFTS_BETA,Uniform,EGE_SH,EGE_SR
+EgeExp3 bernoulli TTPFTS_BETA,Uniform,EGE_SH,EGE_SR
+EgeExp4 bernoulli TTPFTS_BETA,Uniform,EGE_SH,EGE_SR
+EgeExp5 bernoulli TTPFTS_BETA,Uniform,EGE_SH,EGE_SR
+EgeExp6 bernoulli TTPFTS_BETA,Uniform,EGE_SH,EGE_SR
+EgeExp7 bernoulli TTPFTS_BETA,Uniform,EGE_SH,EGE_SR
+EgeExp8 bernoulli TTPFTS_BETA,Uniform,EGE_SH,EGE_SR
+EgeExp1 exponential TTPFTS_GAMMA,Uniform,EGE_SH,EGE_SR
+EgeExp2 exponential TTPFTS_GAMMA,Uniform,EGE_SH,EGE_SR
+EgeExp3 exponential TTPFTS_GAMMA,Uniform,EGE_SH,EGE_SR
+EgeExp4 exponential TTPFTS_GAMMA,Uniform,EGE_SH,EGE_SR
+EgeExp5 exponential TTPFTS_GAMMA,Uniform,EGE_SH,EGE_SR
+EgeExp6 exponential TTPFTS_GAMMA,Uniform,EGE_SH,EGE_SR
+EgeExp7 exponential TTPFTS_GAMMA,Uniform,EGE_SH,EGE_SR
+EgeExp8 exponential TTPFTS_GAMMA,Uniform,EGE_SH,EGE_SR

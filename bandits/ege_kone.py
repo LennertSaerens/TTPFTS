@@ -95,6 +95,26 @@ def is_non_dominated(Y: np.ndarray, eps=0.) -> np.ndarray:
 #     return accepts
 
 
+def _argmax_random_tie(values):
+    """argmax that breaks ties uniformly at random instead of by lowest index.
+
+    With index-ordered tie-breaking, arms that are indistinguishable on the
+    empirical means (in particular before any sample has been drawn) are
+    accepted or rejected purely according to their position in the arm array,
+    which turns arm ordering into apparent performance.
+    """
+    candidates = np.flatnonzero(values == np.max(values))
+    if len(candidates) == 1:
+        return int(candidates[0])
+    return int(np.random.choice(candidates))
+
+
+def _argsort_desc_random_tie(values):
+    """Descending argsort that breaks ties uniformly at random."""
+    perm = np.random.permutation(len(values))
+    return perm[np.argsort(-values[perm], kind="stable")]
+
+
 def EGE_SR(T, K, D, environment):
     """
     Vectorized and optimized implementation of EGE-SR.
@@ -112,7 +132,10 @@ def EGE_SR(T, K, D, environment):
     n_ks = np.ceil([0, *(1 / log_K) * (T - K) / (K + 1 - np.arange(1, K))]).astype(int)
     total = np.zeros((K, D))
     active = np.ones(K, bool)
-    means = np.empty((K, D), float)
+    # Zero-initialised: for budgets too small to afford a single round of pulls
+    # no mean is ever written, and np.empty would leave the accept/reject logic
+    # reading uninitialised memory.
+    means = np.zeros((K, D), float)
     Nc = np.zeros(K, dtype=int)
     accepts = []
     rejects = []
@@ -150,8 +173,8 @@ def EGE_SR(T, K, D, environment):
         f_vec = np.minimum(term1, term2)
 
         # Reject/Accept logic
-        g_idx = np.argmax(g_vec)
-        f_idx = np.argmax(f_vec)
+        g_idx = _argmax_random_tie(g_vec)
+        f_idx = _argmax_random_tie(f_vec)
         indices = [g_vec[g_idx], f_vec[f_idx]]
         if indices[0] >= indices[1]:
             rejects.append(active_idx[g_idx])
@@ -237,7 +260,7 @@ def EGE_SH(T, K, D, environment):
     c_0 = 1e-7
     total = np.zeros((K, D))
     active = np.ones(K, bool)
-    means = np.empty((K, D), float)
+    means = np.zeros((K, D), float)
     Nc = np.zeros(K, dtype=int)
     accepts = []
     rejects = []
@@ -305,8 +328,9 @@ def EGE_SH(T, K, D, environment):
 
         # determine how many to keep
         num_arms_to_keep = math.ceil(s / 2)
-        # sort arms by descending Delta (ties handled by numpy's stable argsort)
-        sorted_idx_within_active = np.argsort(-Delta)
+        # sort arms by descending Delta, breaking ties uniformly at random so
+        # that indistinguishable arms are not dismissed by index order
+        sorted_idx_within_active = _argsort_desc_random_tie(Delta)
         # arms to dismiss are the lower-ranked ones
         dismiss_indices_within_active = sorted_idx_within_active[:-num_arms_to_keep]
         arms_to_dismiss = active_idx[dismiss_indices_within_active]
