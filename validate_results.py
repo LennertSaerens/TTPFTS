@@ -382,8 +382,10 @@ def validate(results_dir: Path, *, python: str, skip_ege_invariance: bool, summa
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("results_dir", type=Path)
-    parser.add_argument("--python", default=str(REPO_ROOT / ".venv" / "bin" / "python"),
-                        help="Python executable used for the EGE invariance smoke run")
+    parser.add_argument("--python", default=sys.executable,
+                        help="Python executable used for the EGE invariance smoke run "
+                             "(defaults to the interpreter running this script, so the "
+                             "check works on HPC nodes without a local .venv)")
     parser.add_argument("--skip-ege-invariance", action="store_true",
                         help="Skip the runner re-execution check (for focused fixture tests only)")
     parser.add_argument("--summary-only", action="store_true",
