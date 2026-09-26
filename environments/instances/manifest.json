@@ -1,16 +1,9 @@
 {
-  "master_seed": 0,
-  "spawn_order": [
-    "EgeExp1",
-    "EgeExp4",
-    "EgeExp5"
-  ],
-  "note": "Frozen once from MASTER_SEED via SeedSequence(MASTER_SEED).spawn(3) in spawn_order, without seed-shopping. Re-running freeze_instances.py must reproduce byte-identical CSVs (see CHECKSUMS.sha256).",
   "environments": {
     "EgeExp1": {
+      "csv_file": "EgeExp1_arms.csv",
       "num_arms": 60,
       "num_objectives": 2,
-      "csv_file": "EgeExp1_arms.csv",
       "pareto_indices": [
         0,
         1,
@@ -25,10 +18,39 @@
       ],
       "sha256": "3a5da82f60c1e74172fbf5c516776e23d9740a581956d922d762634f6932552b"
     },
+    "EgeExp3": {
+      "csv_file": "EgeExp3_arms.csv",
+      "note": "Deterministic circle construction, but cos/sin differ by up to 1 ULP between platform libm implementations, so the instance is frozen from the Linux x86-64 values used for the final run.",
+      "num_arms": 200,
+      "num_objectives": 2,
+      "pareto_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "sha256": "3176929535402b40e4bcc3aeabc101c484b6998f47c63b7c1294b88f2e938d04"
+    },
     "EgeExp4": {
+      "csv_file": "EgeExp4_arms.csv",
       "num_arms": 50,
       "num_objectives": 10,
-      "csv_file": "EgeExp4_arms.csv",
       "pareto_indices": [
         30,
         31,
@@ -54,9 +76,9 @@
       "sha256": "65f9bdad7bf99a2efa2e7eacb187a730b5a50d33f9a647826aa2b52fc55aa2db"
     },
     "EgeExp5": {
+      "csv_file": "EgeExp5_arms.csv",
       "num_arms": 20,
       "num_objectives": 2,
-      "csv_file": "EgeExp5_arms.csv",
       "pareto_indices": [
         12,
         14,
@@ -65,5 +87,12 @@
       ],
       "sha256": "07837f676daacbf30e8a04ad9f985945fb73be97ff8895178eb39d00499ec7df"
     }
-  }
+  },
+  "master_seed": 0,
+  "note": "Frozen once from MASTER_SEED via SeedSequence(MASTER_SEED).spawn(3) in spawn_order, without seed-shopping. Re-running freeze_instances.py must reproduce byte-identical CSVs (see CHECKSUMS.sha256).",
+  "spawn_order": [
+    "EgeExp1",
+    "EgeExp4",
+    "EgeExp5"
+  ]
 }

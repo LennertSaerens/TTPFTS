@@ -1,6 +1,10 @@
 import numpy as np
 from environments.BaseEnvironment import BaseEnvironment
 from environments.distributions import std_from_variance
+from environments.instances.frozen_instance_loader import (
+    FrozenInstanceError,
+    load_frozen_arms,
+)
 
 # Manuscript spec: Gaussian rewards with diagonal covariance sigma^2 I_D, sigma^2=0.25.
 GAUSSIAN_VARIANCE = 0.25
@@ -79,8 +83,20 @@ def generate_arms():
     admissible interval (CRITICAL_LOW_DEG, CRITICAL_HIGH_DEG) so that every
     dominated arm is strictly dominated, no two arms share an objective value,
     and H(nu) is finite.
+
+    The construction is deterministic, but ``cos``/``sin`` may differ by up to
+    one ULP between platform ``libm`` implementations (observed: 7 of 400
+    coordinates differ by 1.1e-16 between macOS/arm64 and Linux/x86-64). That
+    is ~13 orders of magnitude below the smallest decision gap and cannot
+    change any Pareto or algorithmic decision, but it does change the
+    byte-exact instance hash. The frozen instance is therefore authoritative
+    so the benchmark is identical on every platform; the analytic construction
+    below remains the documented derivation and is used to regenerate it.
     """
-    return _circle_points(generate_angles())
+    try:
+        return load_frozen_arms("EgeExp3")
+    except FrozenInstanceError:
+        return _circle_points(generate_angles())
 
 
 class EgeExp3(BaseEnvironment):
