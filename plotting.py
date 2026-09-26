@@ -626,17 +626,17 @@ def plot_metric_all_envs_grid_top_legend(
         handles,
         labels,
         loc="upper center",
-        bbox_to_anchor=(0.5, 0.98),
+        bbox_to_anchor=(0.5, 0.89),
         ncol=min(6, max(1, len(labels))),
         fontsize=12,
         frameon=True,
     )
-    fig.supxlabel("Normalized Budget", y=0.075)
-    fig.supylabel(METRIC_LABELS[metric_key], x=0.045)
+    fig.supxlabel("Normalized Budget", y=0.19)
+    fig.supylabel(METRIC_LABELS[metric_key], x=0.15)
     # Reserve a fixed band for the figure-level legend.  This must not be
     # inferred from the axes' tick-label extents: log-scaled axes have taller
     # tick labels and would otherwise push the legend outside the saved figure.
-    fig.tight_layout(rect=[0.075, 0.105, 1, 0.82])
+    fig.tight_layout(rect=[0.13, 0.13, 1, 0.855])
 
     plotted_table = pd.concat(plotted_tables, ignore_index=True) if plotted_tables else pd.DataFrame()
     if table_file is not None:
