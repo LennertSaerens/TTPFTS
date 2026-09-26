@@ -107,6 +107,9 @@ def main(argv: list[str] | None = None):
             table_file=str(figures_dir / f"publication_{metric_key}_plot_table.csv"),
             manifest_path=str(manifest_path) if manifest_path else None,
             environment_budgets=budgets,
+            exclude_algs={"TTPFTS_KNOWN_VAR"},
+            algorithm_display_labels={"TTPFTS_UNKNOWN_VAR": "TTPFTS"},
+            log_misidentification=True,
             show=False,
         )
     plt.close("all")

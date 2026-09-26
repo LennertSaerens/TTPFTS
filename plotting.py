@@ -18,6 +18,7 @@ from typing import Mapping, Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.ticker import FuncFormatter
 
 try:
     from runner.schema import SCHEMA_COLUMNS
@@ -308,6 +309,12 @@ def _algorithm_label(name: str, format_legend_p: bool = False) -> str:
     return name
 
 
+def _environment_label(name: str) -> str:
+    """Return the compact publication label for a named EgeExp environment."""
+    match = re.fullmatch(r"EgeExp(\d+)", name)
+    return f"Environment {match.group(1)}" if match else name
+
+
 def plot_pfi_metric(file, num_runs=None, num_arm_pulls=None, metric="Jaccard", rolling_avg_window=1,
                     plot_std=True, save_pdf=False, step=1, *, manifest_path=None, legacy=False,
                     show=True):
@@ -492,6 +499,9 @@ def plot_metric_all_envs_grid_top_legend(
         legacy=False,
         legacy_max_budget=5000,
         algorithm_order: Sequence[str] = DEFAULT_ALGORITHM_ORDER,
+        algorithm_display_labels: Mapping[str, str] | None = None,
+        annotate_environments: bool = True,
+        log_misidentification: bool = False,
         show=True,
 ):
     """Plot a 2x4 publication grid with shared labels and top framed legend.
@@ -512,6 +522,7 @@ def plot_metric_all_envs_grid_top_legend(
     combined = pd.concat(frames, ignore_index=True)
     full_summary = summarize_metric_for_plot(combined, metric_key, budgets)
 
+    use_log_y = metric_key == "misidentification" and log_misidentification
     sharey = False if metric_key == "misidentification" else True
     fig, axes = plt.subplots(
         nrows=nrows,
@@ -529,8 +540,18 @@ def plot_metric_all_envs_grid_top_legend(
         ax = axes[row, col]
         n_arms = env_arms[i] if env_arms is not None else None
         n_objs = env_objs[i] if env_objs is not None else None
-        title = f"{env_name}" if n_arms is None or n_objs is None else f"{env_name}"
-        ax.set_title(title, fontsize=14)
+        if annotate_environments:
+            ax.text(
+                0.97,
+                0.05,
+                _environment_label(env_name),
+                transform=ax.transAxes,
+                ha="right",
+                va="bottom",
+                fontsize=10,
+                color="0.25",
+                bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.75, "pad": 1.5},
+            )
 
         env_summary = full_summary[full_summary["environment"] == env_name]
         algorithms = list(env_summary["algorithm"].unique())
@@ -552,17 +573,43 @@ def plot_metric_all_envs_grid_top_legend(
             else:
                 shown = curve
             color = cmap(alg_idx / max(1, len(algorithms) - 1)) if cmap is not None else None
-            line, = ax.plot(shown["normalized_budget"], shown["mean"],
-                            label=_algorithm_label(algorithm, format_legend_p), color=color)
+            means = shown["mean"]
+            if use_log_y:
+                # Exact zero misidentification has no location on a strict log
+                # axis, so omit it rather than depicting it as a positive value.
+                means = means.where(means > 0)
+            label = (algorithm_display_labels or {}).get(
+                algorithm, _algorithm_label(algorithm, format_legend_p)
+            )
+            line, = ax.plot(shown["normalized_budget"], means, label=label, color=color)
             if plot_std:
-                ax.fill_between(shown["normalized_budget"], shown["lower"], shown["upper"],
-                                alpha=0.18, color=line.get_color(), linewidth=0)
+                lower = shown["lower"]
+                upper = shown["upper"]
+                if use_log_y:
+                    lower = lower.where(means.notna())
+                    upper = upper.where(means.notna())
+                ax.fill_between(
+                    shown["normalized_budget"],
+                    lower,
+                    upper,
+                    alpha=0.18,
+                    color=line.get_color(),
+                    linewidth=0,
+                )
             plotted_tables.append(shown)
         ax.set_xlim(0, 1)
         if metric_key in {"bernoulli", "jaccard"}:
             ax.set_ylim(0, 1)
         elif metric_key == "misidentification":
-            ax.set_ylim(bottom=0)
+            if use_log_y:
+                positive = env_summary.loc[env_summary["mean"] > 0, "mean"]
+                if positive.empty:
+                    raise AssertionError(f"{env_name} has no positive misidentification values for log plotting")
+                ax.set_yscale("log")
+                ax.set_ylim(bottom=float(positive.min()) / 2.0)
+            else:
+                ax.set_ylim(bottom=0)
+        ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}"))
         ax.grid(True, alpha=0.22, linewidth=0.55)
 
     for j in range(n_env, nrows * ncols):
@@ -584,9 +631,12 @@ def plot_metric_all_envs_grid_top_legend(
         fontsize=12,
         frameon=True,
     )
-    fig.supxlabel("Normalized Budget", y=0.035)
-    fig.supylabel(METRIC_LABELS[metric_key], x=0.02)
-    fig.tight_layout(rect=[0.045, 0.055, 1, 0.86])
+    fig.supxlabel("Normalized Budget", y=0.075)
+    fig.supylabel(METRIC_LABELS[metric_key], x=0.045)
+    # Reserve a fixed band for the figure-level legend.  This must not be
+    # inferred from the axes' tick-label extents: log-scaled axes have taller
+    # tick labels and would otherwise push the legend outside the saved figure.
+    fig.tight_layout(rect=[0.075, 0.105, 1, 0.82])
 
     plotted_table = pd.concat(plotted_tables, ignore_index=True) if plotted_tables else pd.DataFrame()
     if table_file is not None:

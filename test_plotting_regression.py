@@ -125,6 +125,9 @@ def _make_plot(metric="Jaccard"):
         metric=metric,
         manifest_path=manifest_path,
         figsize=(12, 6),
+        exclude_algs={"TTPFTS_KNOWN_VAR"},
+        algorithm_display_labels={"TTPFTS_UNKNOWN_VAR": "TTPFTS"},
+        log_misidentification=True,
         show=False,
     )
     return fig, axes, table, envs, budgets
@@ -150,8 +153,13 @@ def test_shared_labels_and_legend_entries():
     check("no repeated per-axes y-labels", all(ax.get_ylabel() == "" for ax in axes.flat))
     legend = fig.legends[0] if fig.legends else None
     labels = [t.get_text() for t in legend.get_texts()] if legend else []
-    check("legend has six algorithm entries", len(labels) == 6, str(labels))
-    check("legend labels are distinct", len(set(labels)) == 6, str(labels))
+    check("legend has five algorithm entries", len(labels) == 5, str(labels))
+    check("legend omits known-variance TTPFTS", "TTPFTS_KNOWN_VAR" not in labels, str(labels))
+    check("legend relabels unknown-variance TTPFTS", "TTPFTS" in labels, str(labels))
+    check("legend labels are distinct", len(set(labels)) == 5, str(labels))
+    annotations = [text.get_text() for ax in axes.flat for text in ax.texts]
+    check("subplots have compact environment labels", annotations == [f"Environment {i}" for i in range(1, 9)],
+          str(annotations))
     plt.close(fig)
 
 
@@ -163,6 +171,15 @@ def test_sparse_ege_grids_not_interpolated():
           ege_curve[["arm_pull", "normalized_budget"]].to_string(index=False))
     check("non-EGE synthetic grid can have different recorded count", len(uniform_curve) == 4,
           uniform_curve[["arm_pull", "normalized_budget"]].to_string(index=False))
+    plt.close(fig)
+
+
+def test_misidentification_log_scale_and_compact_x_ticks():
+    fig, axes, _, _, _ = _make_plot("Misidentification")
+    check("misidentification axes use log scale", all(ax.get_yscale() == "log" for ax in axes.flat))
+    tick_labels = [label.get_text() for label in axes[-1, 0].get_xticklabels() if label.get_text()]
+    check("x ticks do not have redundant trailing zeros", all(not text.endswith(".00") for text in tick_labels),
+          str(tick_labels))
     plt.close(fig)
 
 
@@ -204,6 +221,7 @@ if __name__ == "__main__":
     run("x-normalization endpoint and unequal budgets", test_normalization_endpoint_and_unequal_budgets)
     run("shared labels and six-entry legend", test_shared_labels_and_legend_entries)
     run("sparse EGE grids", test_sparse_ege_grids_not_interpolated)
+    run("misidentification log scale and x ticks", test_misidentification_log_scale_and_compact_x_ticks)
     run("legacy archive loading", test_legacy_archive_loading_still_works)
     run("Wilson interval correctness", test_wilson_interval_correctness)
     run("direct summary endpoint assertion", test_summary_direct_endpoint_assertion)
