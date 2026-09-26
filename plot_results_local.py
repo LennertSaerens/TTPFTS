@@ -36,16 +36,29 @@ def _manifest_or_defaults(results_dir: Path) -> tuple[Path | None, dict[str, int
     return None, DEFAULT_EGE_BUDGETS
 
 
-PREREGISTERED_RESULTS_DIR = Path("results_preregistered_final")
+PREREGISTERED_RESULTS_GLOB = "results_preregistered_final*"
 DEVELOPMENT_RESULTS_DIR = Path("results")
 
 
 def resolve_results_dir(explicit: str | None = None) -> Path:
-    """Pick the results directory for the publication plotting path."""
+    """Pick the results directory for the publication plotting path.
+
+    The preregistered run writes to ``results_preregistered_final_<hash>``,
+    where the suffix is the configuration hash, so match by glob rather than
+    an exact name. If several config hashes are present the choice is
+    ambiguous and must be made explicitly rather than guessed.
+    """
     if explicit is not None:
         return Path(explicit)
-    if PREREGISTERED_RESULTS_DIR.exists():
-        return PREREGISTERED_RESULTS_DIR
+    candidates = sorted(p for p in Path(".").glob(PREREGISTERED_RESULTS_GLOB) if p.is_dir())
+    if len(candidates) > 1:
+        raise SystemExit(
+            "Multiple preregistered result directories found: "
+            + ", ".join(str(c) for c in candidates)
+            + "\nPass --results_dir to choose one explicitly."
+        )
+    if candidates:
+        return candidates[0]
     return DEVELOPMENT_RESULTS_DIR
 
 

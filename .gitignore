@@ -4,6 +4,8 @@
 /results_corr/
 /results_preregistered_final*/
 /figures/
+# Final publication artifacts are evidence and are tracked.
+!/figures/publication/
 
 # Bulk archived evidence: preserved on disk and on the HPC with SHA-256
 # manifests, but far too large for git (~2.2 GB). Exclude the heavy payload
