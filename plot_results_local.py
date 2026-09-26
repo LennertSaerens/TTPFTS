@@ -108,7 +108,11 @@ def main(argv: list[str] | None = None):
             manifest_path=str(manifest_path) if manifest_path else None,
             environment_budgets=budgets,
             exclude_algs={"TTPFTS_KNOWN_VAR"},
-            algorithm_display_labels={"TTPFTS_UNKNOWN_VAR": "TTPFTS"},
+            algorithm_display_labels={
+                "EGE_SH": "EGE-SH",
+                "EGE_SR": "EGE-SR",
+                "TTPFTS_UNKNOWN_VAR": "TTPFTS",
+            },
             log_misidentification=True,
             show=False,
         )

@@ -18,7 +18,7 @@ from typing import Mapping, Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FixedLocator, FuncFormatter
 
 try:
     from runner.schema import SCHEMA_COLUMNS
@@ -312,7 +312,7 @@ def _algorithm_label(name: str, format_legend_p: bool = False) -> str:
 def _environment_label(name: str) -> str:
     """Return the compact publication label for a named EgeExp environment."""
     match = re.fullmatch(r"EgeExp(\d+)", name)
-    return f"Environment {match.group(1)}" if match else name
+    return match.group(1) if match else name
 
 
 def plot_pfi_metric(file, num_runs=None, num_arm_pulls=None, metric="Jaccard", rolling_avg_window=1,
@@ -607,9 +607,13 @@ def plot_metric_all_envs_grid_top_legend(
                     raise AssertionError(f"{env_name} has no positive misidentification values for log plotting")
                 ax.set_yscale("log")
                 ax.set_ylim(bottom=float(positive.min()) / 2.0)
+                ax.tick_params(axis="y", labelsize=11)
             else:
                 ax.set_ylim(bottom=0)
-        ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}"))
+        ax.xaxis.set_major_locator(FixedLocator(np.linspace(0.0, 1.0, 4)))
+        ax.xaxis.set_major_formatter(
+            FuncFormatter(lambda value, _: f"{value:.2f}".rstrip("0").rstrip("."))
+        )
         ax.grid(True, alpha=0.22, linewidth=0.55)
 
     for j in range(n_env, nrows * ncols):

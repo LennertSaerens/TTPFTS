@@ -126,7 +126,11 @@ def _make_plot(metric="Jaccard"):
         manifest_path=manifest_path,
         figsize=(12, 6),
         exclude_algs={"TTPFTS_KNOWN_VAR"},
-        algorithm_display_labels={"TTPFTS_UNKNOWN_VAR": "TTPFTS"},
+        algorithm_display_labels={
+            "EGE_SH": "EGE-SH",
+            "EGE_SR": "EGE-SR",
+            "TTPFTS_UNKNOWN_VAR": "TTPFTS",
+        },
         log_misidentification=True,
         show=False,
     )
@@ -158,7 +162,7 @@ def test_shared_labels_and_legend_entries():
     check("legend relabels unknown-variance TTPFTS", "TTPFTS" in labels, str(labels))
     check("legend labels are distinct", len(set(labels)) == 5, str(labels))
     annotations = [text.get_text() for ax in axes.flat for text in ax.texts]
-    check("subplots have compact environment labels", annotations == [f"Environment {i}" for i in range(1, 9)],
+    check("subplots have compact environment labels", annotations == [str(i) for i in range(1, 9)],
           str(annotations))
     grid_center = (axes[0, 0].get_position().x0 + axes[0, -1].get_position().x1) / 2.0
     x_label = next(text for text in fig.texts if text.get_text() == "Normalized Budget")
@@ -185,6 +189,18 @@ def test_misidentification_log_scale_and_compact_x_ticks():
     tick_labels = [label.get_text() for label in axes[-1, 0].get_xticklabels() if label.get_text()]
     check("x ticks do not have redundant trailing zeros", all(not text.endswith(".00") for text in tick_labels),
           str(tick_labels))
+    check("each subplot has four x ticks", all(len(ax.get_xticks()) == 4 for ax in axes.flat))
+    check("x ticks use compact one-third labels", tick_labels == ["0", "0.33", "0.67", "1"],
+          str(tick_labels))
+    fig.canvas.draw()
+    y_tick_sizes = [
+        label.get_fontsize()
+        for ax in axes.flat
+        for label in ax.get_yticklabels()
+        if label.get_visible()
+    ]
+    check("misidentification y tick labels use 11pt font", all(size == 11 for size in y_tick_sizes),
+          str(y_tick_sizes))
     plt.close(fig)
 
 
