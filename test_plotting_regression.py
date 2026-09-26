@@ -160,6 +160,11 @@ def test_shared_labels_and_legend_entries():
     annotations = [text.get_text() for ax in axes.flat for text in ax.texts]
     check("subplots have compact environment labels", annotations == [f"Environment {i}" for i in range(1, 9)],
           str(annotations))
+    grid_center = (axes[0, 0].get_position().x0 + axes[0, -1].get_position().x1) / 2.0
+    x_label = next(text for text in fig.texts if text.get_text() == "Normalized Budget")
+    legend_center = fig.legends[0].get_bbox_to_anchor().transformed(fig.transFigure.inverted()).x0
+    check("shared x-label centers on subplot grid", abs(x_label.get_position()[0] - grid_center) < 1e-9)
+    check("legend centers on subplot grid", abs(legend_center - grid_center) < 1e-9)
     plt.close(fig)
 
 
