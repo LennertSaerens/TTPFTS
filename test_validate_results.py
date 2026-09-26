@@ -157,12 +157,34 @@ def test_mismatched_instance_hash() -> None:
 
 def test_mixed_manifest() -> None:
     def mutate(path: Path) -> None:
-        original = json.loads((path / "run" / "manifest.json").read_text())
-        mixed_dir = path / "other_run"
-        mixed_dir.mkdir()
+        source = next((path / "run" / "manifests").glob("*.json"))
+        original = json.loads(source.read_text())
+        mixed_dir = path / "other_run" / "manifests"
+        mixed_dir.mkdir(parents=True)
         original["num_runs"] = 99
-        (mixed_dir / "manifest.json").write_text(json.dumps(original, indent=2, sort_keys=True) + "\n")
+        (mixed_dir / "EgeExpX.json").write_text(json.dumps(original, indent=2, sort_keys=True) + "\n")
     assert_validator_catches("mixed_manifest", "mixed manifests", mutate)
+
+
+def test_clobbered_manifest_hides_environments() -> None:
+    """A shared run/ directory written by one array task per environment.
+
+    Every task writes run/manifest.json, so the last finisher clobbers the
+    others. Validation must not silently cover only the surviving environment
+    while other result files sit unchecked.
+    """
+    def mutate(path: Path) -> None:
+        manifests = path / "run" / "manifests"
+        keep = sorted(manifests.glob("*.json"))[0]
+        for extra in sorted(manifests.glob("*.json"))[1:]:
+            extra.unlink()
+        # Simulate the surviving combined manifest naming only one environment.
+        data = json.loads(keep.read_text())
+        (path / "run" / "manifest.json").write_text(
+            json.dumps(data, indent=2, sort_keys=True) + "\n")
+        # A second environment's results exist but are now undeclared.
+        shutil.copy(path / "EgeExp7.csv", path / "EgeExp2.csv")
+    assert_validator_catches("clobbered_manifest", "not described by any manifest", mutate)
 
 
 if __name__ == "__main__":
@@ -174,6 +196,7 @@ if __name__ == "__main__":
     run("detect tampered metric", test_tampered_metric)
     run("detect mismatched instance hash", test_mismatched_instance_hash)
     run("detect mixed manifest", test_mixed_manifest)
+    run("detect clobbered manifest hiding environments", test_clobbered_manifest_hides_environments)
 
     print("\n" + "=" * 80)
     if WORK.exists():

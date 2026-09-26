@@ -42,18 +42,34 @@ class CheckReport:
 
 
 def canonical_manifest(data: dict[str, Any]) -> dict[str, Any]:
-    ignored = {"created_at", "results_dir", "run_dir", "cli_args", "n_jobs"}
+    """Run-level fields that must agree across every manifest of one run.
+
+    Per-environment fields are excluded: with one SLURM array task per
+    environment, each task legitimately describes only its own environment.
+    """
+    ignored = {"created_at", "results_dir", "run_dir", "cli_args", "n_jobs",
+               "environments", "budgets", "evaluation_grids"}
     return {k: data[k] for k in sorted(data) if k not in ignored}
 
 
 def find_manifests(results_dir: Path) -> list[Path]:
+    """Locate per-environment manifests, falling back to combined manifests.
+
+    Per-environment manifests under ``run/manifests/`` are authoritative because
+    a shared ``run/manifest.json`` is overwritten by whichever array task
+    finishes last. Preferring the per-environment files prevents validation from
+    silently covering only the surviving environment.
+    """
+    per_env = sorted(p for p in results_dir.rglob("manifests/*.json") if p.is_file())
+    if per_env:
+        return per_env
     return sorted(p for p in results_dir.rglob("manifest.json") if p.is_file())
 
 
 def load_manifest(results_dir: Path, report: CheckReport) -> dict[str, Any] | None:
     manifests = find_manifests(results_dir)
     if not manifests:
-        report.fail("manifest agreement", f"no manifest.json found under {results_dir}")
+        report.fail("manifest agreement", f"no manifest found under {results_dir}")
         return None
     loaded = []
     for path in manifests:
@@ -67,9 +83,30 @@ def load_manifest(results_dir: Path, report: CheckReport) -> dict[str, Any] | No
              if canonical_manifest(data) != canonical]
     if mixed:
         report.fail("manifest agreement", "mixed manifests detected: " + ", ".join(mixed))
-    else:
-        report.pass_("manifest agreement", f"{len(loaded)} consistent manifest(s)")
-    return loaded[0][1]
+        return None
+
+    # Union the per-environment sections so validation covers the whole run.
+    merged = dict(loaded[0][1])
+    environments: list[str] = []
+    budgets: dict[str, Any] = {}
+    grids: dict[str, Any] = {}
+    for path, data in loaded:
+        for env in data.get("environments", []):
+            if env in environments:
+                report.fail("manifest agreement",
+                            f"environment {env} described by more than one manifest "
+                            f"(duplicate in {path.name})")
+                return None
+            environments.append(env)
+        budgets.update(data.get("budgets", {}) or {})
+        grids.update(data.get("evaluation_grids", {}) or {})
+    merged["environments"] = sorted(environments)
+    merged["budgets"] = budgets
+    merged["evaluation_grids"] = grids
+    report.pass_("manifest agreement",
+                 f"{len(loaded)} consistent manifest(s) covering "
+                 f"{len(merged['environments'])} environment(s)")
+    return merged
 
 
 def parse_int_set(encoded: Any, *, field: str, num_arms: int | None) -> tuple[set[int] | None, str | None]:
@@ -107,7 +144,18 @@ def independent_metrics(recommendation: set[int], true_pareto: set[int], num_arm
 
 def read_rows(results_dir: Path, manifest: dict[str, Any], report: CheckReport) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
-    for env in manifest.get("environments", []):
+    declared = list(manifest.get("environments", []))
+
+    # Any result file not described by a manifest would otherwise be skipped
+    # silently, so validation could "pass" while covering a fraction of the
+    # run. Treat unaccounted-for result files as a failure.
+    present = sorted(p.stem for p in results_dir.glob("*.csv"))
+    unaccounted = [name for name in present if name not in declared]
+    if unaccounted:
+        report.fail("load merged data",
+                    "result files not described by any manifest: " + ", ".join(unaccounted))
+
+    for env in declared:
         path = results_dir / f"{env}.csv"
         if not path.exists():
             report.fail("load merged data", f"missing {path.name}")

@@ -1,6 +1,7 @@
 import argparse
 import csv
 import os
+from dataclasses import replace
 import random
 import re
 import zlib
@@ -579,7 +580,23 @@ if __name__ == "__main__":
         run_dir=run_dir,
     )
     if not args.no_write:
+        # Write one manifest per environment as well as the combined
+        # manifest.json. With one SLURM array task per environment sharing a
+        # run directory, every task writes manifest.json and the last writer
+        # silently clobbers the others, which would leave validation covering
+        # only the surviving environment. Per-environment manifests cannot
+        # collide, so the full run stays auditable.
         manifest.write(os.path.join(run_dir, "manifest.json"))
+        manifests_dir = os.path.join(run_dir, "manifests")
+        os.makedirs(manifests_dir, exist_ok=True)
+        for env_name in environments:
+            env_manifest = replace(
+                manifest,
+                environments=[env_name],
+                budgets={env_name: manifest.budgets[env_name]},
+                evaluation_grids={env_name: manifest.evaluation_grids[env_name]},
+            )
+            env_manifest.write(os.path.join(manifests_dir, f"{env_name}.json"))
 
     for i, env_name in enumerate(environments):
         env_cls, _ = ENVIRONMENTS[env_name]
