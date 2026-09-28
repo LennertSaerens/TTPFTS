@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from .analyze import MEASURES, correlation_summary, evolution_summary, load_results, trajectory_correlations, write_analysis
+from .analyze import MEASURES, evolution_summary, load_results, trajectory_correlations, write_analysis
 
 
 LABELS = {
@@ -18,6 +18,10 @@ LABELS = {
     "symmetric_kl": "Symmetric KL Divergence",
     "entropy": "Posterior Entropy (nats)",
 }
+PAPER_WIDTH_INCHES = 7.16
+PAPER_FONT_SIZE = 14
+TICK_FONT_SIZE = 12
+LEGEND_FONT_SIZE = 12
 
 
 def _environment_sort_key(name: str) -> int:
@@ -25,13 +29,13 @@ def _environment_sort_key(name: str) -> int:
 
 
 def plot_evolution(summary: pd.DataFrame, measure: str, output: Path) -> None:
-    fig, ax = plt.subplots(figsize=(8.2, 5.0))
+    fig, ax = plt.subplots(figsize=(PAPER_WIDTH_INCHES, 4.6))
     for environment in sorted(summary["environment"].unique(), key=_environment_sort_key):
         curve = summary[summary["environment"] == environment].sort_values("normalized_budget")
         valid = curve["n_valid"] > 0
         line, = ax.plot(
             curve.loc[valid, "normalized_budget"], curve.loc[valid, "mean"],
-            linewidth=1.8, label=environment.removeprefix("EgeExp"),
+            linewidth=2.0, label=environment.removeprefix("EgeExp"),
         )
         ax.fill_between(
             curve.loc[valid, "normalized_budget"], curve.loc[valid, "lower"], curve.loc[valid, "upper"],
@@ -44,7 +48,13 @@ def plot_evolution(summary: pd.DataFrame, measure: str, output: Path) -> None:
     )
     ax.set_xticks([0, 0.25, 0.5, 0.75, 1])
     ax.grid(True, alpha=0.25)
-    ax.legend(title="Environment", ncol=4, frameon=True, loc="best")
+    ax.tick_params(labelsize=TICK_FONT_SIZE)
+    ax.xaxis.label.set_size(PAPER_FONT_SIZE)
+    ax.yaxis.label.set_size(PAPER_FONT_SIZE)
+    ax.legend(
+        title="Environment", ncol=4, frameon=True, loc="best",
+        fontsize=LEGEND_FONT_SIZE, title_fontsize=LEGEND_FONT_SIZE,
+    )
     fig.tight_layout()
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=500, bbox_inches="tight")
@@ -57,22 +67,27 @@ def plot_correlations(correlations: pd.DataFrame, measure: str, output: Path) ->
         correlations.loc[correlations["environment"] == environment, "pearson_r"].dropna().to_numpy()
         for environment in environments
     ]
-    summary = correlation_summary(correlations).set_index("environment")
-    fig, ax = plt.subplots(figsize=(8.2, 5.0))
-    boxes = ax.boxplot(values, labels=[
-        f"{environment.removeprefix('EgeExp')}\n({int(summary.loc[environment, 'n_valid'])}/{int(summary.loc[environment, 'n_total'])})"
-        for environment in environments
-    ], patch_artist=True, showfliers=True)
+    fig, ax = plt.subplots(figsize=(PAPER_WIDTH_INCHES, 4.6))
+    boxes = ax.boxplot(
+        values,
+        labels=[environment.removeprefix("EgeExp") for environment in environments],
+        vert=False,
+        patch_artist=True,
+        showfliers=True,
+        medianprops={"color": "black", "linewidth": 1.5},
+    )
     for patch, color in zip(boxes["boxes"], plt.rcParams["axes.prop_cycle"].by_key()["color"]):
         patch.set_facecolor(color)
         patch.set_alpha(0.65)
-    ax.axhline(0, color="black", linewidth=0.8)
     ax.set(
-        ylim=(-1, 1),
-        xlabel="Environment (valid trajectories / total)",
-        ylabel=f"Pearson r: {LABELS[measure]} vs Jaccard",
+        xlim=(-1, 1),
+        xlabel=f"Pearson r: {LABELS[measure]} vs Jaccard",
+        ylabel="Environment",
     )
-    ax.grid(axis="y", alpha=0.25)
+    ax.tick_params(labelsize=TICK_FONT_SIZE)
+    ax.xaxis.label.set_size(PAPER_FONT_SIZE)
+    ax.yaxis.label.set_size(PAPER_FONT_SIZE)
+    ax.grid(axis="x", alpha=0.25)
     fig.tight_layout()
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=500, bbox_inches="tight")
