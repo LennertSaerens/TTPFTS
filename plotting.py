@@ -63,6 +63,8 @@ DEFAULT_EGE_BUDGETS = {
     "EgeExp8": 237958,
 }
 
+PUBLICATION_FONT_SIZE = 12
+
 
 def _canonical_metric(metric: str) -> str:
     try:
@@ -548,7 +550,7 @@ def plot_metric_all_envs_grid_top_legend(
                 transform=ax.transAxes,
                 ha="right",
                 va="bottom",
-                fontsize=10,
+                fontsize=PUBLICATION_FONT_SIZE,
                 color="0.25",
                 bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.75, "pad": 1.5},
             )
@@ -607,13 +609,14 @@ def plot_metric_all_envs_grid_top_legend(
                     raise AssertionError(f"{env_name} has no positive misidentification values for log plotting")
                 ax.set_yscale("log")
                 ax.set_ylim(bottom=float(positive.min()) / 2.0)
-                ax.tick_params(axis="y", labelsize=11)
+                ax.tick_params(axis="y", labelsize=PUBLICATION_FONT_SIZE)
             else:
                 ax.set_ylim(bottom=0)
         ax.xaxis.set_major_locator(FixedLocator(np.linspace(0.0, 1.0, 4)))
         ax.xaxis.set_major_formatter(
             FuncFormatter(lambda value, _: f"{value:.2f}".rstrip("0").rstrip("."))
         )
+        ax.tick_params(axis="both", labelsize=PUBLICATION_FONT_SIZE)
         ax.grid(True, alpha=0.22, linewidth=0.55)
 
     for j in range(n_env, nrows * ncols):
@@ -632,15 +635,23 @@ def plot_metric_all_envs_grid_top_legend(
         loc="upper center",
         bbox_to_anchor=(0.5, 0.89),
         ncol=min(6, max(1, len(labels))),
-        fontsize=12,
+        fontsize=PUBLICATION_FONT_SIZE,
         frameon=True,
     )
-    x_label = fig.supxlabel("Normalized Budget", y=0.19)
-    fig.supylabel(METRIC_LABELS[metric_key], x=0.15)
+    x_label = fig.supxlabel(
+        "Normalized Budget",
+        y=0.15,
+        fontsize=PUBLICATION_FONT_SIZE,
+    )
+    fig.supylabel(
+        METRIC_LABELS[metric_key],
+        x=0.115,
+        fontsize=PUBLICATION_FONT_SIZE,
+    )
     # Reserve a fixed band for the figure-level legend.  This must not be
     # inferred from the axes' tick-label extents: log-scaled axes have taller
     # tick labels and would otherwise push the legend outside the saved figure.
-    fig.tight_layout(rect=[0.13, 0.13, 1, 0.855])
+    fig.tight_layout(rect=[0.145, 0.15, 1, 0.855])
     visible_axes = [ax for ax in axes.flat if ax.get_visible()]
     grid_left = min(ax.get_position().x0 for ax in visible_axes)
     grid_right = max(ax.get_position().x1 for ax in visible_axes)

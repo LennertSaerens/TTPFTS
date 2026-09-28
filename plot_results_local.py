@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 from plotting import DEFAULT_EGE_BUDGETS, plot_metric_all_envs_grid_top_legend
 
-plt.rcParams.update({"font.size": 14, "font.family": "serif"})
+plt.rcParams.update({"font.size": 12, "font.family": "serif"})
 
 
 def get_env_configs():

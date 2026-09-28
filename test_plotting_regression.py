@@ -19,6 +19,7 @@ import pandas as pd
 
 from plotting import (
     DEFAULT_ALGORITHM_ORDER,
+    PUBLICATION_FONT_SIZE,
     load_legacy_results,
     plot_metric_all_envs_grid_top_legend,
     summarize_metric_for_plot,
@@ -199,8 +200,34 @@ def test_misidentification_log_scale_and_compact_x_ticks():
         for label in ax.get_yticklabels()
         if label.get_visible()
     ]
-    check("misidentification y tick labels use 11pt font", all(size == 11 for size in y_tick_sizes),
+    check(
+        "misidentification y tick labels use publication font size",
+        all(size == PUBLICATION_FONT_SIZE for size in y_tick_sizes),
           str(y_tick_sizes))
+    plt.close(fig)
+
+
+def test_publication_font_sizes_match_legend():
+    fig, axes, _, _, _ = _make_plot("Jaccard")
+    fig.canvas.draw()
+    legend_sizes = [text.get_fontsize() for text in fig.legends[0].get_texts()]
+    axis_sizes = [
+        label.get_fontsize()
+        for ax in axes.flat
+        for label in [*ax.get_xticklabels(), *ax.get_yticklabels()]
+        if label.get_visible()
+    ]
+    annotation_sizes = [text.get_fontsize() for ax in axes.flat for text in ax.texts]
+    shared_sizes = [
+        text.get_fontsize()
+        for text in fig.texts
+        if text.get_text() in {"Normalized Budget", "Jaccard Metric"}
+    ]
+    check("legend uses publication font size", all(size == PUBLICATION_FONT_SIZE for size in legend_sizes))
+    check("axis ticks use publication font size", all(size == PUBLICATION_FONT_SIZE for size in axis_sizes))
+    check("environment annotations use publication font size",
+          all(size == PUBLICATION_FONT_SIZE for size in annotation_sizes))
+    check("shared labels use publication font size", all(size == PUBLICATION_FONT_SIZE for size in shared_sizes))
     plt.close(fig)
 
 
@@ -243,6 +270,7 @@ if __name__ == "__main__":
     run("shared labels and six-entry legend", test_shared_labels_and_legend_entries)
     run("sparse EGE grids", test_sparse_ege_grids_not_interpolated)
     run("misidentification log scale and x ticks", test_misidentification_log_scale_and_compact_x_ticks)
+    run("publication font-size consistency", test_publication_font_sizes_match_legend)
     run("legacy archive loading", test_legacy_archive_loading_still_works)
     run("Wilson interval correctness", test_wilson_interval_correctness)
     run("direct summary endpoint assertion", test_summary_direct_endpoint_assertion)
