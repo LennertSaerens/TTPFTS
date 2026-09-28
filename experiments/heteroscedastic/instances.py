@@ -182,7 +182,9 @@ def freeze_candidates(config: dict | None = None, *, write: bool = True) -> tupl
     INSTANCES_DIR.mkdir(parents=True, exist_ok=True)
     with CANDIDATES_CSV.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
-            f, fieldnames=["instance_id", "condition", "arm", "objective", "mean", "std"]
+            f,
+            fieldnames=["instance_id", "condition", "arm", "objective", "mean", "std"],
+            lineterminator="\n",
         )
         writer.writeheader()
         for candidate in candidates:

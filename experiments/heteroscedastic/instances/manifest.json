@@ -1,6 +1,6 @@
 {
   "artifacts": {
-    "candidates_csv_sha256": "f117ae872aa7d7f9a3537b28a89b126de7d019e246a2970f06878eb4c3d3100d"
+    "candidates_csv_sha256": "8edd3c2f92b66dfc9cb17a11855af4fb54d5c30e3efc91029970d8a671d424be"
   },
   "candidate_config_file": "candidate_config.json",
   "candidate_config_hash": "e4d15ab8a94d880be5768b2f16ec2936be0b9d8b27987f0792c98fa96ff3632a",
