@@ -23,6 +23,8 @@
 !environments/instances/*.csv
 !environments/reports/*.csv
 !experiments/reports/*.csv
+!experiments/heteroscedastic/instances/*.csv
+!experiments/heteroscedastic/reports/*.csv
 
 # Python bytecode
 __pycache__/

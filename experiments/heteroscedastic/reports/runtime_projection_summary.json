@@ -1,0 +1,12 @@
+{
+  "assumption": "Linear extrapolation from representative local timing; EGE is multiplied by 5.5 because 0 plus ten normalized budgets have a budget sum of 5.5B.",
+  "max_projected_core_hours_one_condition_algorithm": 82.61895234240555,
+  "representatives": [
+    3,
+    10,
+    13,
+    19,
+    40
+  ],
+  "status": "preliminary_projection_not_a_full_experiment"
+}

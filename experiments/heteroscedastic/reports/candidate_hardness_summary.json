@@ -1,0 +1,22 @@
+{
+  "candidate_config_hash": "e4d15ab8a94d880be5768b2f16ec2936be0b9d8b27987f0792c98fa96ff3632a",
+  "candidate_count": 100,
+  "counts_above_hardness": {
+    "1000000.0": 56,
+    "10000000.0": 29,
+    "100000000.0": 6,
+    "1000000000.0": 5
+  },
+  "hardness_quantiles": {
+    "0.0": 561.9698614628412,
+    "0.25": 258890.84566056603,
+    "0.5": 1445008.6107184268,
+    "0.75": 12340784.322193444,
+    "0.9": 49253867.42302947,
+    "0.95": 238511462.3841538,
+    "0.99": 28662408306.586205,
+    "1.0": 33665417479.193886
+  },
+  "hardness_threshold_decision": "pending_explicit_user_approval",
+  "note": "No candidate has been silently rejected, clipped, or run. This report is the evidence for the required hardness gate."
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": "heteroscedastic-candidate-v1",
+  "status": "candidate_generation_only_pending_hardness_gate",
+  "master_seed": 20260928,
+  "candidate_instances": 100,
+  "arms": {
+    "minimum": 10,
+    "maximum": 200,
+    "distribution": "discrete_uniform_inclusive"
+  },
+  "objectives": {
+    "minimum": 2,
+    "maximum": 10,
+    "distribution": "discrete_uniform_inclusive"
+  },
+  "means": {
+    "minimum": 0.0,
+    "maximum": 1.0,
+    "distribution": "continuous_uniform"
+  },
+  "reward_model": {
+    "distribution": "gaussian_independent_objectives",
+    "heterogeneous_std_values": [0.1, 0.2, 0.3, 0.4, 0.5],
+    "heterogeneous_assignment": "iid_discrete_uniform_per_arm_objective",
+    "control": "per_instance_rms_matched_homoscedastic"
+  },
+  "conditions": ["heterogeneous", "homoscedastic_rms"],
+  "hardness": {
+    "definition": "mean_only_sum_inverse_squared_gaps",
+    "budget_rule": "round(H(nu))",
+    "zero_gap_policy": "fail_generation"
+  },
+  "evaluation_grid": {
+    "type": "normalized_endpoint_inclusive",
+    "num_intervals": 10,
+    "points": "0 plus 10 positive normalized budgets through B"
+  },
+  "algorithms": ["EGE_SH", "EGE_SR", "Uniform", "APE", "TTPFTS_UNKNOWN_VAR"],
+  "pilot": {
+    "trajectories_per_instance_condition_algorithm": 1,
+    "full_trajectory_execution": "blocked_pending_explicit_hardness_threshold"
+  }
+}
