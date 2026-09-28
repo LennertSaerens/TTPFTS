@@ -190,8 +190,8 @@ def test_misidentification_log_scale_and_compact_x_ticks():
     tick_labels = [label.get_text() for label in axes[-1, 0].get_xticklabels() if label.get_text()]
     check("x ticks do not have redundant trailing zeros", all(not text.endswith(".00") for text in tick_labels),
           str(tick_labels))
-    check("each subplot has four x ticks", all(len(ax.get_xticks()) == 4 for ax in axes.flat))
-    check("x ticks use compact one-third labels", tick_labels == ["0", "0.33", "0.67", "1"],
+    check("each subplot has five x ticks", all(len(ax.get_xticks()) == 5 for ax in axes.flat))
+    check("x ticks use compact quarter-step labels", tick_labels == ["0", "0.25", "0.5", "0.75", "1"],
           str(tick_labels))
     fig.canvas.draw()
     y_tick_sizes = [

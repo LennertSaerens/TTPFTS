@@ -612,7 +612,7 @@ def plot_metric_all_envs_grid_top_legend(
                 ax.tick_params(axis="y", labelsize=PUBLICATION_FONT_SIZE)
             else:
                 ax.set_ylim(bottom=0)
-        ax.xaxis.set_major_locator(FixedLocator(np.linspace(0.0, 1.0, 4)))
+        ax.xaxis.set_major_locator(FixedLocator(np.linspace(0.0, 1.0, 5)))
         ax.xaxis.set_major_formatter(
             FuncFormatter(lambda value, _: f"{value:.2f}".rstrip("0").rstrip("."))
         )
