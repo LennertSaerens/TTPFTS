@@ -61,11 +61,16 @@
       "expected_rows_all_algorithms": 60600,
       "expected_rows_per_algorithm": 10100,
       "frozen_instance": {
-        "source": "environment class fixed by repository commit",
-        "type": "deterministic_code_defined"
+        "csv_file": "environments/instances/EgeExp3_arms.csv",
+        "csv_sha256_checksums": "3176929535402b40e4bcc3aeabc101c484b6998f47c63b7c1294b88f2e938d04",
+        "csv_sha256_manifest": "3176929535402b40e4bcc3aeabc101c484b6998f47c63b7c1294b88f2e938d04",
+        "pareto_indices": [
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
+        ],
+        "type": "frozen_platform_independent"
       },
       "hardness_H": 685035.7311624396,
-      "instance_hash": "281336bdf3ce2e2b",
+      "instance_hash": "aca5f0a692403e19",
       "name": "EgeExp3",
       "num_arms": 200,
       "num_objectives": 2
@@ -198,7 +203,7 @@
   "master_seed": 0,
   "notes": [
     "Budgets are round(H(nu)) chosen autonomously because the user was unavailable; this is the transparent default specified in the plan and remains pending user review.",
-    "EgeExp1, EgeExp4, and EgeExp5 use frozen seeded CSV instances from environments/instances; other EgeExp environments are deterministic code-defined instances.",
+    "EgeExp1, EgeExp3, EgeExp4, and EgeExp5 use frozen CSV instances from environments/instances. EgeExp3 was frozen from the exact Linux values used by the final results because analytic trigonometric evaluation varies by one ULP between platforms; this post-execution config correction updates only stale instance-hash provenance, not experiment behavior or result rows.",
     "TTPFTS_KNOWN_VAR and TTPFTS_UNKNOWN_VAR use rho=0.5 and matched four-pull warmup; APE uses sigma equal to max environment reward std (0.5 for these Gaussian runs)."
   ],
   "num_runs": 100,
