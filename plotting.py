@@ -645,7 +645,7 @@ def plot_metric_all_envs_grid_top_legend(
     )
     fig.supylabel(
         METRIC_LABELS[metric_key],
-        x=0.13,
+        x=0.145,
         fontsize=PUBLICATION_FONT_SIZE,
     )
     # Reserve a fixed band for the figure-level legend.  This must not be
