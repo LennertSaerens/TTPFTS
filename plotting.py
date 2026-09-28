@@ -640,18 +640,18 @@ def plot_metric_all_envs_grid_top_legend(
     )
     x_label = fig.supxlabel(
         "Normalized Budget",
-        y=0.15,
+        y=0.17,
         fontsize=PUBLICATION_FONT_SIZE,
     )
     fig.supylabel(
         METRIC_LABELS[metric_key],
-        x=0.115,
+        x=0.13,
         fontsize=PUBLICATION_FONT_SIZE,
     )
     # Reserve a fixed band for the figure-level legend.  This must not be
     # inferred from the axes' tick-label extents: log-scaled axes have taller
     # tick labels and would otherwise push the legend outside the saved figure.
-    fig.tight_layout(rect=[0.145, 0.15, 1, 0.855])
+    fig.tight_layout(rect=[0.137, 0.14, 1, 0.855])
     visible_axes = [ax for ax in axes.flat if ax.get_visible()]
     grid_left = min(ax.get_position().x0 for ax in visible_axes)
     grid_right = max(ax.get_position().x1 for ax in visible_axes)
