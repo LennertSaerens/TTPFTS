@@ -24,11 +24,17 @@ TICK_FONT_SIZE = 12
 LEGEND_FONT_SIZE = 12
 
 
+def _apply_paper_style() -> None:
+    """Use the publication serif family before creating each figure."""
+    plt.rcParams.update({"font.family": "serif", "font.size": PAPER_FONT_SIZE})
+
+
 def _environment_sort_key(name: str) -> int:
     return int(name.removeprefix("EgeExp"))
 
 
 def plot_evolution(summary: pd.DataFrame, measure: str, output: Path) -> None:
+    _apply_paper_style()
     fig, ax = plt.subplots(figsize=(PAPER_WIDTH_INCHES, 4.6))
     for environment in sorted(summary["environment"].unique(), key=_environment_sort_key):
         curve = summary[summary["environment"] == environment].sort_values("normalized_budget")
@@ -62,6 +68,7 @@ def plot_evolution(summary: pd.DataFrame, measure: str, output: Path) -> None:
 
 
 def plot_correlations(correlations: pd.DataFrame, measure: str, output: Path) -> None:
+    _apply_paper_style()
     environments = sorted(correlations["environment"].unique(), key=_environment_sort_key)
     values = [
         correlations.loc[correlations["environment"] == environment, "pearson_r"].dropna().to_numpy()

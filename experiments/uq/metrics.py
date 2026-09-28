@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 from paretoset import paretoset
 
+from environments.hardness import direct_gaps
 
 @dataclass(frozen=True)
 class UQResult:
@@ -123,3 +124,112 @@ def uncertainty_from_tposterior_state(
     except ValueError as exc:
         return _unavailable(str(exc))
     return uncertainty_from_moments(means, stds)
+
+
+def true_pareto_boundary_pairs(true_means: np.ndarray, true_pareto_indices: np.ndarray) -> tuple[tuple[int, int], ...]:
+    """Fix each true Pareto arm's closest true dominated challenger.
+
+    For true Pareto arm ``i`` and dominated arm ``j``, the direct hardness
+    witness is ``max_c(mu_j[c] - mu_i[c])_+ + Delta_j``.  Keeping every
+    minimizer produces a deterministic, ground-truth-conditioned boundary
+    set. It cannot switch to an easier arm merely because a posterior estimate
+    puts a dominated arm into the estimated Pareto front.
+    """
+    true_means = np.asarray(true_means, dtype=np.float64)
+    pareto = np.asarray(true_pareto_indices, dtype=int)
+    if true_means.ndim != 2:
+        raise ValueError("true means must be two-dimensional")
+    if pareto.ndim != 1 or pareto.size == 0:
+        raise ValueError("true Pareto indices must be a nonempty vector")
+    if len(np.unique(pareto)) != len(pareto) or np.any(pareto < 0) or np.any(pareto >= len(true_means)):
+        raise ValueError("true Pareto indices are invalid")
+    pareto_mask = np.zeros(len(true_means), dtype=bool)
+    pareto_mask[pareto] = True
+    dominated = np.flatnonzero(~pareto_mask)
+    if dominated.size == 0:
+        return ()
+    gaps = direct_gaps(true_means, pareto_mask)
+    pairs: list[tuple[int, int]] = []
+    for optimal in pareto:
+        scores = np.asarray([
+            max(float(np.max(true_means[dominated_arm] - true_means[optimal])), 0.0) + gaps[dominated_arm]
+            for dominated_arm in dominated
+        ])
+        minimum = float(scores.min())
+        for dominated_arm in dominated[np.isclose(scores, minimum, rtol=0.0, atol=1e-12)]:
+            pairs.append((int(optimal), int(dominated_arm)))
+    return tuple(sorted(set(pairs)))
+
+
+def truth_conditioned_uncertainty_from_moments(
+    means: np.ndarray, stds: np.ndarray, boundary_pairs: tuple[tuple[int, int], ...]
+) -> UQResult:
+    """Compute UQ over a fixed ground-truth Pareto/dominated boundary."""
+    means = np.asarray(means, dtype=np.float64)
+    stds = np.asarray(stds, dtype=np.float64)
+    if means.ndim != 2 or stds.shape != means.shape:
+        raise ValueError("means and stds must be same-shaped two-dimensional arrays")
+    if not boundary_pairs:
+        return _unavailable("no_true_dominated_boundary")
+    if not np.all(np.isfinite(means)):
+        return _unavailable("nonfinite_posterior_mean")
+    if not np.all(np.isfinite(stds)) or np.any(stds <= 0):
+        return _unavailable("nonfinite_or_nonpositive_posterior_std")
+
+    total_bc = 0.0
+    total_kl = 0.0
+    boundary_arms = set()
+    for optimal, dominated in boundary_pairs:
+        if not (0 <= optimal < len(means) and 0 <= dominated < len(means)):
+            raise ValueError("boundary pair index out of range")
+        boundary_arms.update((optimal, dominated))
+        var1 = stds[optimal] ** 2
+        var2 = stds[dominated] ** 2
+        var_avg = 0.5 * (var1 + var2)
+        difference_squared = (means[optimal] - means[dominated]) ** 2
+        db = 0.125 * np.sum(difference_squared / var_avg)
+        db += 0.5 * (
+            np.sum(np.log(var_avg))
+            - 0.5 * (np.sum(np.log(var1)) + np.sum(np.log(var2)))
+        )
+        total_bc += float(np.exp(-db))
+        kl12 = 0.5 * (
+            np.sum(var1 / var2)
+            + np.sum(difference_squared / var2)
+            - means.shape[1]
+            + np.sum(np.log(var2) - np.log(var1))
+        )
+        kl21 = 0.5 * (
+            np.sum(var2 / var1)
+            + np.sum(difference_squared / var1)
+            - means.shape[1]
+            + np.sum(np.log(var1) - np.log(var2))
+        )
+        total_kl += float(0.5 * (kl12 + kl21))
+    boundary_arm_indices = sorted(boundary_arms)
+    entropy = 0.5 * means.shape[1] * (1.0 + np.log(2.0 * np.pi))
+    entropy += 0.5 * np.mean(np.sum(np.log(stds[boundary_arm_indices] ** 2), axis=1))
+    return UQResult(
+        True,
+        "available",
+        total_bc / len(boundary_pairs),
+        total_kl / len(boundary_pairs),
+        float(entropy),
+        len({optimal for optimal, _ in boundary_pairs}),
+        len({dominated for _, dominated in boundary_pairs}),
+    )
+
+
+def truth_conditioned_uncertainty_from_tposterior_state(
+    n: np.ndarray,
+    means: np.ndarray,
+    m2: np.ndarray,
+    boundary_pairs: tuple[tuple[int, int], ...],
+    alpha: float = 0.0,
+) -> UQResult:
+    """Compute fixed-boundary UQ directly from serialized TPosterior state."""
+    try:
+        stds = posterior_stds_from_tposterior_state(n, m2, alpha)
+    except ValueError as exc:
+        return _unavailable(str(exc))
+    return truth_conditioned_uncertainty_from_moments(means, stds, boundary_pairs)

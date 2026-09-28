@@ -14,7 +14,10 @@ import pandas as pd
 from experiments.uq.analyze import trajectory_correlations
 from experiments.uq.config import environment_config, load_config
 from experiments.uq.metrics import uncertainty_from_moments, uncertainty_from_tposterior_state
+from experiments.uq.metrics import true_pareto_boundary_pairs, truth_conditioned_uncertainty_from_moments
 from experiments.uq.replay import replay_repetition, shard_paths
+from environments.EgeExp6 import EgeExp6
+from environments.EgeExp8 import EgeExp8
 
 
 FAILURES: list[str] = []
@@ -83,6 +86,22 @@ def test_trajectory_correlation_contract() -> None:
     check("correlation is trajectory-wise Pearson", correlation["pearson_r"] < -0.9)
 
 
+def test_truth_conditioned_boundary_contract() -> None:
+    environment = EgeExp8()
+    pairs = true_pareto_boundary_pairs(environment.arms, environment.pareto_indices)
+    check("EgeExp8 fixed boundary is optimal arm 4 versus challenger 3", pairs == ((4, 3),))
+    result = truth_conditioned_uncertainty_from_moments(
+        environment.arms, np.full_like(environment.arms, 0.003), pairs
+    )
+    check("EgeExp8 fixed boundary UQ is available", result.available)
+    no_boundary = true_pareto_boundary_pairs(EgeExp6().arms, EgeExp6().pareto_indices)
+    check("all-Pareto EgeExp6 has no dominated boundary", no_boundary == ())
+    unavailable = truth_conditioned_uncertainty_from_moments(
+        EgeExp6().arms, np.full_like(EgeExp6().arms, 0.003), no_boundary
+    )
+    check("all-Pareto boundary UQ is explicitly unavailable", not unavailable.available)
+
+
 def test_instrumented_replay_checkpoint_contract() -> None:
     config = load_config()
     root = Path(tempfile.mkdtemp(prefix="mots-uq-test-"))
@@ -110,6 +129,7 @@ if __name__ == "__main__":
     run("Moment metric validity", test_moment_metric_validity)
     run("Finite-variance warm-up boundary", test_tposterior_finite_variance_boundary)
     run("Trajectory correlation contract", test_trajectory_correlation_contract)
+    run("Truth-conditioned boundary contract", test_truth_conditioned_boundary_contract)
     run("Instrumented replay checkpoint contract", test_instrumented_replay_checkpoint_contract)
     print("\n" + "=" * 80)
     if FAILURES:
