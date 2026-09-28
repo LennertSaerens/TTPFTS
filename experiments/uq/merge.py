@@ -7,11 +7,40 @@ import argparse
 import csv
 import json
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 
 from .config import config_hash, environment_config, load_config
 from .replay import UQ_COLUMNS, shard_is_complete, shard_paths
+
+
+def _source_provenance() -> dict[str, object]:
+    """Return the committed source revision, rejecting unsynced source edits."""
+    root = Path(__file__).resolve().parents[2]
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=root, text=True, capture_output=True, check=True
+    ).stdout.strip()
+    status = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=root, text=True, capture_output=True, check=True
+    ).stdout.splitlines()
+    source_changes = []
+    ignored_bytecode_changes = []
+    for entry in status:
+        path = entry[3:]
+        if path.endswith(".pyc") and "__pycache__/" in path:
+            ignored_bytecode_changes.append(entry)
+        else:
+            source_changes.append(entry)
+    if source_changes:
+        raise RuntimeError(
+            "refusing to merge scientific UQ results from an uncommitted source tree: "
+            + "; ".join(source_changes)
+        )
+    return {
+        "source_commit": commit,
+        "ignored_generated_bytecode_changes": ignored_bytecode_changes,
+    }
 
 
 def _atomic_write(path: Path, rows: list[dict]) -> None:
@@ -54,6 +83,7 @@ def merge_environment(
 def write_manifest(
     run_dir: Path, results_dir: Path, config: dict, environments: list[str], repetitions: list[int] | None = None
 ) -> None:
+    provenance = _source_provenance()
     payload = {
         "schema_version": "hardness-budget-uq-results-v1",
         "uq_config_hash": config_hash(config),
@@ -66,6 +96,7 @@ def write_manifest(
         },
         "results_dir": str(results_dir),
         "run_dir": str(run_dir),
+        **provenance,
     }
     target = run_dir / "uq_manifest.json"
     descriptor, temporary = tempfile.mkstemp(dir=target.parent, prefix=".tmp-uq-manifest-", suffix=".json")
