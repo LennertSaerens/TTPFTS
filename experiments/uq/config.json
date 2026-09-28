@@ -1,0 +1,29 @@
+{
+  "schema_version": "hardness-budget-uq-v1",
+  "final_config_sha256": "ff29cc456351571808480961d67fd334af454042e81f9094de3c937a7d845d47",
+  "final_config_file_sha256": "2c5f3fd10e8dd6e8091dae11370f95c9a5ac455ee563f32eaf7b41dcba9e8ea4",
+  "algorithm": "TTPFTS_UNKNOWN_VAR",
+  "posterior": {
+    "class": "TPosterior",
+    "alpha": 0.0,
+    "warmup_pulls_per_arm": 4,
+    "rho": 0.5,
+    "unknown_variance": true
+  },
+  "num_runs": 100,
+  "master_seed": 0,
+  "eval_points": 100,
+  "measures": [
+    "bhattacharyya",
+    "symmetric_kl",
+    "entropy"
+  ],
+  "availability": {
+    "exclude_budget_zero": true,
+    "require_finite_posterior_mean_variance": true,
+    "require_second_estimated_front": true,
+    "undefined_value": null
+  },
+  "state_schema": "tposterior-welford-v1",
+  "environment_spec_sha256": "89999086b77a2e8195fcf2daf9b283e85ce9845f312af4c63614cc1fc9540d04"
+}

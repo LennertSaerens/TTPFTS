@@ -29,6 +29,8 @@ GATES: tuple[Gate, ...] = (
          "Gate 1: APE reference equivalence (includes C++ helper parity)"),
     Gate("posteriors", ("validate_posteriors.py",),
          "Gate 2: TTPFTS known/unknown-variance posterior validation", slow=True),
+    Gate("uq-replay", ("test_uq_replay.py",),
+         "UQ replay: posterior-state validity and trajectory-correlation semantics"),
     Gate("reward-report", ("-m", "environments.validate_reward_environment_gate"),
          "Gate 2/3: regenerate reward/environment/hardness reports"),
     Gate("environment", ("test_environment_reward_hardness_gate.py",),
