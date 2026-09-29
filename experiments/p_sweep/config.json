@@ -1,0 +1,33 @@
+{
+  "algorithm": "TTPFTS_UNKNOWN_VAR",
+  "environment_spec_sha256": "e4b8db4c8409c0a70a68e03f634f047ca22f0c84578c9c728042831a636975ab",
+  "eval_intervals": 20,
+  "final_config_file_sha256": "55e410c4973001436c3141ac01d9848cc08444fbcc65d6af4206dbd7be351cb1",
+  "final_config_sha256": "0ab48d2c82e04890acc26345c010d79843e6dd1cd97fe6dbc49773024c2f1885",
+  "master_seed": 0,
+  "num_runs": 100,
+  "p_values": [
+    0.0,
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9,
+    1.0
+  ],
+  "posterior": {
+    "alpha": 0.0,
+    "class": "TPosterior",
+    "unknown_variance": true,
+    "warmup_pulls_per_arm": 4
+  },
+  "schema_version": "hardness-normalized-ttpfts-p-sweep-v1",
+  "seeding": {
+    "bandit_namespace": "TTPFTS_UNKNOWN_VAR",
+    "strategy": "matched-across-p"
+  }
+}

@@ -4,6 +4,7 @@
 /results_corr/
 /results_preregistered_final*/
 /results_uq_hardness*/
+/results_p_sweep*/
 /figures/
 # Final publication artifacts are evidence and are tracked.
 !/figures/publication/
