@@ -33,6 +33,8 @@ GATES: tuple[Gate, ...] = (
          "UQ replay: posterior-state validity and trajectory-correlation semantics"),
     Gate("p-sweep", ("test_p_sweep.py",),
          "Hardness-normalized TTPFTS p-sweep provenance, identity, and plotting checks", slow=True),
+    Gate("gap-noise-alignment", ("test_gap_noise_alignment.py",),
+         "Paired custom gap/noise conditions, traces, resume, validation, and figures", slow=True),
     Gate("reward-report", ("-m", "environments.validate_reward_environment_gate"),
          "Gate 2/3: regenerate reward/environment/hardness reports"),
     Gate("environment", ("test_environment_reward_hardness_gate.py",),

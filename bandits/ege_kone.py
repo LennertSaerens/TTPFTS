@@ -115,7 +115,7 @@ def _argsort_desc_random_tie(values):
     return perm[np.argsort(-values[perm], kind="stable")]
 
 
-def EGE_SR(T, K, D, environment):
+def EGE_SR(T, K, D, environment, trace=None):
     """
     Vectorized and optimized implementation of EGE-SR.
     Preserves original algorithm.
@@ -124,6 +124,7 @@ def EGE_SR(T, K, D, environment):
     :param K: Number of arms
     :param D: Number of objectives
     :param environment: The multi-objective bandit environment
+    :param trace: Optional append-only diagnostic decision list.
     :return: The estimated Pareto optimal arms
     """
     arms = np.arange(K)
@@ -179,11 +180,38 @@ def EGE_SR(T, K, D, environment):
         if indices[0] >= indices[1]:
             rejects.append(active_idx[g_idx])
             rk = g_idx
+            decision = "reject"
         else:
             accepts.append(active_idx[f_idx])
             rk = f_idx
+            decision = "accept"
+        if trace is not None:
+            trace.append({
+                "round": r,
+                "active_count": int(len(active_idx)),
+                "arm": int(active_idx[rk]),
+                "decision": decision,
+                "empirical_g": float(g_vec[rk]),
+                "empirical_f": float(f_vec[rk]),
+                "empirical_delta": float("nan"),
+                "empirical_pareto": "",
+                "samples_at_decision": int(Nc[active_idx[rk]]),
+            })
         active[active_idx[rk]] = False
-    accepts += [*arms[active]]
+    final_arm = int(arms[active][0])
+    accepts.append(final_arm)
+    if trace is not None:
+        trace.append({
+            "round": K,
+            "active_count": 1,
+            "arm": final_arm,
+            "decision": "accept_final",
+            "empirical_g": float("nan"),
+            "empirical_f": float("nan"),
+            "empirical_delta": float("nan"),
+            "empirical_pareto": "",
+            "samples_at_decision": int(Nc[final_arm]),
+        })
     return accepts
 
 
@@ -243,7 +271,7 @@ def EGE_SR(T, K, D, environment):
 #     return accepts
 
 
-def EGE_SH(T, K, D, environment):
+def EGE_SH(T, K, D, environment, trace=None):
     """
     Vectorized and optimized implementation of EGE-SH.
     Preserves original algorithm semantics while reducing Python-level loops
@@ -253,6 +281,7 @@ def EGE_SH(T, K, D, environment):
     :param K: Number of arms
     :param D: Number of objectives
     :param environment: The multi-objective bandit environment
+    :param trace: Optional append-only diagnostic decision list.
     :return: The estimated Pareto optimal arms
     """
     arms = np.arange(K)
@@ -345,10 +374,37 @@ def EGE_SH(T, K, D, environment):
             idx = pos[a]
             if Sk_star_mask[idx]:
                 accepts.append(a)
+                decision = "accept"
             else:
                 rejects.append(a)
+                decision = "reject"
+            if trace is not None:
+                trace.append({
+                    "round": k + 1,
+                    "active_count": int(s),
+                    "arm": int(a),
+                    "decision": decision,
+                    "empirical_g": float(g[idx]),
+                    "empirical_f": float(f[idx]),
+                    "empirical_delta": float(Delta[idx]),
+                    "empirical_pareto": int(Sk_star_mask[idx]),
+                    "samples_at_decision": int(Nc[a]),
+                })
 
     # after rounds, exactly one active arm should remain
     assert sum(active) == 1, "There should not be more than one active arm remaining"
-    accepts += [*arms[active]]
+    final_arm = int(arms[active][0])
+    accepts.append(final_arm)
+    if trace is not None:
+        trace.append({
+            "round": ceil_log2_K + 1,
+            "active_count": 1,
+            "arm": final_arm,
+            "decision": "accept_final",
+            "empirical_g": float("nan"),
+            "empirical_f": float("nan"),
+            "empirical_delta": float("nan"),
+            "empirical_pareto": 1,
+            "samples_at_decision": int(Nc[final_arm]),
+        })
     return accepts

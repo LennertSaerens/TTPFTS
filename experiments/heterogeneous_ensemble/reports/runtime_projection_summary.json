@@ -1,0 +1,10 @@
+{
+  "calibration_method": "Algorithm-specific linear operation-feature envelope fit on deterministic calibration strata, inflated by 1.25 times the largest held-out underprediction.",
+  "ensemble_config_hash": "3ab51938ad3fd4c8ddecb8583779ede14d39fa68cc75c613cf56e68bb3796262",
+  "probe_instances": 22,
+  "projected_balanced_eight_worker_hours": 107.40393016490886,
+  "projected_total_core_hours": 859.2314413192709,
+  "projection_is_conservative_not_a_runtime_guarantee": true,
+  "schema_version": "heterogeneous-ensemble-runtime-projection-v1",
+  "validation_instances": 6
+}

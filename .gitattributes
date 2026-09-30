@@ -7,3 +7,5 @@ environments/instances/*.csv -text
 environments/reports/*.csv   -text
 experiments/reports/*.csv    -text
 experiments/heteroscedastic/instances/*.csv -text
+experiments/heterogeneous_ensemble/instances/*.csv -text
+experiments/gap_noise_alignment/instances/*.csv -text

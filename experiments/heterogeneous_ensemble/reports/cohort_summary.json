@@ -1,0 +1,27 @@
+{
+  "acceptance_rate": 0.3947887879984208,
+  "accepted_budget_total": 199744429,
+  "accepted_count": 1000,
+  "accepted_hardness_quantiles": {
+    "0.0": 138.3128953780073,
+    "0.1": 4659.0680960552945,
+    "0.25": 26851.207595348445,
+    "0.5": 117619.39543627959,
+    "0.75": 344842.35889322957,
+    "0.9": 530450.443935304,
+    "0.95": 603510.2658373682,
+    "0.99": 667609.3923089814,
+    "1.0": 683888.0045705416
+  },
+  "ensemble_config_hash": "3ab51938ad3fd4c8ddecb8583779ede14d39fa68cc75c613cf56e68bb3796262",
+  "hardness_ceiling": 685035.7311624396,
+  "manifest_sha256": {
+    "accepted_instances_csv_sha256": "966f1af3a755af0ed0a37b8852e0c15846d28752732a36d6824800cb965aabaa",
+    "proposal_ledger_csv_sha256": "2bba5ac7024eca357b9abfb1ae71feaf13fa84805309151f125e07551132afe8"
+  },
+  "note": "Accepted instances are the first ordered proposals satisfying the EgeExp3 mean-gap hardness ceiling; no budgets are clipped and no accepted instance is removed post hoc.",
+  "proposal_count": 2533,
+  "rejection_reason_counts": {
+    "hardness_above_egeexp3_ceiling": 1533
+  }
+}

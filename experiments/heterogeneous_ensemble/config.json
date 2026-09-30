@@ -1,0 +1,75 @@
+{
+  "algorithms": [
+    "EGE_SH",
+    "EGE_SR",
+    "Uniform",
+    "APE",
+    "TTPFTS_UNKNOWN_VAR"
+  ],
+  "bootstrap": {
+    "confidence": 0.95,
+    "replicates": 2000,
+    "seed": 20261001
+  },
+  "cohort": {
+    "accepted_instances": 1000,
+    "max_proposals": 100000,
+    "proposal_rule": "accept_first_eligible_in_increasing_proposal_id_order"
+  },
+  "evaluation_grid": {
+    "num_intervals": 20,
+    "type": "normalized_endpoint_inclusive"
+  },
+  "final_config_file_sha256": "55e410c4973001436c3141ac01d9848cc08444fbcc65d6af4206dbd7be351cb1",
+  "final_config_sha256": "0ab48d2c82e04890acc26345c010d79843e6dd1cd97fe6dbc49773024c2f1885",
+  "hardness": {
+    "budget_rule": "round(H(nu))",
+    "ceiling_environment": "EgeExp3",
+    "ceiling_hardness": 685035.7311624396,
+    "definition": "mean_only_sum_inverse_squared_gaps",
+    "zero_gap_policy": "reject_proposal"
+  },
+  "instance_generation": {
+    "arms": {
+      "distribution": "discrete_uniform_inclusive",
+      "maximum": 200,
+      "minimum": 10
+    },
+    "means": {
+      "distribution": "continuous_uniform",
+      "maximum": 1.0,
+      "minimum": 0.0
+    },
+    "objectives": {
+      "distribution": "discrete_uniform_inclusive",
+      "maximum": 10,
+      "minimum": 2
+    }
+  },
+  "master_seed": 20261001,
+  "reward_model": {
+    "distribution": "gaussian_independent_objectives",
+    "heterogeneous_assignment": "iid_discrete_uniform_per_arm_objective",
+    "heterogeneous_std_values": [
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5
+    ],
+    "require_within_instance_heterogeneity": true
+  },
+  "schema_version": "heterogeneous-ensemble-v1",
+  "seeding": {
+    "algorithm_streams": "independent_deterministic",
+    "proposal_streams": "shape_means_stds_separate"
+  },
+  "ttpfts": {
+    "alpha": 0.0,
+    "p": 0.5,
+    "posterior": "TPosterior",
+    "warmup_pulls_per_arm": 4
+  },
+  "trajectories_per_instance_algorithm": 1,
+  "zero_budget_policy": "native_algorithm"
+}

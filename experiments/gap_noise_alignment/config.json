@@ -1,0 +1,82 @@
+{
+  "algorithms": [
+    "EGE_SH",
+    "EGE_SR",
+    "Uniform",
+    "APE",
+    "TTPFTS_UNKNOWN_VAR"
+  ],
+  "bootstrap": {
+    "confidence": 0.95,
+    "replicates": 2000,
+    "seed": 20261002
+  },
+  "conditions": [
+    "large_gap_noisy",
+    "small_gap_noisy"
+  ],
+  "environment": {
+    "anchor_start": [
+      0.9,
+      0.4
+    ],
+    "anchor_step": [
+      -0.125,
+      0.125
+    ],
+    "child_epsilons": [
+      0.001,
+      0.002,
+      0.003
+    ],
+    "child_nominal_gaps": [
+      0.04,
+      0.08,
+      0.16
+    ],
+    "mean_domain": [
+      0.0,
+      1.0
+    ],
+    "num_anchors": 5,
+    "num_arms": 50,
+    "num_objectives": 2
+  },
+  "evaluation_grid": {
+    "num_intervals": 20,
+    "type": "normalized_endpoint_inclusive"
+  },
+  "hardness": {
+    "budget_rule": "round(H(nu))",
+    "definition": "mean_only_sum_inverse_squared_gaps",
+    "expected_hardness": 14290.552976858806,
+    "zero_gap_policy": "reject"
+  },
+  "master_seed": 20261002,
+  "noise_assignment": {
+    "assignment": "reverse_standard_deviation_by_stable_true_gap_rank",
+    "per_arm_isotropic": true,
+    "rank_key": "round(true_gap, 12), arm_index",
+    "standard_deviations": [
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5
+    ],
+    "arms_per_standard_deviation": 10
+  },
+  "repetitions": 100,
+  "reward_model": {
+    "distribution": "independent_gaussian",
+    "paired_latent_streams": "per_arm_per_objective_streams_shared_across_conditions"
+  },
+  "schema_version": "gap-noise-alignment-v1",
+  "ttpfts": {
+    "alpha": 0.0,
+    "p": 0.5,
+    "posterior": "TPosterior",
+    "warmup_pulls_per_arm": 4
+  },
+  "zero_budget_policy": "native_algorithm"
+}

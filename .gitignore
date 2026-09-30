@@ -27,6 +27,12 @@
 !experiments/reports/*.csv
 !experiments/heteroscedastic/instances/*.csv
 !experiments/heteroscedastic/reports/*.csv
+!experiments/heterogeneous_ensemble/instances/*.csv
+!experiments/heterogeneous_ensemble/reports/*.csv
+!experiments/gap_noise_alignment/instances/*.csv
+!experiments/gap_noise_alignment/reports/*.csv
+
+/results_gap_noise_alignment_*/
 
 # Python bytecode
 __pycache__/
