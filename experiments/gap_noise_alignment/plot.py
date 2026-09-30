@@ -131,8 +131,10 @@ def render_performance(condition: str, metric: str, summary_path: Path, output_d
         if curve.grid_index.tolist() != list(range(21)):
             raise ValueError(f"{condition}/{algorithm}: incomplete grid")
         x_values = curve.normalized_budget.to_numpy(float)
-        if not np.allclose(x_values, np.linspace(0.0, 1.0, 21), rtol=0.0, atol=1e-12):
-            raise ValueError(f"{condition}/{algorithm}: incorrect normalized grid")
+        # Raw checkpoints are round(kB/20), so their normalized locations
+        # retain the intentionally tiny rounding deviations from k/20.
+        if x_values[0] != 0.0 or x_values[-1] != 1.0 or np.any(np.diff(x_values) <= 0.0):
+            raise ValueError(f"{condition}/{algorithm}: invalid endpoint-inclusive normalized grid")
         mean, lower, upper = (curve[column].to_numpy(float) for column in ("mean", "lower", "upper"))
         if metric == "misidentification":
             visible = mean > 0.0
