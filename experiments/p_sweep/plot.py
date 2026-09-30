@@ -88,7 +88,7 @@ def render(jaccard_summary: Path, output_dir: Path) -> Path:
     fig.supylabel("Jaccard Metric", fontsize=FONT_SIZE, x=0.035)
     fig.legend(
         legend_handles, legend_labels, ncol=6, loc="upper center",
-        bbox_to_anchor=(0.5, 0.99), frameon=True, fontsize=FONT_SIZE,
+        bbox_to_anchor=(0.5, 0.93), frameon=True, fontsize=FONT_SIZE,
         columnspacing=0.9, handlelength=1.55,
     )
     fig.subplots_adjust(left=0.10, right=0.99, bottom=0.14, top=0.78, wspace=0.22, hspace=0.26)
