@@ -13,7 +13,10 @@ import pandas as pd
 from .config import default_output_root, load_config
 
 
-PAPER_WIDTH_INCHES = 7.16
+# Match the finalized eight-environment publication grids in
+# ``plot_results_local.py``. The p-sweep has eleven legend entries, but its
+# 2x4 axes need the same horizontal room as the six-algorithm comparison.
+PUBLICATION_FIGSIZE = (13, 6.6)
 FONT_SIZE = 12
 XTICKS = [0, 0.25, 0.5, 0.75, 1]
 
@@ -43,7 +46,7 @@ def render(jaccard_summary: Path, output_dir: Path) -> Path:
         raise ValueError("all plotted checkpoints must contain 100 repetitions")
 
     plt.rcParams.update({"font.family": "serif", "font.size": FONT_SIZE})
-    fig, axes = plt.subplots(2, 4, figsize=(PAPER_WIDTH_INCHES, 5.45), sharex=True, sharey=True)
+    fig, axes = plt.subplots(2, 4, figsize=PUBLICATION_FIGSIZE, sharex=True, sharey=True)
     colors = plt.cm.coolwarm(np.linspace(0.05, 0.95, len(p_values)))
     legend_handles, legend_labels = [], []
     for axis, environment in zip(axes.flat, environments):

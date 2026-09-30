@@ -10,6 +10,7 @@ from pathlib import Path
 import matplotlib
 import numpy as np
 import pandas as pd
+from matplotlib.image import imread
 
 matplotlib.use("Agg")
 
@@ -144,6 +145,12 @@ def test_plot_uses_exact_summary_table() -> None:
         plotted = pd.read_csv(root / "figures" / "jaccard_plotted_values.csv")
         check("p-sweep figure is rendered", output.is_file() and output.stat().st_size > 0)
         check("plotted values exactly retain summary rows", len(plotted) == len(table))
+        image = imread(output)
+        check(
+            "p-sweep figure uses wide publication-grid aspect ratio",
+            image.shape[1] / image.shape[0] > 1.8,
+            f"aspect={image.shape[1] / image.shape[0]:.3f}",
+        )
 
 
 def test_analysis_endpoint_and_auc_contract() -> None:
