@@ -31,9 +31,11 @@
 !experiments/heterogeneous_ensemble/reports/*.csv
 !experiments/gap_noise_alignment/instances/*.csv
 !experiments/gap_noise_alignment/reports/*.csv
+!experiments/information_matched/reports/*.csv
 
 /results_gap_noise_alignment_*/
 /results_ege_doubling_*/
+/results_information_matched_*/
 
 # Python bytecode
 __pycache__/

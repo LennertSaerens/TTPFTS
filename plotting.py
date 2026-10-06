@@ -504,6 +504,9 @@ def plot_metric_all_envs_grid_top_legend(
         algorithm_display_labels: Mapping[str, str] | None = None,
         annotate_environments: bool = True,
         log_misidentification: bool = False,
+        algorithm_styles: Mapping[str, Mapping[str, object]] | None = None,
+        legend_ncol: int | None = None,
+        legend_kwargs: Mapping[str, object] | None = None,
         show=True,
 ):
     """Plot a 2x4 publication grid with shared labels and top framed legend.
@@ -574,7 +577,10 @@ def plot_metric_all_envs_grid_top_legend(
                     shown = shown.drop_duplicates(subset=["environment", "algorithm", "arm_pull"]).sort_values("arm_pull")
             else:
                 shown = curve
-            color = cmap(alg_idx / max(1, len(algorithms) - 1)) if cmap is not None else None
+            style = dict((algorithm_styles or {}).get(algorithm, {}))
+            color = style.pop("color", None)
+            if color is None:
+                color = cmap(alg_idx / max(1, len(algorithms) - 1)) if cmap is not None else None
             means = shown["mean"]
             if use_log_y:
                 # Exact zero misidentification has no location on a strict log
@@ -583,7 +589,7 @@ def plot_metric_all_envs_grid_top_legend(
             label = (algorithm_display_labels or {}).get(
                 algorithm, _algorithm_label(algorithm, format_legend_p)
             )
-            line, = ax.plot(shown["normalized_budget"], means, label=label, color=color)
+            line, = ax.plot(shown["normalized_budget"], means, label=label, color=color, **style)
             if plot_std:
                 lower = shown["lower"]
                 upper = shown["upper"]
@@ -634,9 +640,10 @@ def plot_metric_all_envs_grid_top_legend(
         labels,
         loc="upper center",
         bbox_to_anchor=(0.5, 0.89),
-        ncol=min(6, max(1, len(labels))),
+        ncol=legend_ncol if legend_ncol is not None else min(6, max(1, len(labels))),
         fontsize=PUBLICATION_FONT_SIZE,
         frameon=True,
+        **dict(legend_kwargs or {}),
     )
     x_label = fig.supxlabel(
         "Normalized Budget",

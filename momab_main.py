@@ -15,6 +15,7 @@ from bandits.TTPFTS import TTPFTSBandit, CPFTSBandit, RPFTSBandit, OverlapTTPFTS
 from bandits.UCB import PUCB1Bandit
 from bandits.Uniform import UniformBandit
 from bandits.APE import APEAnytimeBandit
+from bandits.APE_UV import APEUnknownVarianceBandit
 from bandits.ege_kone import EGE_SH, EGE_SR
 from environments.CovBoost import CovBoost
 from environments.EgeExp1 import EgeExp1
@@ -79,7 +80,7 @@ EGE_ALGORITHMS = {
 # unambiguous TTPFTS_UNKNOWN_VAR (alpha=0 reference/Jeffreys prior) -- they
 # are not silently redefinitions of one another.
 ANYTIME_ALGORITHMS = [
-    "Uniform", "PUCB1", "APE",
+    "Uniform", "PUCB1", "APE", "APE_UV",
     "TTPFTS_KNOWN_VAR", "TTPFTS_UNKNOWN_VAR",
     "TTPFTS_GKV", "OverlapTTPFTS_GKV", "TTPFTS_UNI",
     "CPFTS_UNI", "CPFTS_GKV", "RPFTS_UNI", "RPFTS_GKV",
@@ -114,6 +115,10 @@ def _make_bandit(base_name, environment, p):
         sigma = float(np.max(np.asarray(environment.stds, dtype=float)))
         return APEAnytimeBandit(num_arms, num_objectives, delta=0.1, sigma=sigma,
                                 epsilon_1=0.0, epsilon_2=0.0)
+    if base_name == "APE_UV":
+        # Unknown-variance APE: no noise information; variances are estimated
+        # online after a 4-pull warm-up matched to TTPFTS.
+        return APEUnknownVarianceBandit(num_arms, num_objectives, delta=0.1, num_warmup_pulls=4)
     if base_name == "TTPFTS_KNOWN_VAR":
         return TTPFTSBandit(NormalPosterior(num_arms, num_objectives, environment.stds),
                             p=0.5, num_warmup_pulls=4)
@@ -459,7 +464,7 @@ def _write_results(results_file, rows):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MOMAB Benchmarking Framework")
     parser.add_argument('--algorithms', required=True,
-                        help='Comma-separated list: EGE_SR,EGE_SH,Uniform,PUCB1,'
+                        help='Comma-separated list: EGE_SR,EGE_SH,Uniform,PUCB1,APE,APE_UV,'
                              'TTPFTS_KNOWN_VAR,TTPFTS_UNKNOWN_VAR,TTPFTS_GKV,TTPFTS_UNI,'
                              'TTPFTS_BETA,TTPFTS_GAMMA,TTPFTS_POISSON')
     parser.add_argument('--environments', required=True,

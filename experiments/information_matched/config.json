@@ -1,0 +1,211 @@
+{
+  "ape_uv": {
+    "class": "bandits.APE_UV.APEUnknownVarianceBandit",
+    "delta": 0.1,
+    "noise_information": "none",
+    "radius": "t_{n-1}^{-1}(1 - alpha_n/2) * s/sqrt(n), alpha_n = 6 delta / (pi^2 K D n^2)",
+    "seed_namespace": "APE_UV",
+    "warmup_pulls_per_arm": 4,
+    "width": "per-objective r_{i,d}(n_i) + r_{j,d}(n_j)"
+  },
+  "dist": "gaussian",
+  "doubling_files": {
+    "doubling/EgeExp1.csv": "817f8773e8679abdc50bc196a523140bd78b9526ca00d2b1bc77db4b14b99d96",
+    "doubling/EgeExp2.csv": "6a12b7028212e69499033bf08ed9b5327cf5ec8d75608c91f46c219fd2e008ea",
+    "doubling/EgeExp3.csv": "a24bd3c8f4144ece2ab55b3ad042bb139004d7674ae5ffb822cc704152d4dace",
+    "doubling/EgeExp4.csv": "bb90b177cb60de65cce1bad24a41bac6fa7d07aaf2853f125d2724a357baffa1",
+    "doubling/EgeExp5.csv": "28d13babb3bf0ef45ae93c311f386573f513fd3f6cd3ba664a30143328b08dcd",
+    "doubling/EgeExp6.csv": "146875307c06073e06341922909b294c6fbf4ccbe380ed78b08de1faafd9ca45",
+    "doubling/EgeExp7.csv": "90f8d3f35f85451cd6668960b3d3430e10444a3f25ed9af803ea3e0ce7dc479b",
+    "doubling/EgeExp8.csv": "f88e72f50d7cac194fe4c56fc2987689421e134a242dc5b5cf36e32530ef61f4",
+    "stage_runs/EgeExp1.csv": "5e97e7823458d1d7911bdb0a9173117bfee906a095f2e7ab8ff4ce4cc89cc139",
+    "stage_runs/EgeExp2.csv": "647e917dedc00fe62335832ba5e30e0f71e80ab4ab6d0cd02b0b4e087fa5ac5c",
+    "stage_runs/EgeExp3.csv": "5b79fe394a71c2f495d24610f13b3c2824030cf8f2aeafd00e64fb42de0ed062",
+    "stage_runs/EgeExp4.csv": "e3849f11a0c6560ec71d2b520341691d2bcbdd317c5b747d912c1fdd5f026ab2",
+    "stage_runs/EgeExp5.csv": "40a6ce027a4aec8146084ce6f156fcc798642d1911ca0224b8e27f7541eee70b",
+    "stage_runs/EgeExp6.csv": "1c4d0adeb44286d973f42006ef9d6aebf48f5e33d735fab54698e57806270d27",
+    "stage_runs/EgeExp7.csv": "2a962ceb80af3ae001d746d44f518fd8fd97f3b70f782c5dc465e4022913aea4",
+    "stage_runs/EgeExp8.csv": "9dda86156644fa05d8233352a8afc55ec63088d52e41379cdd604b6ab3f43d59",
+    "validation_report.json": "82bab96e855200de6a69e8d246c3a0cc57adc84ca30eb938b4037868ea930c07"
+  },
+  "doubling_results_dir": "results_ege_doubling_3840c14dc78c",
+  "empirical_doubling": {
+    "evaluation_points": "shared 101-point grid together with every completed stage endpoint e_s",
+    "recommendation": "Pareto set of empirical means over every sample drawn at time <= t, across stages",
+    "reference": "Jun & Nowak (2016), DSAR: recommend from all samples collected so far",
+    "seed_contract": "(master_seed, env|dist, base_algorithm, repetition, 'budget', b_s), identical to the naive stages",
+    "sensitivity": "native block order within rounds, reported only",
+    "stages": "fresh native EGE runs with budget 2**(s-1) K for s = 1..S+1; stage S+1 is incomplete and truncated at B",
+    "time_mapping": "stage s draws at e_{s-1}+1 .. e_{s-1}+a_s and is idle until e_s",
+    "unsampled_arm_mean": "zero, identical to the Uniform/APE empirical-mean convention",
+    "within_round_order": "round_robin"
+  },
+  "figure_sets": {
+    "kv_both": [
+      "D_EGE_SH",
+      "D_EGE_SH_N",
+      "D_EGE_SR",
+      "D_EGE_SR_N",
+      "Uniform",
+      "APE",
+      "TTPFTS_KNOWN_VAR"
+    ],
+    "kv_naive": [
+      "D_EGE_SH_N",
+      "D_EGE_SR_N",
+      "Uniform",
+      "APE",
+      "TTPFTS_KNOWN_VAR"
+    ],
+    "uv_both": [
+      "D_EGE_SH",
+      "D_EGE_SH_N",
+      "D_EGE_SR",
+      "D_EGE_SR_N",
+      "Uniform",
+      "APE_UV",
+      "TTPFTS_UNKNOWN_VAR"
+    ],
+    "uv_naive": [
+      "D_EGE_SH_N",
+      "D_EGE_SR_N",
+      "Uniform",
+      "APE_UV",
+      "TTPFTS_UNKNOWN_VAR"
+    ]
+  },
+  "figures_dir": "figures/publication_information_matched",
+  "final_config_file_sha256": "55e410c4973001436c3141ac01d9848cc08444fbcc65d6af4206dbd7be351cb1",
+  "final_config_sha256": "0ab48d2c82e04890acc26345c010d79843e6dd1cd97fe6dbc49773024c2f1885",
+  "labels": {
+    "APE": "APE",
+    "APE_UV": "APE-UV",
+    "D_EGE_SH": "D-EGE-SH",
+    "D_EGE_SH_N": "D-EGE-SH-N",
+    "D_EGE_SR": "D-EGE-SR",
+    "D_EGE_SR_N": "D-EGE-SR-N",
+    "TTPFTS_KNOWN_VAR": "TTPFTS-KV",
+    "TTPFTS_UNKNOWN_VAR": "TTPFTS-UV",
+    "Uniform": "Uniform"
+  },
+  "master_seed": 0,
+  "num_runs": 100,
+  "plot": {
+    "figsize": [
+      13,
+      6.6
+    ],
+    "font_family": "serif",
+    "font_size": 12,
+    "legend_kwargs": {
+      "kv_both": {
+        "columnspacing": 0.8,
+        "handlelength": 1.5,
+        "handletextpad": 0.5
+      },
+      "kv_naive": {},
+      "uv_both": {
+        "columnspacing": 0.8,
+        "handlelength": 1.5,
+        "handletextpad": 0.5
+      },
+      "uv_naive": {}
+    },
+    "log_misidentification": true
+  },
+  "protected_files": {
+    "figures/publication": {
+      "publication_bernoulli.png": "05f77a5189c6ae7301c9a5d5747af9bdf4990d1e5c401af0ade6b6df281e047c",
+      "publication_bernoulli_plot_table.csv": "1343f83fa80b02a3a6cca6fbcd69e01cdd86c8b58c87350410f74fdcf2e95a2d",
+      "publication_jaccard.png": "bcf86448644d40bea3edab4ab79f87f014e9d84f13f23de69682208887dd9563",
+      "publication_jaccard_plot_table.csv": "1f0b77ffea9d74f548db6950157952f23e6dd7d8923b58d60f21480c3bdf3518",
+      "publication_misidentification.png": "eaf5381f91f21d22c208b0dc2f674def6b0e31622fe006f555cfcf2ab6cdb05c",
+      "publication_misidentification_plot_table.csv": "02987966ac34b8beafd3e8c24428a658087f93e04f50764cb04dd52b28f4f492"
+    },
+    "figures/publication_ege_doubling": {
+      "figure_manifest.json": "abf5b67fcf434d38a3c2ac7511373f88333ef0df34375e985c334f47631f6a3d",
+      "publication_bernoulli_ege_doubling.png": "91c0ee247962f54aec10a3f71962d793fd245df4582a06deab84a665017b2181",
+      "publication_bernoulli_ege_doubling_plot_table.csv": "aa86860c6a25f06f021ebcad3b04b709470e4154d1621ba105a632e8398b837e",
+      "publication_jaccard_ege_doubling.png": "39a2ff94872fac1a02d2b2eb291dc36c6f3dbe34bbfddbd60bc13bbb179f7404",
+      "publication_jaccard_ege_doubling_plot_table.csv": "19613fb2e1382876a3bc4e00e2009523a883f5f7e526bf05aec7a7b321502ee4",
+      "publication_misidentification_ege_doubling.png": "21c1af92823a6ae21c3e09efc5317eae90a030237deac8037e7d3f3992c364b9",
+      "publication_misidentification_ege_doubling_plot_table.csv": "a0446b8b18b24be4ce6d6c9a5e8281e98503c6ac83ea342bed433426065ac45f"
+    }
+  },
+  "schema_version": "information-matched-publication-v1",
+  "source_files": {
+    "EgeExp1.csv": "ba841805d8369b14645c57f977ca285e3be663f01f03ff31e11863abeea7cb24",
+    "EgeExp2.csv": "1d0ad3f47b588a8b95ffe40dc8f0f881a55a4b13275c46446f8fff7c5c0bed23",
+    "EgeExp3.csv": "563f62e9aa6b35f84d9cdaffc7a1aceb9026708db98f7a0af1dbc5ec30f8cddc",
+    "EgeExp4.csv": "5b2086c5aee9bcc88f566242eb05f894b9715dd4cce3bbcc32e8f21e3cbfbbbc",
+    "EgeExp5.csv": "91343e4af00c80ef99e778806fa4794150da595c61a841e4e864ab77e316eaaf",
+    "EgeExp6.csv": "e1231b0025d5fefe8aefb05a11a2d5e8362a6d735ec1bb425a142d59442acda7",
+    "EgeExp7.csv": "0d337a29366f3741e0777791201b1cc8c76e0019068ca05e9799d347f9b9a896",
+    "EgeExp8.csv": "ede3d6e60a58e8e4124c16f44794cbee2c6902d9b28eea2a53bf8c5730e6bbf8",
+    "run/manifests/EgeExp1.json": "3c292c12af776e43d7199a81acbb822dd25ecc75cdd3fb7a8cce5ecab225a9b5",
+    "run/manifests/EgeExp2.json": "c64e6c8afdf0a2edbd10cc83e25115e3283e5f9a5e44c9399ba6aecb587cc204",
+    "run/manifests/EgeExp3.json": "213c0b7e6f12cb44d7576bb87fc9cc3f79dc8cfbfbe481c226461656ee5ffb75",
+    "run/manifests/EgeExp4.json": "538db8e4e34ff6197e087eaf4aa6cbc0808a1bae12e2fc5fe76fb564374e450d",
+    "run/manifests/EgeExp5.json": "6d85f514ca943e5971940de8a9fba35620c024e4631777df7b90c55de2a67acb",
+    "run/manifests/EgeExp6.json": "92d6b65575183c32e6e1001d54b38a8e8160c84442792b9046dedea98184f4db",
+    "run/manifests/EgeExp7.json": "c8204c4ceae6b777963626b0f9e155f782d8a67ff9f193270bc433c11a2b7de3",
+    "run/manifests/EgeExp8.json": "bb76326e628c8f19e3a5142c2501b1aca083833cdbbded328e0fb8cde9a3da36"
+  },
+  "source_results_dir": "results_preregistered_final_ff29cc456351",
+  "styles": {
+    "APE": {
+      "color": "C3",
+      "linestyle": "-"
+    },
+    "APE_UV": {
+      "color": "C3",
+      "linestyle": "-"
+    },
+    "D_EGE_SH": {
+      "color": "C0",
+      "linestyle": "-"
+    },
+    "D_EGE_SH_N": {
+      "color": "C0",
+      "linestyle": "--"
+    },
+    "D_EGE_SR": {
+      "color": "C1",
+      "linestyle": "-"
+    },
+    "D_EGE_SR_N": {
+      "color": "C1",
+      "linestyle": "--"
+    },
+    "TTPFTS_KNOWN_VAR": {
+      "color": "C4",
+      "linestyle": "-"
+    },
+    "TTPFTS_UNKNOWN_VAR": {
+      "color": "C4",
+      "linestyle": "-"
+    },
+    "Uniform": {
+      "color": "C2",
+      "linestyle": "-"
+    }
+  },
+  "validation_samples": {
+    "ape_uv_rerun": {
+      "environments": [
+        "EgeExp2",
+        "EgeExp7"
+      ],
+      "repetitions": [
+        0,
+        73
+      ]
+    },
+    "empirical_recompute": {
+      "repetitions": [
+        0,
+        57
+      ]
+    }
+  }
+}
