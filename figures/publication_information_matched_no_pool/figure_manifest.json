@@ -1,0 +1,139 @@
+{
+  "config_hash": "427e2cfc311f7d36bf9781b0acbc92d308d1738f817c9a3c137618cfbb96c35a",
+  "environments": [
+    "EgeExp1",
+    "EgeExp2",
+    "EgeExp3",
+    "EgeExp4",
+    "EgeExp5",
+    "EgeExp6",
+    "EgeExp7",
+    "EgeExp8"
+  ],
+  "figure_sets": {
+    "kv_both_no_pool": [
+      "D_EGE_SH",
+      "D_EGE_SH_N",
+      "D_EGE_SR",
+      "D_EGE_SR_N",
+      "Uniform",
+      "APE",
+      "TTPFTS_KNOWN_VAR"
+    ],
+    "uv_both_no_pool": [
+      "D_EGE_SH",
+      "D_EGE_SH_N",
+      "D_EGE_SR",
+      "D_EGE_SR_N",
+      "Uniform",
+      "APE_UV",
+      "TTPFTS_UNKNOWN_VAR"
+    ]
+  },
+  "files": {
+    "publication_bernoulli_kv_both_no_pool.png": "aa493b3e02eda2da33e21ca7c01f6cf9b8a64c22b125f19777aa153fc88c8308",
+    "publication_bernoulli_kv_both_no_pool_plot_table.csv": "e68a9028fe022bccd8040cb015a5adbd4a54071e2aa5adebd021462585785e8d",
+    "publication_bernoulli_uv_both_no_pool.png": "5b23af83a893b923ad08a0b01926ab9e0c557b024708b8cd2ff19a233d1376c1",
+    "publication_bernoulli_uv_both_no_pool_plot_table.csv": "2400ab610ea976f035254a97de123e3dec017ff93b1da4c7c16168babe859c31",
+    "publication_jaccard_kv_both_no_pool.png": "cb7740ba133b01dcf9da55c92d154c811cb198e1dccf58c765c825048834879e",
+    "publication_jaccard_kv_both_no_pool_plot_table.csv": "ee510309f42993b6e754a3be6850928eaea0380fcebb5676261ee33c4ea6faf0",
+    "publication_jaccard_uv_both_no_pool.png": "06d60009372b56c26bd190cbf52d1a7a35eabdd9a95f4bd06eb5c4d5097bfb8e",
+    "publication_jaccard_uv_both_no_pool_plot_table.csv": "2dafc7ce4cefbed3e7f8756d4eed18314e4c5b3b557d08753668e15d982f6454",
+    "publication_misidentification_kv_both_no_pool.png": "dac6d3c42ff7623c4e7ffe015258a97d8fd478112c4e783d08d3af3aae216d83",
+    "publication_misidentification_kv_both_no_pool_plot_table.csv": "1677289e530d4feb936b33db84ca722b68c30a1071a31fe6fe7c7c4c0cc84bd7",
+    "publication_misidentification_uv_both_no_pool.png": "dba07644f8472d2bca38a097a60092b22c73152ab2d24724072f11f2f85a780d",
+    "publication_misidentification_uv_both_no_pool_plot_table.csv": "9ac2793236fdf085ce54800fcc28d8533ee689f476bb80f40f83505cef850f6c"
+  },
+  "ignored_generated_bytecode_changes": [
+    " M __pycache__/plotting.cpython-311.pyc"
+  ],
+  "labels": {
+    "APE": "APE",
+    "APE_UV": "APE-UV",
+    "D_EGE_SH": "D-EGE-SH",
+    "D_EGE_SH_N": "D-EGE-SH-N",
+    "D_EGE_SR": "D-EGE-SR",
+    "D_EGE_SR_N": "D-EGE-SR-N",
+    "TTPFTS_KNOWN_VAR": "TTPFTS-KV",
+    "TTPFTS_UNKNOWN_VAR": "TTPFTS-UV",
+    "Uniform": "Uniform"
+  },
+  "plot_input_sha256": {
+    "EgeExp1": "ce481e7ed19c501d270fdc931c92e6118a1a16dda7951669d77eb0a3a00ddce4",
+    "EgeExp2": "09dfe1747ab9cadbc2b12683398c262b981d6e277b607d01b488037d34750086",
+    "EgeExp3": "e9df259b1746aaa7b9fd143a715b305086d8a6b84a72caecd1855baec0d39a58",
+    "EgeExp4": "b41957aeb34d47f2a9b5a823b942b8a810b016dcba11aa3665279e6d9c73c839",
+    "EgeExp5": "9237530e875321b5bd45881d0f24b71255b2eed2bfa668b8c916c909c4e0c9e5",
+    "EgeExp6": "64e03aa94aa0643830d624793282ea01d0be7fe1e3743d8d276f58373b042dbb",
+    "EgeExp7": "3b7103184d11c99c9c24d6e35d3d83f74a2ca6e613423a847b473c7a9b4204c2",
+    "EgeExp8": "7bb1d70aee13b0d53169730550832b601567beb2c27ba0b719422778b7155dae"
+  },
+  "plot_settings": {
+    "figsize": [
+      13,
+      6.6
+    ],
+    "font_family": "serif",
+    "font_size": 12,
+    "legend_kwargs": {
+      "kv_both_no_pool": {
+        "columnspacing": 0.8,
+        "handlelength": 1.5,
+        "handletextpad": 0.5
+      },
+      "uv_both_no_pool": {
+        "columnspacing": 0.8,
+        "handlelength": 1.5,
+        "handletextpad": 0.5
+      }
+    },
+    "log_misidentification": true
+  },
+  "rendering": {
+    "backend": "MacOSX",
+    "reference_figures_reproduced": true
+  },
+  "schema_version": "information-matched-figures-v1",
+  "source_changes": [],
+  "source_commit": "009cf9728a49ba77c3fdc70025e78a83fa83cd50",
+  "source_dirty": false,
+  "styles": {
+    "APE": {
+      "color": "C3",
+      "linestyle": "-"
+    },
+    "APE_UV": {
+      "color": "C3",
+      "linestyle": "-"
+    },
+    "D_EGE_SH": {
+      "color": "C0",
+      "linestyle": "-"
+    },
+    "D_EGE_SH_N": {
+      "color": "C0",
+      "linestyle": "--"
+    },
+    "D_EGE_SR": {
+      "color": "C1",
+      "linestyle": "-"
+    },
+    "D_EGE_SR_N": {
+      "color": "C1",
+      "linestyle": "--"
+    },
+    "TTPFTS_KNOWN_VAR": {
+      "color": "C4",
+      "linestyle": "-"
+    },
+    "TTPFTS_UNKNOWN_VAR": {
+      "color": "C4",
+      "linestyle": "-"
+    },
+    "Uniform": {
+      "color": "C2",
+      "linestyle": "-"
+    }
+  },
+  "validation_report_sha256": "d0b01340a23a0af27569812f8776fef518cd2ebce189c30113d8c1300d8f203e"
+}
