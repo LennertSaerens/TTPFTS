@@ -168,7 +168,7 @@ def test_pipeline_resume_validation_and_plotting() -> None:
 
         build(root, environments=SMOKE_ENVIRONMENTS, num_runs=SMOKE_RUNS)
         check("render is refused before validation",
-              raises(lambda: render(root, environments=SMOKE_ENVIRONMENTS, figures_dir=figures, allow_dirty=True),
+              raises(lambda: render(root, environments=SMOKE_ENVIRONMENTS, figures_dir=figures, allow_dirty=True, verify_style=False),
                      RuntimeError))
         report = _validate(root)
         check("validator passes clean smoke data", report["status"] == "pass", "; ".join(report["problems"][:5]))
@@ -203,12 +203,12 @@ def test_pipeline_resume_validation_and_plotting() -> None:
         path.write_bytes(original)
         check("validator passes again after restoring data", _validate(root)["status"] == "pass")
 
-        render(root, environments=SMOKE_ENVIRONMENTS, figures_dir=figures, allow_dirty=True)
+        render(root, environments=SMOKE_ENVIRONMENTS, figures_dir=figures, allow_dirty=True, verify_style=False)
         report = _validate(root, figures_dir=figures, check_figures=True)
         check("figures keep anytime curves identical to the existing publication tables and D-EGE means exact",
               report["status"] == "pass", "; ".join(report["problems"][:5]))
         check("existing doubling figures are never overwritten implicitly",
-              raises(lambda: render(root, environments=SMOKE_ENVIRONMENTS, figures_dir=figures, allow_dirty=True),
+              raises(lambda: render(root, environments=SMOKE_ENVIRONMENTS, figures_dir=figures, allow_dirty=True, verify_style=False),
                      FileExistsError))
         verify_protected_hashes(config)
         verify_source_hashes(config)

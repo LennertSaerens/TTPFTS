@@ -11,11 +11,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import tempfile
 from pathlib import Path
 
 import matplotlib
-
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from plotting import plot_metric_all_envs_grid_top_legend
@@ -32,6 +31,7 @@ from .config import (
     load_config,
     sha256_file,
     source_provenance,
+    source_results_dir,
     verify_protected_hashes,
 )
 from .run import write_json_atomic
@@ -39,6 +39,28 @@ from .validate import figure_manifest_path, figure_paths, report_path
 
 
 METRIC_TITLES = {"jaccard": "Jaccard", "bernoulli": "Bernoulli", "misidentification": "Misidentification"}
+
+
+def verify_reference_rendering(config: dict) -> dict:
+    """Prove this rendering environment reproduces the existing publication figures exactly.
+
+    Tick density depends on backend text metrics (the originals were drawn with
+    the default macOS backend, whose layout differs from headless Agg), so the
+    unchanged ``plot_results_local`` path re-renders the originals into a
+    temporary directory and every PNG/table must be byte-identical.
+    """
+    import plot_results_local
+
+    with tempfile.TemporaryDirectory() as directory:
+        plot_results_local.main(["--results_dir", str(source_results_dir(config)), "--figures_dir", directory])
+        plt.close("all")
+        for name, expected in sorted(config["protected_publication_files"].items()):
+            if sha256_file(Path(directory) / name) != expected:
+                raise RuntimeError(
+                    f"backend {matplotlib.get_backend()!r} does not reproduce {name}; "
+                    "render with the backend used for the original publication figures"
+                )
+    return {"backend": matplotlib.get_backend(), "reference_publication_figures_reproduced": True}
 
 
 def _require_validated_data(output_root: Path, config: dict, names: list[str], algorithms: list[str]) -> dict:
@@ -65,6 +87,7 @@ def render(
     figures_dir: Path | None = None,
     overwrite: bool = False,
     allow_dirty: bool = False,
+    verify_style: bool = True,
 ) -> dict[str, str]:
     config = load_config() if config is None else config
     output_root = Path(default_output_root(config) if output_root is None else output_root)
@@ -81,6 +104,9 @@ def render(
     if existing and not overwrite:
         raise FileExistsError(f"refusing to overwrite existing doubling figures: {existing}")
     verify_protected_hashes(config)
+    style = verify_reference_rendering(config) if verify_style else {
+        "backend": matplotlib.get_backend(), "reference_publication_figures_reproduced": False,
+    }
 
     plot = config["plot"]
     plt.rcParams.update({"font.size": plot["font_size"], "font.family": plot["font_family"]})
@@ -121,6 +147,7 @@ def render(
         "algorithms": algorithms,
         "display_labels": labels,
         "plot_settings": plot,
+        "rendering": style,
         "validation_report_sha256": sha256_file(report_path(output_root)),
         "plot_input_sha256": {name: report["summaries"][name]["data_sha256"]["plot_input"] for name in names},
         "files": files,
@@ -135,12 +162,15 @@ def main() -> None:
     parser.add_argument("--figures-dir", default=None)
     parser.add_argument("--overwrite", action="store_true", help="Replace existing doubling figures only.")
     parser.add_argument("--allow-dirty-source", action="store_true")
+    parser.add_argument("--skip-style-check", action="store_true",
+                        help="Testing only: skip re-rendering the original figures byte-identically.")
     args = parser.parse_args()
     files = render(
         output_root=Path(args.output_root) if args.output_root else None,
         figures_dir=Path(args.figures_dir) if args.figures_dir else None,
         overwrite=args.overwrite,
         allow_dirty=args.allow_dirty_source,
+        verify_style=not args.skip_style_check,
     )
     print(json.dumps(files, indent=2))
 
