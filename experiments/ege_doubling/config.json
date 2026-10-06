@@ -1,0 +1,104 @@
+{
+  "anytime_algorithms": {
+    "APE": "APE",
+    "TTPFTS_UNKNOWN_VAR": "TTPFTS",
+    "Uniform": "Uniform"
+  },
+  "dist": "gaussian",
+  "doubling": {
+    "before_first_stage": "undefined; curves start at arm_pull = K",
+    "budget_accounting": "nominal stage budget; unused native EGE allocation is not carried forward",
+    "completed_stages": "every s with (2**s - 1) * K <= B; an incomplete final stage is never run",
+    "recommendation": "output of the most recently completed stage, held until the next endpoint",
+    "reference": "Jun & Nowak (2016), Anytime Exploration for Multi-armed Bandits using Confidence Information, ICML, Sec. 1",
+    "rendering": "exact step function evaluated at e_s, e_s - 1 (s >= 2), shared grid points >= K, and B",
+    "seed_contract": "existing EGE per-budget seed: (master_seed, env|dist, base_algorithm, repetition, 'budget', b_s)",
+    "stage_budget": "2**(s-1) * K",
+    "stage_endpoint": "(2**s - 1) * K",
+    "stage_runs": "fresh independent calls to the unchanged native EGE implementation; no sample reuse"
+  },
+  "doubling_algorithms": {
+    "D_EGE_SH": {
+      "base_algorithm": "EGE_SH",
+      "label": "D-EGE-SH"
+    },
+    "D_EGE_SR": {
+      "base_algorithm": "EGE_SR",
+      "label": "D-EGE-SR"
+    }
+  },
+  "figures_dir": "figures/publication_ege_doubling",
+  "final_config_file_sha256": "55e410c4973001436c3141ac01d9848cc08444fbcc65d6af4206dbd7be351cb1",
+  "final_config_sha256": "0ab48d2c82e04890acc26345c010d79843e6dd1cd97fe6dbc49773024c2f1885",
+  "master_seed": 0,
+  "num_runs": 100,
+  "plot": {
+    "algorithm_order": [
+      "D_EGE_SH",
+      "D_EGE_SR",
+      "Uniform",
+      "APE",
+      "TTPFTS_KNOWN_VAR",
+      "TTPFTS_UNKNOWN_VAR"
+    ],
+    "figsize": [
+      13,
+      6.6
+    ],
+    "font_family": "serif",
+    "font_size": 12,
+    "log_misidentification": true
+  },
+  "protected_publication_dir": "figures/publication",
+  "protected_publication_files": {
+    "publication_bernoulli.png": "05f77a5189c6ae7301c9a5d5747af9bdf4990d1e5c401af0ade6b6df281e047c",
+    "publication_bernoulli_plot_table.csv": "1343f83fa80b02a3a6cca6fbcd69e01cdd86c8b58c87350410f74fdcf2e95a2d",
+    "publication_jaccard.png": "bcf86448644d40bea3edab4ab79f87f014e9d84f13f23de69682208887dd9563",
+    "publication_jaccard_plot_table.csv": "1f0b77ffea9d74f548db6950157952f23e6dd7d8923b58d60f21480c3bdf3518",
+    "publication_misidentification.png": "eaf5381f91f21d22c208b0dc2f674def6b0e31622fe006f555cfcf2ab6cdb05c",
+    "publication_misidentification_plot_table.csv": "02987966ac34b8beafd3e8c24428a658087f93e04f50764cb04dd52b28f4f492"
+  },
+  "reference_schedules": {
+    "EgeExp7": [
+      22,
+      66,
+      154,
+      330,
+      682,
+      1386,
+      2794,
+      5610
+    ]
+  },
+  "reproduction_check": {
+    "grid_indices": [
+      1,
+      50,
+      100
+    ],
+    "repetitions": [
+      0,
+      99
+    ]
+  },
+  "schema_version": "ege-doubling-publication-v1",
+  "source_files": {
+    "EgeExp1.csv": "ba841805d8369b14645c57f977ca285e3be663f01f03ff31e11863abeea7cb24",
+    "EgeExp2.csv": "1d0ad3f47b588a8b95ffe40dc8f0f881a55a4b13275c46446f8fff7c5c0bed23",
+    "EgeExp3.csv": "563f62e9aa6b35f84d9cdaffc7a1aceb9026708db98f7a0af1dbc5ec30f8cddc",
+    "EgeExp4.csv": "5b2086c5aee9bcc88f566242eb05f894b9715dd4cce3bbcc32e8f21e3cbfbbbc",
+    "EgeExp5.csv": "91343e4af00c80ef99e778806fa4794150da595c61a841e4e864ab77e316eaaf",
+    "EgeExp6.csv": "e1231b0025d5fefe8aefb05a11a2d5e8362a6d735ec1bb425a142d59442acda7",
+    "EgeExp7.csv": "0d337a29366f3741e0777791201b1cc8c76e0019068ca05e9799d347f9b9a896",
+    "EgeExp8.csv": "ede3d6e60a58e8e4124c16f44794cbee2c6902d9b28eea2a53bf8c5730e6bbf8",
+    "run/manifests/EgeExp1.json": "3c292c12af776e43d7199a81acbb822dd25ecc75cdd3fb7a8cce5ecab225a9b5",
+    "run/manifests/EgeExp2.json": "c64e6c8afdf0a2edbd10cc83e25115e3283e5f9a5e44c9399ba6aecb587cc204",
+    "run/manifests/EgeExp3.json": "213c0b7e6f12cb44d7576bb87fc9cc3f79dc8cfbfbe481c226461656ee5ffb75",
+    "run/manifests/EgeExp4.json": "538db8e4e34ff6197e087eaf4aa6cbc0808a1bae12e2fc5fe76fb564374e450d",
+    "run/manifests/EgeExp5.json": "6d85f514ca943e5971940de8a9fba35620c024e4631777df7b90c55de2a67acb",
+    "run/manifests/EgeExp6.json": "92d6b65575183c32e6e1001d54b38a8e8160c84442792b9046dedea98184f4db",
+    "run/manifests/EgeExp7.json": "c8204c4ceae6b777963626b0f9e155f782d8a67ff9f193270bc433c11a2b7de3",
+    "run/manifests/EgeExp8.json": "bb76326e628c8f19e3a5142c2501b1aca083833cdbbded328e0fb8cde9a3da36"
+  },
+  "source_results_dir": "results_preregistered_final_ff29cc456351"
+}

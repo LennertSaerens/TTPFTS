@@ -35,6 +35,8 @@ GATES: tuple[Gate, ...] = (
          "Hardness-normalized TTPFTS p-sweep provenance, identity, and plotting checks", slow=True),
     Gate("gap-noise-alignment", ("test_gap_noise_alignment.py",),
          "Paired custom gap/noise conditions, traces, resume, validation, and figures", slow=True),
+    Gate("ege-doubling", ("test_ege_doubling.py",),
+         "Doubling-trick D-EGE schedule, protection, validation, and publication figures", slow=True),
     Gate("reward-report", ("-m", "environments.validate_reward_environment_gate"),
          "Gate 2/3: regenerate reward/environment/hardness reports"),
     Gate("environment", ("test_environment_reward_hardness_gate.py",),

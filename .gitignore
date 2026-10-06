@@ -33,6 +33,7 @@
 !experiments/gap_noise_alignment/reports/*.csv
 
 /results_gap_noise_alignment_*/
+/results_ege_doubling_*/
 
 # Python bytecode
 __pycache__/
