@@ -1,0 +1,12 @@
+environment,algorithm,issue,points,first,last,figure_sets
+EgeExp4,D_EGE_SH_N,band reaches axis floor (lower bound 0),22,0.7980221568504725,1.0,"kv_both,kv_naive,uv_both,uv_naive"
+EgeExp4,D_EGE_SR,band reaches axis floor (lower bound 0),5,0.3699693309131877,1.0,"kv_both,uv_both"
+EgeExp4,D_EGE_SR_N,band reaches axis floor (lower bound 0),64,0.3974463290980785,1.0,"kv_both,kv_naive,uv_both,uv_naive"
+EgeExp4,TTPFTS_UNKNOWN_VAR,band reaches axis floor (lower bound 0),5,0.9399762158102272,1.0,"uv_both,uv_naive"
+EgeExp6,APE,mean omitted (exact zero),1,0.0,0.0,"kv_both,kv_naive"
+EgeExp6,APE_UV,mean omitted (exact zero),1,0.0,0.0,"uv_both,uv_naive"
+EgeExp6,D_EGE_SH,mean omitted (exact zero),1,0.0,0.0,"kv_both,uv_both"
+EgeExp6,D_EGE_SR,mean omitted (exact zero),2,0.0,0.0001924335142208,"kv_both,uv_both"
+EgeExp6,TTPFTS_KNOWN_VAR,mean omitted (exact zero),1,0.0,0.0,"kv_both,kv_naive"
+EgeExp6,TTPFTS_UNKNOWN_VAR,mean omitted (exact zero),1,0.0,0.0,"uv_both,uv_naive"
+EgeExp6,Uniform,mean omitted (exact zero),1,0.0,0.0,"kv_both,kv_naive,uv_both,uv_naive"

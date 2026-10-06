@@ -1,0 +1,167 @@
+{
+  "config_hash": "e3b913e5e6cdb088c778fa39aa95c0b64d4093757b630c5cfb9c08e292e603e5",
+  "environments": [
+    "EgeExp1",
+    "EgeExp2",
+    "EgeExp3",
+    "EgeExp4",
+    "EgeExp5",
+    "EgeExp6",
+    "EgeExp7",
+    "EgeExp8"
+  ],
+  "figure_sets": {
+    "kv_both": [
+      "D_EGE_SH",
+      "D_EGE_SH_N",
+      "D_EGE_SR",
+      "D_EGE_SR_N",
+      "Uniform",
+      "APE",
+      "TTPFTS_KNOWN_VAR"
+    ],
+    "kv_naive": [
+      "D_EGE_SH_N",
+      "D_EGE_SR_N",
+      "Uniform",
+      "APE",
+      "TTPFTS_KNOWN_VAR"
+    ],
+    "uv_both": [
+      "D_EGE_SH",
+      "D_EGE_SH_N",
+      "D_EGE_SR",
+      "D_EGE_SR_N",
+      "Uniform",
+      "APE_UV",
+      "TTPFTS_UNKNOWN_VAR"
+    ],
+    "uv_naive": [
+      "D_EGE_SH_N",
+      "D_EGE_SR_N",
+      "Uniform",
+      "APE_UV",
+      "TTPFTS_UNKNOWN_VAR"
+    ]
+  },
+  "files": {
+    "publication_bernoulli_kv_both.png": "6882de21e3b4494d9e4636f11efd411e88aceca4cd0cbbc05e50f546c1f3f846",
+    "publication_bernoulli_kv_both_plot_table.csv": "3fce9150d7949010792be4b01dc51b1f3b1bf044cb4a4cda8d6f5979e761cc7e",
+    "publication_bernoulli_kv_naive.png": "1e7849ea84f14a5e3028bc11c6bab1fdfb5d3b41351bc56be5b2a28baafd010d",
+    "publication_bernoulli_kv_naive_plot_table.csv": "eaa4a1f768a81313fdc0a5981e1b1e7f0db3a2706f6dc8193d42d5006fa35679",
+    "publication_bernoulli_uv_both.png": "96af8f9c2fcb07b79cff2680446d9ad5237c23859e65ee93e472e28182293f27",
+    "publication_bernoulli_uv_both_plot_table.csv": "59a55b0a5510ff0cc1449a56a0c99b3e390dab1a83ca3101ba3833ed4c3a8a69",
+    "publication_bernoulli_uv_naive.png": "6126aaf0d4d37cda7eb38638a5c180071d1ffdd0a27e81f1cfb0a4a5f350dfd7",
+    "publication_bernoulli_uv_naive_plot_table.csv": "0f385818acdce848ec2f8756a889c9023521176c6b811589b0372ba6c326d24d",
+    "publication_jaccard_kv_both.png": "63a6ae1a5862d0b183feab6dd0d7573b1336ced4aaf7740d2fe924eafd48bc29",
+    "publication_jaccard_kv_both_plot_table.csv": "4f6a3e14dcb428d2e4f9682e3c0f389cb6592c6998593ed51df3d28a7c46733a",
+    "publication_jaccard_kv_naive.png": "03d6242f5e3f5e79fec4a66ec6bb04253f6cb15b585cd7af976fbd82a89dd063",
+    "publication_jaccard_kv_naive_plot_table.csv": "120852c2ebf8467d6595423e13d3d588e4cc80ae16b43baf5c171527d158890a",
+    "publication_jaccard_uv_both.png": "29c6552c0d91e51013f7ae9285f702892d371e63ab46723d90f360c1a500e90e",
+    "publication_jaccard_uv_both_plot_table.csv": "b84ca40b62a6835b4098a171209368ff483b74d4c3322ef7fd2c9a1052e6cfd1",
+    "publication_jaccard_uv_naive.png": "7a3f9a5816bec43b74f9b7f2719003d65a88612d0f83b257205cbe926977ec96",
+    "publication_jaccard_uv_naive_plot_table.csv": "0c88fc3a81c269bba670bd6e9f9463d9644852450c5a3df4a74180b1c4ff13bb",
+    "publication_misidentification_kv_both.png": "f76ee6599aaf43465f0a2f45e8afc6cf3179b855b119eba86f6c1807ffed5719",
+    "publication_misidentification_kv_both_plot_table.csv": "2ccd35023d52c41aabf0c9ae3c35e7339412133f22042f6bd7c0388a2132ebda",
+    "publication_misidentification_kv_naive.png": "f040dc005cfac8acf58c1fecff4058df1083575d4d379a2ef38e74437afafa3b",
+    "publication_misidentification_kv_naive_plot_table.csv": "5f7e612caafdaf74005129be2af1686d4dd005af0de07bc5008731b2494ef4f9",
+    "publication_misidentification_uv_both.png": "1394b8b9d435d8fe076f0ec5d0cc136a699ae9965e4d977e94c6dedd84b337dd",
+    "publication_misidentification_uv_both_plot_table.csv": "5e3595eb4b40dae6abd7e31aefccefae5cebf36f8f3e9b6353d8e7243a90b7ec",
+    "publication_misidentification_uv_naive.png": "592abd9cce2e55cd3f104cb9b83cf623129501daa610b58da2230a92df3c2c63",
+    "publication_misidentification_uv_naive_plot_table.csv": "ea328f72373ba7fdbaadd6bb6bf774ae7ba678f402de0351933d3bf3790836a6"
+  },
+  "ignored_generated_bytecode_changes": [
+    " M __pycache__/plotting.cpython-311.pyc"
+  ],
+  "labels": {
+    "APE": "APE",
+    "APE_UV": "APE-UV",
+    "D_EGE_SH": "D-EGE-SH",
+    "D_EGE_SH_N": "D-EGE-SH-N",
+    "D_EGE_SR": "D-EGE-SR",
+    "D_EGE_SR_N": "D-EGE-SR-N",
+    "TTPFTS_KNOWN_VAR": "TTPFTS-KV",
+    "TTPFTS_UNKNOWN_VAR": "TTPFTS-UV",
+    "Uniform": "Uniform"
+  },
+  "plot_input_sha256": {
+    "EgeExp1": "b3fc57a5c9230e6f0fdd719bf30867d9344cc5e5333dd954ea3f6a5508f8f97f",
+    "EgeExp2": "319a0a5a426f629a74f5e171eee2563066c0fbb1533d60f2b3725726b8c5f774",
+    "EgeExp3": "be837a2e6179c85e3ed3f22085f58e5ae5a436e69cae960d55017b0f1dc89cca",
+    "EgeExp4": "6363c9f789660ad41bca8da34ec29d27d22067e6e25024b14e1729d29e373ae5",
+    "EgeExp5": "48584188d17433c47571bf94c9035f66d88fc374be259d6c56b7c3eb3b543a87",
+    "EgeExp6": "f9f46543bba0e29c8a2fe912a0d276cac705087507bd46740e9417914885fb0b",
+    "EgeExp7": "baabf4049b3b81506e1ce6882ee0edeb3e25567ed75b003f820b44ae51214bf6",
+    "EgeExp8": "5b3610e80b1d78b78957c302873e0e681dbefc4d045bc83050c8ff750d122589"
+  },
+  "plot_settings": {
+    "figsize": [
+      13,
+      6.6
+    ],
+    "font_family": "serif",
+    "font_size": 12,
+    "legend_kwargs": {
+      "kv_both": {
+        "columnspacing": 0.8,
+        "handlelength": 1.5,
+        "handletextpad": 0.5
+      },
+      "kv_naive": {},
+      "uv_both": {
+        "columnspacing": 0.8,
+        "handlelength": 1.5,
+        "handletextpad": 0.5
+      },
+      "uv_naive": {}
+    },
+    "log_misidentification": true
+  },
+  "rendering": {
+    "backend": "MacOSX",
+    "reference_figures_reproduced": true
+  },
+  "schema_version": "information-matched-figures-v1",
+  "source_changes": [],
+  "source_commit": "6db4fd2df11a405ab5e4df18da90ac938e219921",
+  "source_dirty": false,
+  "styles": {
+    "APE": {
+      "color": "C3",
+      "linestyle": "-"
+    },
+    "APE_UV": {
+      "color": "C3",
+      "linestyle": "-"
+    },
+    "D_EGE_SH": {
+      "color": "C0",
+      "linestyle": "-"
+    },
+    "D_EGE_SH_N": {
+      "color": "C0",
+      "linestyle": "--"
+    },
+    "D_EGE_SR": {
+      "color": "C1",
+      "linestyle": "-"
+    },
+    "D_EGE_SR_N": {
+      "color": "C1",
+      "linestyle": "--"
+    },
+    "TTPFTS_KNOWN_VAR": {
+      "color": "C4",
+      "linestyle": "-"
+    },
+    "TTPFTS_UNKNOWN_VAR": {
+      "color": "C4",
+      "linestyle": "-"
+    },
+    "Uniform": {
+      "color": "C2",
+      "linestyle": "-"
+    }
+  },
+  "validation_report_sha256": "9cc8311969440efa6ced76e2a1bc622f8e44440b9e4d2c96e5ccc60e7384819d"
+}
