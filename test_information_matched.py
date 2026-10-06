@@ -129,6 +129,44 @@ def test_renderer_styles() -> None:
         plt.close(fig)
 
 
+def test_stage_only_memory() -> None:
+    times = np.array([1, 2, 3, 4])
+    arms = np.array([0, 1, 0, 1])
+    rewards = np.array([[10.0, 10.0], [1.0, 1.0], [0.0, 0.0], [2.0, 2.0]])
+    points = [0, 2, 3, 4, 5]
+    pooled = empirical_trajectory(times, arms, rewards, points, 3)
+    local = empirical_trajectory(times, arms, rewards, points, 3, reset_after=[2, 4])
+    check("no-pool endpoint retains its just-completed stage",
+          local[1][1].tolist() == [0] and local[3][1].tolist() == [1])
+    check("no-pool discards previous-stage means at the next pull",
+          pooled[3][1].tolist() == [0] and local[3][1].tolist() == [1])
+    check("no-pool resets even when the next stage has no observations yet",
+          local[4][1].tolist() == [0, 1, 2] and local[4][3] == 3)
+    check("no-pool preserves cumulative acquisition counts",
+          [row[2] for row in pooled] == [row[2] for row in local])
+    check("no-pool resets correctly when evaluation skips multiple stages",
+          empirical_trajectory(times, arms, rewards, [4], 3, reset_after=[2, 4])[0][1].tolist() == [1])
+
+    from experiments.information_matched import no_pool
+
+    config = no_pool.load_no_pool_config()
+    check("no-pool workflow protects the old information-matched results",
+          raises(lambda: assert_safe_output(no_pool.source_root(config) / "empirical/EgeExp2.csv", config),
+                 PermissionError))
+    check("no-pool workflow protects the old information-matched figures",
+          raises(lambda: assert_safe_output(REPO_ROOT / "figures/publication_information_matched/x.png", config),
+                 PermissionError))
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        no_pool.run_empirical.run(
+            root, config=config, environments=["EgeExp2"], repetitions=[0, 1], n_jobs=1, allow_dirty=True
+        )
+        no_pool.build_inputs(root, config, ["EgeExp2"])
+        report = no_pool.validate(root, config, ["EgeExp2"], [0, 1], require_clean=False)
+        check("no-pool runner matches independent stage-reset replay in both pull orders",
+              report["summaries"]["EgeExp2"]["empirical"]["independently_recomputed_points"] > 0)
+
+
 def _run(root: Path, n_jobs: int, environments=ENVIRONMENTS) -> None:
     config = load_config()
     run_ape_uv.run(root, config, environments=environments, repetitions=REPETITIONS, n_jobs=n_jobs, allow_dirty=True)
@@ -229,6 +267,7 @@ def test_pipeline() -> None:
 if __name__ == "__main__":
     execute("Protection, round-robin ordering, stage clock, and empirical recommendation", test_protection_and_units)
     execute("Renderer styles and legend", test_renderer_styles)
+    execute("Stage-only sample memory", test_stage_only_memory)
     execute("Run, resume, serial/parallel identity, validation, corruption, and plotting", test_pipeline)
     print("\n" + "=" * 80)
     if FAILURES:

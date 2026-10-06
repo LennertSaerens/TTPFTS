@@ -103,8 +103,10 @@ def stage_plan(num_arms: int, budget: int) -> list[dict]:
     return plan
 
 
-def evaluation_points(spec: dict) -> list[int]:
+def evaluation_points(spec: dict, include_restarts: bool = False) -> list[int]:
     endpoints = {stage.start for stage in doubling_schedule(spec["num_arms"], spec["budget"])}
+    if include_restarts:
+        endpoints |= {endpoint + 1 for endpoint in endpoints if endpoint < spec["budget"]}
     return sorted(set(spec["grid"]) | endpoints)
 
 
@@ -116,16 +118,27 @@ def active_stage(plan: list[dict], arm_pull: int) -> int:
 
 
 def empirical_trajectory(times: np.ndarray, arms: np.ndarray, rewards: np.ndarray, points: list[int],
-                         num_arms: int) -> list[tuple[int, np.ndarray, int, int]]:
+                         num_arms: int, reset_after: list[int] | None = None
+                         ) -> list[tuple[int, np.ndarray, int, int]]:
     """``(t, recommendation, samples_drawn, unsampled_arms)`` at every evaluation point.
 
     Sums accumulate pull by pull in time order (``np.add.at`` is unbuffered),
     matching a sequential reference implementation bit for bit.
+    With ``reset_after``, discard earlier stages at the first evaluation point
+    strictly after each endpoint. The endpoint itself still uses its completed
+    stage. ``samples_drawn`` remains the cumulative acquisition count.
     """
     sums = np.zeros((num_arms, rewards.shape[1] if rewards.ndim == 2 else 0), dtype=float)
     counts = np.zeros(num_arms, dtype=np.int64)
-    position, out = 0, []
+    position, out, previous_segment = 0, [], 0
     for arm_pull in points:
+        if reset_after is not None:
+            segment = int(np.searchsorted(reset_after, arm_pull, side="left"))
+            if segment != previous_segment:
+                sums.fill(0.0)
+                counts.fill(0)
+                position = int(np.searchsorted(times, reset_after[segment - 1], side="right"))
+                previous_segment = segment
         upto = int(np.searchsorted(times, arm_pull, side="right"))
         if upto > position:
             np.add.at(sums, arms[position:upto], rewards[position:upto])
@@ -206,13 +219,18 @@ def run_task(output_root: str, environment_name: str, algorithm: str, repetition
             "config_hash": digest,
         })
 
-    points = evaluation_points(spec)
+    memory = config["empirical_doubling"].get("sample_memory", "all_stages")
+    if memory not in ("all_stages", "current_stage"):
+        raise ValueError(f"unsupported empirical sample memory: {memory}")
+    points = evaluation_points(spec, include_restarts=memory == "current_stage")
     encoded_points = encode_int_set(points)
+    reset_after = [item["end"] for item in plan if item["completed"]] if memory == "current_stage" else None
     files = {}
     for order, suffix in ORDERS.items():
         times, arms, rewards = (np.concatenate(part) for part in pieces[order])
         rows = []
-        for arm_pull, recommendation, drawn, unsampled in empirical_trajectory(times, arms, rewards, points, K):
+        for arm_pull, recommendation, drawn, unsampled in empirical_trajectory(
+                times, arms, rewards, points, K, reset_after=reset_after):
             recommendation = list(recommendation)
             row = build_row(
                 environment=environment_name, instance_hash=instance_hash, algorithm=f"{algorithm}{suffix}",
@@ -260,7 +278,8 @@ def merge_environment(output_root: Path, environment_name: str, config: dict, al
             collected["trajectory"].extend(read_csv(directory / "trajectory.csv")[1])
             collected["block"].extend(read_csv(directory / "trajectory_block.csv")[1])
             collected["stages"].extend(read_csv(directory / "stages.csv")[1])
-    points = len(evaluation_points(spec))
+    include_restarts = config["empirical_doubling"].get("sample_memory", "all_stages") == "current_stage"
+    points = len(evaluation_points(spec, include_restarts=include_restarts))
     stages = len(stage_plan(spec["num_arms"], spec["budget"]))
     expected = {
         "trajectory": len(algorithms) * len(repetitions) * points,
@@ -282,7 +301,7 @@ def merge_environment(output_root: Path, environment_name: str, config: dict, al
         "environment": spec,
         "algorithms": algorithms,
         "repetitions": repetitions,
-        "evaluation_points": evaluation_points(spec),
+        "evaluation_points": evaluation_points(spec, include_restarts=include_restarts),
         "stage_plan": stage_plan(spec["num_arms"], spec["budget"]),
         "files": files,
         **provenance,

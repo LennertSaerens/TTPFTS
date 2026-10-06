@@ -166,7 +166,7 @@ def validate_ape_uv(output_root: Path, spec: dict, config: dict, repetitions: li
 
 # ------------------------------------------------------------------ empirical D-EGE
 def _independent_trajectory(spec: dict, config: dict, base: str, repetition: int, points: list[int],
-                            order: str) -> list[tuple[int, str, int, int]]:
+                            order: str, pool_samples: bool = True) -> list[tuple[int, str, int, int]]:
     """Pull-by-pull reference: own recorder, explicit loops, ``paretoset`` Pareto sets."""
     name, K, B = spec["name"], spec["num_arms"], spec["budget"]
     env_tag, master = f"{name}|{config['dist']}", int(config["master_seed"])
@@ -212,8 +212,16 @@ def _independent_trajectory(spec: dict, config: dict, base: str, repetition: int
 
     sums = np.zeros((K, D))
     counts = np.zeros(K, dtype=int)
-    out, position = [], 0
+    out, position, previous_start = [], 0, 0
     for t in points:
+        if not pool_samples:
+            current_start = max((end for end in stage_ends if end < t), default=0)
+            if current_start != previous_start:
+                sums.fill(0.0)
+                counts.fill(0)
+                while position < len(timeline) and timeline[position][0] <= current_start:
+                    position += 1
+                previous_start = current_start
         while position < len(timeline) and timeline[position][0] <= t:
             _, arm, reward = timeline[position]
             sums[arm] += reward
@@ -243,6 +251,8 @@ def validate_empirical(output_root: Path, spec: dict, config: dict, repetitions:
     stage_ends = endpoints(K, B)
     S = len(stage_ends)
     points = sorted(set(spec["grid"]) | set(stage_ends))
+    if config["empirical_doubling"].get("sample_memory", "all_stages") == "current_stage":
+        points = sorted(set(points) | {end + 1 for end in stage_ends if end < B})
     encoded_points = encode_int_set(points)
 
     # stages
@@ -312,7 +322,10 @@ def validate_empirical(output_root: Path, spec: dict, config: dict, repetitions:
                     problems.add(f"{name}/{algorithm}/rep{rep}/t={t}: {problem}")
             if rep in sample_reps:
                 order = "block" if suffix else "round_robin"
-                reference = _independent_trajectory(spec, config, EMPIRICAL_ALGORITHMS[base_key], rep, points, order)
+                reference = _independent_trajectory(
+                    spec, config, EMPIRICAL_ALGORITHMS[base_key], rep, points, order,
+                    pool_samples=config["empirical_doubling"].get("sample_memory", "all_stages") != "current_stage",
+                )
                 for row, (t, recommendation, drawn, unsampled) in zip(trajectory, reference):
                     recomputed += 1
                     if (row["recommendation"], row["samples_drawn"], row["unsampled_arms"]) != (
