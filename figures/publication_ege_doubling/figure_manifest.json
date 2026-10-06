@@ -1,0 +1,69 @@
+{
+  "algorithms": [
+    "D_EGE_SH",
+    "D_EGE_SR"
+  ],
+  "display_labels": {
+    "D_EGE_SH": "D-EGE-SH",
+    "D_EGE_SR": "D-EGE-SR",
+    "TTPFTS_UNKNOWN_VAR": "TTPFTS"
+  },
+  "doubling_config_hash": "3840c14dc78c90af2f88679ff3f333c6802827dd64da9554169c7a6338ffe4d1",
+  "environments": [
+    "EgeExp1",
+    "EgeExp2",
+    "EgeExp3",
+    "EgeExp4",
+    "EgeExp5",
+    "EgeExp6",
+    "EgeExp7",
+    "EgeExp8"
+  ],
+  "files": {
+    "publication_bernoulli_ege_doubling.png": "91c0ee247962f54aec10a3f71962d793fd245df4582a06deab84a665017b2181",
+    "publication_bernoulli_ege_doubling_plot_table.csv": "aa86860c6a25f06f021ebcad3b04b709470e4154d1621ba105a632e8398b837e",
+    "publication_jaccard_ege_doubling.png": "39a2ff94872fac1a02d2b2eb291dc36c6f3dbe34bbfddbd60bc13bbb179f7404",
+    "publication_jaccard_ege_doubling_plot_table.csv": "19613fb2e1382876a3bc4e00e2009523a883f5f7e526bf05aec7a7b321502ee4",
+    "publication_misidentification_ege_doubling.png": "21c1af92823a6ae21c3e09efc5317eae90a030237deac8037e7d3f3992c364b9",
+    "publication_misidentification_ege_doubling_plot_table.csv": "a0446b8b18b24be4ce6d6c9a5e8281e98503c6ac83ea342bed433426065ac45f"
+  },
+  "ignored_generated_bytecode_changes": [
+    " M __pycache__/plotting.cpython-311.pyc"
+  ],
+  "plot_input_sha256": {
+    "EgeExp1": "7a431598c0c40fa056ea55df8c3d378d48038d2c1b82be725515f636f21330ec",
+    "EgeExp2": "4bec4d4cc6dd055b026851b6406dba0bb8fdc52d8b220614ed563c041e2df502",
+    "EgeExp3": "a00995365341c6b67eaa08c53ddfbe7b4b84a563659b4e8ed3c2667bd6a5b1a8",
+    "EgeExp4": "ed186ad90de18db5ddfdaa992a976d087910f75c3025f83820c60f57596fa7fc",
+    "EgeExp5": "4974d3426266907af97c4f28a35eb5bd3395a96b2263d503ce1a5f1abbabb0c5",
+    "EgeExp6": "1ad1824c261334de24bfef6682096021fed87b82011ad7b14f7c3cb57b59bd23",
+    "EgeExp7": "1f67060ac80d161816dc7041e5f5f46ee1ddf6f3313680dbe62e76b8dd514ebf",
+    "EgeExp8": "3082e9570715144651b57c8977b161f888bebbfecd23de2a3c557f6bb8c29065"
+  },
+  "plot_settings": {
+    "algorithm_order": [
+      "D_EGE_SH",
+      "D_EGE_SR",
+      "Uniform",
+      "APE",
+      "TTPFTS_KNOWN_VAR",
+      "TTPFTS_UNKNOWN_VAR"
+    ],
+    "figsize": [
+      13,
+      6.6
+    ],
+    "font_family": "serif",
+    "font_size": 12,
+    "log_misidentification": true
+  },
+  "rendering": {
+    "backend": "MacOSX",
+    "reference_publication_figures_reproduced": true
+  },
+  "schema_version": "ege-doubling-figures-v1",
+  "source_changes": [],
+  "source_commit": "1dac4f30aea8594b0cc59b3e6a941065e5950e05",
+  "source_dirty": false,
+  "validation_report_sha256": "bb29b9389f3e23e12e58e577c1c83cb6d7e627ea74494d7294199862c501d0e5"
+}
