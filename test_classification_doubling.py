@@ -70,8 +70,40 @@ def test_trace_is_passive():
     print("PASS: diagnostic timing leaves rewards, native recommendations and RNG unchanged")
 
 
-def test_end_to_end():
-    config = experiment.load_classification_config()
+def test_pooling():
+    sums = np.array([[100.0, 100.0], [2.0, 2.0], [50.0, 50.0]])
+    counts = np.array([10, 1, 5])
+    old_sums, old_counts = sums.copy(), counts.copy()
+    arms, rewards = np.array([1]), np.array([[3.0, 3.0]])
+    events = [
+        {"arm": 2, "decision": "reject", "sample_offset": 1},
+        {"arm": 0, "decision": "accept", "sample_offset": 2},
+        {"arm": 1, "decision": "accept_final", "sample_offset": 2},
+    ]
+    local = experiment.progressive_rows(arms, rewards, events, [0, 1, 2], 3)
+    pooled = experiment.progressive_rows(
+        arms, rewards, events, [0, 1, 2], 3, previous_sums=sums, previous_counts=counts
+    )
+    assert local[1]["recommendation"] == "[1]" and pooled[1]["recommendation"] == "[0]"
+    assert pooled[0]["recommendation"] == "[0,2]"  # Arms reactivate; only observations carry over.
+    assert pooled[1]["rejected"] == "[2]" and pooled[1]["accepted"] == "[]"
+    assert pooled[2]["recommendation"] == local[2]["recommendation"] == "[0,1]"
+    assert all(state["unsampled_arms"] == 0 for state in pooled)
+    assert [state["stage_samples"] for state in pooled] == [0, 1, 1]
+    assert np.array_equal(sums, old_sums) and np.array_equal(counts, old_counts)
+    before = experiment.progressive_rows(
+        arms, rewards * 1000, events, [0], 3, previous_sums=sums, previous_counts=counts
+    )
+    assert before[0] == pooled[0]  # Future rewards do not affect the restart estimate.
+    assert experiment.output_root(experiment.load_classification_config()).name == (
+        "results_information_matched_classification_12c9bfa8cd16"
+    )
+    print("PASS: pooling changes active-arm estimates without carrying old classifications, "
+          "altering native endpoints, consuming future rewards, or mutating history")
+
+
+def test_end_to_end(pool_samples=False):
+    config = experiment.load_classification_config(pool_samples=pool_samples)
     assert config["labels"] == load_config()["labels"]
     assert all(len(algs) == 7 for algs in config["figure_sets"].values())
     verify_sources(config)
@@ -126,11 +158,13 @@ def test_end_to_end():
     verify_sources(config)
     verify_protected(config)
     print("PASS: source preservation, resume, parallel identity, 32 exact endpoints, independent replay, "
-          "corruption rejection, six figures, and unchanged labels/baselines")
+          f"corruption rejection, six figures, and unchanged labels/baselines (pooled={pool_samples})")
 
 
 if __name__ == "__main__":
     test_partial_rule()
     test_trace_is_passive()
+    test_pooling()
     test_end_to_end()
+    test_end_to_end(pool_samples=True)
     print("ALL CLASSIFICATION-AWARE DOUBLING TESTS PASSED")

@@ -1,6 +1,9 @@
 """Classification-aware anytime recommendations for native doubling EGE.
 
 Run ``python -m experiments.information_matched.classification --n-jobs 8``.
+Add ``--pool-samples`` to retain observations across stages for the active
+arms' empirical means, while native EGE selection and classification remain
+stage-local. Each mode has a separate immutable binding and output directory.
 The new figures retain every existing display label: only the solid D-EGE
 curves change. All other curves are copied from the original plot inputs.
 
@@ -10,7 +13,8 @@ disappear. Apply native classification events after their round's observations,
 including final acceptance. Thus the recommendation equals the native EGE
 output throughout its nominal-budget idle tail and at every completed endpoint.
 
-Means/counts and classifications reset strictly after an endpoint. At t=0
+By default means/counts and classifications reset strictly after an endpoint;
+with pooling only classifications reset. At t=0
 retain the original zero-information recommendation (all arms). Zero-sample
 classification events are observable on the first integer pull of their
 stage, never at the preceding stage's endpoint. Future events from a replayed
@@ -55,7 +59,9 @@ from .run_empirical import SampleRecorder, STAGE_COLUMNS, evaluation_points, rou
 from .validate import Problems, figure_paths, report_path, validate_figures
 
 CONFIG_PATH = Path(__file__).with_name("classification_config.json")
+POOLED_CONFIG_PATH = Path(__file__).with_name("classification_pooled_config.json")
 RULE = "native accepted arms union empirical Pareto of current-stage active arms; rejected arms excluded"
+POOLED_RULE = "native accepted arms union empirical Pareto of active arms using all stages' observations; rejected arms excluded"
 COLUMNS = [
     *SCHEMA_COLUMNS, "base_algorithm", "active_stage", "samples_drawn", "stage_samples",
     "unsampled_arms", "accepted", "rejected", "active", "config_hash",
@@ -66,32 +72,35 @@ EVENT_COLUMNS = [
 ]
 
 
-def load_classification_config() -> dict:
-    with CONFIG_PATH.open() as handle:
+def load_classification_config(pool_samples: bool = False) -> dict:
+    with (POOLED_CONFIG_PATH if pool_samples else CONFIG_PATH).open() as handle:
         binding = json.load(handle)
     config = copy.deepcopy(load_config())
-    if binding["base_config_hash"] != config_hash(config) or binding["recommendation"] != RULE:
+    rule = POOLED_RULE if pool_samples else RULE
+    if binding["base_config_hash"] != config_hash(config) or binding["recommendation"] != rule:
         raise ValueError("classification-aware configuration differs from its frozen specification")
+    if pool_samples and binding.get("sample_memory") != "all_stages":
+        raise ValueError("pooled classification-aware configuration must retain all earlier observations")
     config["classification_binding"] = binding
     config["empirical_doubling"].update({
-        "recommendation": RULE,
-        "sample_memory": "current_stage",
+        "recommendation": rule,
+        "sample_memory": "all_stages" if pool_samples else "current_stage",
         "classification_timing": "native round-end trace offsets; post-decision recommendation",
         "evaluation_points": "shared grid, completed endpoints and first post-restart pull",
     })
     config["figures_dir"] = binding["figures_dir"]
     config["protected_files"].update(binding["additional_protected_files"])
-    config["figure_sets"] = {
-        f"{name}_classification": config["figure_sets"][name] for name in ("uv_both", "kv_both")
-    }
+    suffix = "classification_pooled" if pool_samples else "classification"
+    config["figure_sets"] = {f"{name}_{suffix}": config["figure_sets"][name] for name in ("uv_both", "kv_both")}
     config["plot"]["legend_kwargs"] = {
-        f"{name}_classification": config["plot"]["legend_kwargs"][name] for name in ("uv_both", "kv_both")
+        f"{name}_{suffix}": config["plot"]["legend_kwargs"][name] for name in ("uv_both", "kv_both")
     }
     return config
 
 
 def output_root(config: dict) -> Path:
-    return REPO_ROOT / f"results_information_matched_classification_{config_hash(config)[:12]}"
+    pooled = "_pooled" if config["empirical_doubling"]["sample_memory"] == "all_stages" else ""
+    return REPO_ROOT / f"results_information_matched_classification{pooled}_{config_hash(config)[:12]}"
 
 
 def source_root(config: dict) -> Path:
@@ -136,14 +145,27 @@ def recommend(means: np.ndarray, active: np.ndarray, accepted: np.ndarray) -> np
 
 
 def progressive_rows(arms: np.ndarray, rewards: np.ndarray, events: list[dict],
-                     offsets: list[int], num_arms: int) -> list[dict]:
-    """Evaluate accepted union Pareto(active) after all decisions visible at each offset."""
+                     offsets: list[int], num_arms: int, previous_sums: np.ndarray | None = None,
+                     previous_counts: np.ndarray | None = None) -> list[dict]:
+    """Evaluate accepted union Pareto(active), optionally pooling earlier rewards.
+
+    Classification state always starts fresh. Supplied sufficient statistics
+    are copied and never modified; current/future samples cannot enter the
+    preceding stage. ``stage_samples`` counts only the current stage.
+    """
     if offsets != sorted(set(offsets)) or any(t < 0 for t in offsets):
         raise ValueError("stage observation offsets must be unique, increasing and non-negative")
     if any(int(a["sample_offset"]) > int(b["sample_offset"]) for a, b in zip(events, events[1:])):
         raise ValueError("classification trace is not in observation order")
-    sums = np.zeros((num_arms, rewards.shape[1]))
-    counts = np.zeros(num_arms, int)
+    if (previous_sums is None) != (previous_counts is None):
+        raise ValueError("pooled sums and counts must be supplied together")
+    if previous_sums is not None:
+        if previous_sums.shape != (num_arms, rewards.shape[1]) or previous_counts.shape != (num_arms,):
+            raise ValueError("pooled sufficient-statistic shapes do not match the environment")
+        if np.any(previous_counts < 0) or not np.all(np.isfinite(previous_sums)):
+            raise ValueError("invalid pooled sufficient statistics")
+    sums = np.zeros((num_arms, rewards.shape[1])) if previous_sums is None else previous_sums.copy()
+    counts = np.zeros(num_arms, int) if previous_counts is None else previous_counts.copy()
     active = np.ones(num_arms, bool)
     accepted = np.zeros(num_arms, bool)
     rejected = np.zeros(num_arms, bool)
@@ -213,6 +235,9 @@ def run_task(root: str, spec: dict, algorithm: str, repetition: int, config: dic
     plan = stage_plan(K, B)
     trajectory, stages, event_rows = [], [], []
     previous_draws = 0
+    pool = config["empirical_doubling"]["sample_memory"] == "all_stages"
+    history_sums = np.zeros((K, spec["num_objectives"]))
+    history_counts = np.zeros(K, int)
     for item in plan:
         seed_rngs(config["master_seed"], env_tag, base, repetition, "budget", item["budget"])
         recorder = TimedRecorder(environment)
@@ -229,7 +254,11 @@ def run_task(root: str, spec: dict, algorithm: str, repetition: int, config: dic
         rewards = np.concatenate([block[1] for block in blocks]) if blocks else np.empty((0, spec["num_objectives"]))
         used = min(recorder.draws, item["end"] - item["start"])
         stage_points = [t for t in points if item["start"] < t <= item["end"] or (t == 0 and item["stage"] == 1)]
-        states = progressive_rows(arms, rewards, trace, [t - item["start"] for t in stage_points], K)
+        states = progressive_rows(
+            arms, rewards, trace, [t - item["start"] for t in stage_points], K,
+            previous_sums=history_sums if pool else None,
+            previous_counts=history_counts if pool else None,
+        )
         for t, state in zip(stage_points, states):
             recommendation = json.loads(state["recommendation"])
             row = build_row(
@@ -265,6 +294,9 @@ def run_task(root: str, spec: dict, algorithm: str, repetition: int, config: dic
             "used_draws": used, "recommendation": encode_int_set(native), "config_hash": digest,
         })
         previous_draws += used
+        if pool:
+            np.add.at(history_sums, arms[:used], rewards[:used])
+            np.add.at(history_counts, arms[:used], 1)
     if [row["arm_pull"] for row in trajectory] != points:
         raise ValueError(f"{name}/{algorithm}: trajectory grid mismatch")
     files = {}
@@ -339,6 +371,8 @@ def independent_replay(spec: dict, config: dict, algorithm: str, repetition: int
     seed_rngs(config["master_seed"], tag, "env", repetition)
     environment.reset()
     results = {}
+    pool = config["empirical_doubling"]["sample_memory"] == "all_stages"
+    sums, counts = np.zeros((K, D)), np.zeros(K, int)
     for item in stage_plan(K, spec["budget"]):
         calls, sample_counts, trace = [], [], []
 
@@ -362,7 +396,8 @@ def independent_replay(spec: dict, config: dict, algorithm: str, repetition: int
                 by_arm.setdefault(int(arm), []).append(reward)
             for k in range(len(next(iter(by_arm.values())))):
                 sequence.extend((arm, values[k]) for arm, values in by_arm.items())
-        sums, counts = np.zeros((K, D)), np.zeros(K, int)
+        if not pool:
+            sums, counts = np.zeros((K, D)), np.zeros(K, int)
         active, accepted = set(range(K)), set()
         position = decision = 0
         for t in points:
@@ -525,7 +560,7 @@ def validate(root: Path, config: dict, names: list[str], repetitions: list[int],
         files = validate_figures(root, directory,
                                  specs, config, len(repetitions), problems, reused_algorithms=("APE_UV",))
         for set_name in config["figure_sets"]:
-            original_set = set_name.removesuffix("_classification")
+            original_set = set_name.split("_classification")[0]
             for metric in METRICS:
                 original = pd.read_csv(
                     REPO_ROOT / "figures/publication_information_matched"
@@ -544,7 +579,8 @@ def validate(root: Path, config: dict, names: list[str], repetitions: list[int],
         "status": "pass" if not problems else "fail", "config_hash": config_hash(config),
         "environments": names, "repetitions": repetitions, "summaries": summaries,
         "figures_checked": check_figures, "figure_files": files, "problems": list(problems),
-        "recommendation": RULE,
+        "recommendation": config["empirical_doubling"]["recommendation"],
+        "sample_memory": config["empirical_doubling"]["sample_memory"],
     }
     atomic_json(report_path(root), report)
     if problems:
@@ -556,8 +592,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--phase", choices=["run", "build", "validate", "plot", "all"], default="all")
     parser.add_argument("--n-jobs", type=int, default=8)
+    parser.add_argument("--pool-samples", action="store_true",
+                        help="Pool past observations for active-arm means; native decisions stay stage-local.")
     args = parser.parse_args()
-    config = load_classification_config()
+    config = load_classification_config(pool_samples=args.pool_samples)
     root = output_root(config)
     names = [spec["name"] for spec in environment_specs(config)]
     repetitions = list(range(config["num_runs"]))
