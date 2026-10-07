@@ -1,0 +1,139 @@
+{
+  "config_hash": "7f8168191ef289997b1855ec99cce2578d4dfc322c20c535f08decaad9f8cfbb",
+  "environments": [
+    "EgeExp1",
+    "EgeExp2",
+    "EgeExp3",
+    "EgeExp4",
+    "EgeExp5",
+    "EgeExp6",
+    "EgeExp7",
+    "EgeExp8"
+  ],
+  "figure_sets": {
+    "kv_both_classification_pooled": [
+      "D_EGE_SH",
+      "D_EGE_SH_N",
+      "D_EGE_SR",
+      "D_EGE_SR_N",
+      "Uniform",
+      "APE",
+      "TTPFTS_KNOWN_VAR"
+    ],
+    "uv_both_classification_pooled": [
+      "D_EGE_SH",
+      "D_EGE_SH_N",
+      "D_EGE_SR",
+      "D_EGE_SR_N",
+      "Uniform",
+      "APE_UV",
+      "TTPFTS_UNKNOWN_VAR"
+    ]
+  },
+  "files": {
+    "publication_bernoulli_kv_both_classification_pooled.png": "b8f5df1af54e12a3155eeecb7f0e569b8db4ac2562c93c16c4cfdc839ce0ca3f",
+    "publication_bernoulli_kv_both_classification_pooled_plot_table.csv": "a0ede4c9664c66d071642d0c23006c4a79696e17a2fdcd665340b8bc36b9076a",
+    "publication_bernoulli_uv_both_classification_pooled.png": "df03674764042a1ea1ccc0da7cfa7fb9d6bf5bb5ec5e3bf1376e17087f31d80f",
+    "publication_bernoulli_uv_both_classification_pooled_plot_table.csv": "1cac263d996c12f3b9a3f8d2c909ff849a3c6e7024fe1ecde49893b39b11ff6a",
+    "publication_jaccard_kv_both_classification_pooled.png": "d03dd46e91a164afd963e9aace891e6f98dc43ee1893df62b6c739a85b7adbd0",
+    "publication_jaccard_kv_both_classification_pooled_plot_table.csv": "84742d782616b4d420c787dcc50f02471d796135c7d9ca7f1a9e99b1ad62a96a",
+    "publication_jaccard_uv_both_classification_pooled.png": "a9324933ef225b1b93c800d02fbcabe7ce084d4b37ef2fa9d883f046964d931e",
+    "publication_jaccard_uv_both_classification_pooled_plot_table.csv": "b4f8f5d1e29430962f0a4a04bfd99a354f1d6b3c258ed428280abbf445434b57",
+    "publication_misidentification_kv_both_classification_pooled.png": "6b3c702cad4863fc35916ae03ddaae6aebf0e0ea030d65a4f70d5754933b47f0",
+    "publication_misidentification_kv_both_classification_pooled_plot_table.csv": "a7cff0828421d6097bff4284337492aee9d85c65ec47a38c5c1f88c8e5a59b06",
+    "publication_misidentification_uv_both_classification_pooled.png": "052a60e86cef40a9c17202c28260cedc6adc81146392c7fd36ad307df49522f5",
+    "publication_misidentification_uv_both_classification_pooled_plot_table.csv": "acadb69c1a323b4b9d672673656638667407fdb9453544f38e8abf725c4f3d90"
+  },
+  "ignored_generated_bytecode_changes": [
+    " M __pycache__/plotting.cpython-311.pyc"
+  ],
+  "labels": {
+    "APE": "APE",
+    "APE_UV": "APE-UV",
+    "D_EGE_SH": "D-EGE-SH",
+    "D_EGE_SH_N": "D-EGE-SH-N",
+    "D_EGE_SR": "D-EGE-SR",
+    "D_EGE_SR_N": "D-EGE-SR-N",
+    "TTPFTS_KNOWN_VAR": "TTPFTS-KV",
+    "TTPFTS_UNKNOWN_VAR": "TTPFTS-UV",
+    "Uniform": "Uniform"
+  },
+  "plot_input_sha256": {
+    "EgeExp1": "f398287a20f2e4dd031ee75f734c20458f9be78dad122cbfb6f63ed145d12003",
+    "EgeExp2": "a48556100668b041219f50666eda7b42c3b2393c51db265dc57129bf728e5eb4",
+    "EgeExp3": "7e1d1319cdfa0c3df25784fbc905b7fde77c8a5cb59b94e52243822a0ec003db",
+    "EgeExp4": "950a509d9488661fae6e3b1d5d9b3fcdda8c9666f429de36ad76ff0b13bb4116",
+    "EgeExp5": "aefd47934f860b374ae2addd8c1d9c726c1c04b90bc473e4bee599949bd7d1f6",
+    "EgeExp6": "d6dafa8bb7ac63505af6708f8b6a15c4b6198edb87ab41395a9742ffbd8e815d",
+    "EgeExp7": "ec696a21c0ec4072f94231a77421942c9ec0e176173648994a2e3c3f333b2a99",
+    "EgeExp8": "275b071c2bd29607670376f899641b0c64c38a47b438cdd45ca103b990212ae8"
+  },
+  "plot_settings": {
+    "figsize": [
+      13,
+      6.6
+    ],
+    "font_family": "serif",
+    "font_size": 12,
+    "legend_kwargs": {
+      "kv_both_classification_pooled": {
+        "columnspacing": 0.8,
+        "handlelength": 1.5,
+        "handletextpad": 0.5
+      },
+      "uv_both_classification_pooled": {
+        "columnspacing": 0.8,
+        "handlelength": 1.5,
+        "handletextpad": 0.5
+      }
+    },
+    "log_misidentification": true
+  },
+  "rendering": {
+    "backend": "MacOSX",
+    "reference_figures_reproduced": true
+  },
+  "schema_version": "information-matched-figures-v1",
+  "source_changes": [],
+  "source_commit": "f5fb4ad0c47b263e185fdd4e0936c25f2f4cc403",
+  "source_dirty": false,
+  "styles": {
+    "APE": {
+      "color": "C3",
+      "linestyle": "-"
+    },
+    "APE_UV": {
+      "color": "C3",
+      "linestyle": "-"
+    },
+    "D_EGE_SH": {
+      "color": "C0",
+      "linestyle": "-"
+    },
+    "D_EGE_SH_N": {
+      "color": "C0",
+      "linestyle": "--"
+    },
+    "D_EGE_SR": {
+      "color": "C1",
+      "linestyle": "-"
+    },
+    "D_EGE_SR_N": {
+      "color": "C1",
+      "linestyle": "--"
+    },
+    "TTPFTS_KNOWN_VAR": {
+      "color": "C4",
+      "linestyle": "-"
+    },
+    "TTPFTS_UNKNOWN_VAR": {
+      "color": "C4",
+      "linestyle": "-"
+    },
+    "Uniform": {
+      "color": "C2",
+      "linestyle": "-"
+    }
+  },
+  "validation_report_sha256": "cc943ce3ed4b5997c7e16c678d26b322d4ede0117d48f9ebd95907ec7a40effa"
+}
