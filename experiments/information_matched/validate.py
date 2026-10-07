@@ -367,7 +367,7 @@ def validate_plot_inputs(output_root: Path, spec: dict, config: dict, problems: 
 
 # ---------------------------------------------------------------------- figures
 def validate_figures(output_root: Path, figures_dir: Path, specs: list[dict], config: dict, num_runs: int,
-                     problems: Problems) -> dict:
+                     problems: Problems, reused_algorithms: tuple[str, ...] = ()) -> dict:
     names = [spec["name"] for spec in specs]
     key = ["environment", "algorithm", "arm_pull"]
     existing = {m: pd.read_csv(REPO_ROOT / "figures/publication" / f"publication_{m}_plot_table.csv") for m in METRICS}
@@ -413,7 +413,9 @@ def validate_figures(output_root: Path, figures_dir: Path, specs: list[dict], co
                             curve["mean"].to_numpy(), means.to_numpy(), rtol=0, atol=1e-12):
                         problems.add(f"{set_name}/{metric}/{spec['name']}/{algorithm}: plotted means differ")
                         continue
-                    expected_n = int(config["num_runs"]) if algorithm in PREREGISTERED_ALGORITHMS else num_runs
+                    expected_n = int(config["num_runs"]) if algorithm in (
+                        *PREREGISTERED_ALGORITHMS, *reused_algorithms
+                    ) else num_runs
                     if set(curve["n"]) != {expected_n} or float(curve["normalized_budget"].iloc[-1]) != 1.0:
                         problems.add(f"{set_name}/{metric}/{spec['name']}/{algorithm}: wrong n or endpoint")
                     for (_, point), values in zip(curve.iterrows(), (g.to_numpy() for _, g in grouped)):

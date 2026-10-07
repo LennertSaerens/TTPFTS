@@ -41,6 +41,8 @@ GATES: tuple[Gate, ...] = (
          "APE-UV: bitwise APE equivalence in known-bound mode, exact caches, coverage, no noise leakage"),
     Gate("information-matched", ("test_information_matched.py",),
          "APE-UV / empirical-mean D-EGE runs, naive-stage reproduction, validation, and figures", slow=True),
+    Gate("classification-doubling", ("test_classification_doubling.py",),
+         "Native classification-aware recommendations, endpoint identity, causal replay, and reused figures", slow=True),
     Gate("reward-report", ("-m", "environments.validate_reward_environment_gate"),
          "Gate 2/3: regenerate reward/environment/hardness reports"),
     Gate("environment", ("test_environment_reward_hardness_gate.py",),
