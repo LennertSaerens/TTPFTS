@@ -48,7 +48,8 @@ echo "=== Merge & Validate Known-Variance UQ ==="
 python -m experiments.uq_kv.merge_validate_kv \
     --run-dir "$RUN_DIR" \
     --results-dir "$RESULTS_DIR" \
-    --final-results-dir "$FINAL_RESULTS_DIR"
+    --final-results-dir "$FINAL_RESULTS_DIR" \
+    --n-jobs "$N_JOBS"
 
 echo "=== Running Analysis & Rendering Figures ==="
 python -m experiments.uq_kv.plot \
