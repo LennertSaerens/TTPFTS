@@ -1,4 +1,8 @@
 /results/
 /results5000/
 
+__pycache__/
+*.py[cod]
+
 *.csv
+!environments/instances/*.csv

@@ -28,7 +28,7 @@ class PUCB1Bandit(BaseMOMABAlgorithm):
             ucb_values = self.arm_means + self.kappa * np.sqrt(
                 (2 * (np.log(self.n) + self._log_arm_obj_factor)) / self.arm_counts
             )
-            pareto_mask = paretoset(ucb_values, sense=self._pareto_sense)
+            pareto_mask = paretoset(ucb_values, sense=self._pareto_sense, distinct=False)
             pareto_indices = np.where(pareto_mask)[0]
             arm = random.choice(pareto_indices)
         else:
@@ -40,7 +40,7 @@ class PUCB1Bandit(BaseMOMABAlgorithm):
 
     def get_top_arms(self):
         """Get the Pareto optimal arms based on the estimated arm means."""
-        pareto_mask = paretoset(self.arm_means, sense=self._pareto_sense)
+        pareto_mask = paretoset(self.arm_means, sense=self._pareto_sense, distinct=False)
         return np.where(pareto_mask)[0]
 
     def learn(self, arm, reward):

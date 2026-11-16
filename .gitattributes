@@ -1,0 +1,2 @@
+# Preserve byte-exact CSV line endings for checksummed frozen instances.
+environments/instances/*.csv -text

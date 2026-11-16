@@ -150,11 +150,22 @@ DISTRIBUTION_REGISTRY = {
 }
 
 
+def std_from_variance(variance: float | np.ndarray) -> float | np.ndarray:
+    """Convert a variance (sigma^2) into the corresponding standard deviation (sigma).
+
+    Use this helper at every Gaussian-reward call site instead of hand-computing
+    ``sqrt(variance)`` inline, so the variance value being targeted is always
+    visible next to the std it produces (e.g. ``std_from_variance(0.25)`` reads
+    unambiguously as "sigma^2 = 0.25", producing sigma = 0.5).
+    """
+    return np.sqrt(np.asarray(variance, dtype=np.float64))
+
+
 def make_distributions(
     arm_means: np.ndarray,
     dist: str = "gaussian",
     *,
-    gaussian_std: float | np.ndarray = 0.25,
+    gaussian_std: float | np.ndarray = 0.5,
 ) -> list[RewardDistribution]:
     """
     Build a list of RewardDistribution objects from arm mean vectors.
@@ -163,13 +174,27 @@ def make_distributions(
     ----------
     arm_means : (num_arms, num_objectives) array
     dist : distribution family name
-    gaussian_std : scalar or (num_objectives,) array for Gaussian
+    gaussian_std : scalar, ``(num_objectives,)``, or
+        ``(num_arms, num_objectives)`` array of Gaussian standard deviations
+        sigma (NOT the variance sigma^2). E.g. to reproduce a manuscript spec
+        of "diagonal covariance sigma^2 I_D with sigma^2=0.25", pass
+        ``std_from_variance(0.25)`` (== 0.5), never 0.25 directly. A full
+        matrix represents independent, heteroscedastic arm-objective rewards.
     """
     arm_means = np.asarray(arm_means, dtype=np.float64)
-    std_arr = np.broadcast_to(np.asarray(gaussian_std, dtype=np.float64), arm_means.shape[1:])
+    std_arr = np.asarray(gaussian_std, dtype=np.float64)
 
     if dist == "gaussian":
-        return [GaussianReward(m, std_arr) for m in arm_means]
+        try:
+            std_matrix = np.broadcast_to(std_arr, arm_means.shape)
+        except ValueError as exc:
+            raise ValueError(
+                "gaussian_std must be scalar, shape (num_objectives,), or "
+                f"shape {arm_means.shape}; got shape {std_arr.shape}."
+            ) from exc
+        if not np.all(np.isfinite(std_matrix)) or np.any(std_matrix <= 0.0):
+            raise ValueError("gaussian_std must contain only finite positive values.")
+        return [GaussianReward(m, std_matrix[i]) for i, m in enumerate(arm_means)]
     elif dist == "bernoulli":
         if np.any(arm_means < 0) or np.any(arm_means > 1):
             raise ValueError(

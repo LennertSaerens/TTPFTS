@@ -22,7 +22,7 @@ class UniformBandit(BaseMOMABAlgorithm):
 
     def get_top_arms(self):
         """Get the Pareto optimal arms based on the estimated arm means."""
-        pareto_mask = paretoset(self.arm_means, sense=self._pareto_sense)
+        pareto_mask = paretoset(self.arm_means, sense=self._pareto_sense, distinct=False)
         return np.where(pareto_mask)[0]
 
     def learn(self, arm, reward):

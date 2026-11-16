@@ -4,6 +4,7 @@ from abc import abstractmethod
 import numpy as np
 from paretoset import paretoset
 from bandits.InterfaceMOMABPFI import BaseMOMABAlgorithm
+from uncertainty_quantification import find_max_overlap_pair
 
 
 def _non_dominated_sort(samples: np.ndarray, sense: list) -> list[np.ndarray]:
@@ -32,6 +33,13 @@ class BaseThompsonParetoBandit(BaseMOMABAlgorithm):
     Provides shared warm-up logic, posterior management, top-arm identification,
     learning, and reset. Subclasses implement only `_select_arm` to define
     how an arm is chosen from the posterior samples after warm-up.
+
+    Note: `posterior.sample()`/`get_stds()` may raise `ValueError` if
+    invoked before every arm has enough observations for a well-defined
+    posterior (e.g. `TPosterior` requires df = n + 2*alpha - 1 > 0). The
+    round-robin warm-up below must therefore run at least as many pulls per
+    arm as the chosen posterior needs before any real Thompson sampling
+    decision is made.
     """
 
     def __init__(self, posterior, num_warmup_pulls: int = 2):
@@ -59,7 +67,7 @@ class BaseThompsonParetoBandit(BaseMOMABAlgorithm):
 
     def get_top_arms(self) -> np.ndarray:
         means = self.posterior.get_mean()
-        pareto_mask = paretoset(means, sense=self._pareto_sense)
+        pareto_mask = paretoset(means, sense=self._pareto_sense, distinct=False)
         return np.where(pareto_mask)[0]
 
     def learn(self, arm: int, reward: np.ndarray) -> None:
@@ -84,7 +92,7 @@ class TTPFTSBandit(BaseThompsonParetoBandit):
         self.p = p
 
     def _select_arm(self, samples: np.ndarray) -> int:
-        pareto_mask = paretoset(samples, sense=self._pareto_sense)
+        pareto_mask = paretoset(samples, sense=self._pareto_sense, distinct=False)
         pareto_indices = np.where(pareto_mask)[0]
 
         if np.random.random() < self.p:
@@ -94,8 +102,57 @@ class TTPFTSBandit(BaseThompsonParetoBandit):
         if len(non_pareto_indices) == 0:
             return random.choice(pareto_indices)
 
-        non_pareto_pareto_mask = paretoset(samples[non_pareto_indices], self._pareto_sense)
+        non_pareto_pareto_mask = paretoset(samples[non_pareto_indices], self._pareto_sense,
+                                           distinct=False)
         return random.choice(non_pareto_indices[np.where(non_pareto_pareto_mask)[0]])
+
+
+class OverlapTTPFTSBandit(BaseThompsonParetoBandit):
+    """
+    Overlap Top-Two Pareto Fronts Thompson Sampling Bandit.
+
+    Selects an arm from the first Pareto front with probability p,
+    otherwise from the second Pareto front of the posterior samples.
+    Instead of selecting uniformly, it selects the arm that has the maximum
+    posterior overlap with the opposite front.
+    """
+
+    def __init__(self, posterior, p: float = 0.5, num_warmup_pulls: int = 2):
+        super().__init__(posterior, num_warmup_pulls)
+        self.p = p
+
+    def _select_arm(self, samples: np.ndarray) -> int:
+        pareto_mask = paretoset(samples, sense=self._pareto_sense, distinct=False)
+        pareto_indices = np.where(pareto_mask)[0]
+
+        non_pareto_indices = np.where(~pareto_mask)[0]
+        if len(non_pareto_indices) == 0:
+            return random.choice(pareto_indices)
+
+        non_pareto_pareto_mask = paretoset(samples[non_pareto_indices], self._pareto_sense,
+                                           distinct=False)
+        front2_indices = non_pareto_indices[np.where(non_pareto_pareto_mask)[0]]
+
+        means = self.posterior.get_mean()
+        # get_stds() is the *actual* posterior standard deviation (not a
+        # Student-t scale parameter): for TPosterior this can be np.inf when
+        # the marginal posterior variance of mu is undefined (df <= 2), in
+        # which case the Bhattacharyya coefficient below evaluates to NaN
+        # and the existing best_f1/best_f2 == -1 fallback below is used.
+        vars = self.posterior.get_stds() ** 2
+
+        best_f1, best_f2 = find_max_overlap_pair(pareto_indices, front2_indices, means, vars)
+
+        if best_f1 == -1 or best_f2 == -1:
+            if np.random.random() < self.p:
+                return random.choice(pareto_indices)
+            else:
+                return random.choice(front2_indices)
+
+        if np.random.random() < self.p:
+            return best_f1
+        else:
+            return best_f2
 
 
 class CPFTSBandit(BaseThompsonParetoBandit):
@@ -137,7 +194,7 @@ class RPFTSBandit(BaseThompsonParetoBandit):
         self.max_resamples = max_resamples
 
     def _select_arm(self, samples: np.ndarray) -> int:
-        pareto_mask = paretoset(samples, sense=self._pareto_sense)
+        pareto_mask = paretoset(samples, sense=self._pareto_sense, distinct=False)
         pareto_indices = np.where(pareto_mask)[0]
 
         # With probability rho, pick from the first front

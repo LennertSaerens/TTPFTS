@@ -69,7 +69,7 @@ class BaseEnvironment(ABC):
     def _compute_pareto_indices(arms: np.ndarray) -> np.ndarray:
         """Returns indices of Pareto-optimal arms (no arm is strictly dominated)."""
         num_objectives = arms.shape[1]
-        pareto_mask = paretoset(arms, sense=["max"] * num_objectives)
+        pareto_mask = paretoset(arms, sense=["max"] * num_objectives, distinct=False)
         return np.where(pareto_mask)[0]
 
     def _update_pareto_cache(self) -> None:
@@ -79,10 +79,17 @@ class BaseEnvironment(ABC):
     def _init_standard_2obj(self,
                             arms: np.ndarray,
                             pareto_indices: Optional[np.ndarray] = None,
-                            dist: str = "gaussian") -> None:
-        """Common init for standard 2-objective environments with stds=0.25."""
+                            dist: str = "gaussian",
+                            gaussian_std: float = 0.5) -> None:
+        """Common init for standard 2-objective environments.
+
+        ``gaussian_std`` is the Gaussian standard deviation sigma (NOT the
+        variance sigma^2). The default of 0.5 corresponds to a variance of
+        0.25, matching the manuscript's "diagonal covariance sigma^2 I_D
+        with sigma^2=0.25" specification.
+        """
         arm_means = np.asarray(arms, dtype=np.float64)
-        distributions = make_distributions(arm_means, dist=dist, gaussian_std=0.25)
+        distributions = make_distributions(arm_means, dist=dist, gaussian_std=gaussian_std)
         if pareto_indices is None:
             pareto_indices = BaseEnvironment._compute_pareto_indices(arm_means)
         reference_point = np.array([1.0, 1.0])
