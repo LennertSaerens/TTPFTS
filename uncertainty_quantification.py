@@ -260,3 +260,25 @@ def uncertainty_quantification_all(posterior_df):
     total_entropy /= len(all_vars)
 
     return total_bc, total_kl, total_entropy
+
+
+def uncertainty_quantification_v1(posterior_df):
+    """Variant 1 (Directional Chernoff-Bhattacharyya overlap) from posterior DataFrame."""
+    from experiments.uq.metrics import uq_directional_bc_from_moments
+
+    means = np.vstack(posterior_df["means"].values)
+    stds = np.vstack(posterior_df["stds"].values)
+    return uq_directional_bc_from_moments(means, stds)
+
+
+def uncertainty_quantification_v2(posterior_df):
+    """Variant 2 (Analytic dominance-reversal recommendation risk) from posterior DataFrame."""
+    from experiments.uq.metrics import uq_dominance_risk_from_moments
+
+    means = np.vstack(posterior_df["means"].values)
+    stds = np.vstack(posterior_df["stds"].values)
+    return uq_dominance_risk_from_moments(means, stds)
+
+
+uncertainty_quantification_directional_bc = uncertainty_quantification_v1
+uncertainty_quantification_dominance_risk = uncertainty_quantification_v2

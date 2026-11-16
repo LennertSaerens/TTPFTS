@@ -1,0 +1,132 @@
+{
+  "schema_version": "known-var-uq-v1",
+  "final_config_sha256": "0ab48d2c82e04890acc26345c010d79843e6dd1cd97fe6dbc49773024c2f1885",
+  "final_config_file_sha256": "55e410c4973001436c3141ac01d9848cc08444fbcc65d6af4206dbd7be351cb1",
+  "environment_spec_sha256": "0d0191ad532508bd36261b632e20c61a136b1bcae9378e4bca1d1892d2540035",
+  "algorithm": "TTPFTS_KNOWN_VAR",
+  "posterior": {
+    "class": "NormalPosterior",
+    "known_std": 0.5,
+    "warmup_pulls_per_arm": 4,
+    "rho": 0.5,
+    "unknown_variance": false
+  },
+  "num_runs": 100,
+  "master_seed": 0,
+  "eval_points": 100,
+  "mc_draws": 512,
+  "mc_seed_base": 20261118,
+  "measures": [
+    "bhattacharyya",
+    "bhattacharyya_raw",
+    "uq_v1",
+    "uq_v2",
+    "uq_mc",
+    "symmetric_kl",
+    "entropy"
+  ],
+  "heldout_seeds": {
+    "checkpoint_stopping_seed": 20261116,
+    "trajectory_correlation_seed": 20261117
+  },
+  "frozen_selection": {
+    "risk_bins": [
+      0.0,
+      0.01,
+      0.05,
+      0.1,
+      0.25,
+      0.5,
+      1.0
+    ],
+    "coverage_fractions": [
+      0.1,
+      0.25,
+      0.5
+    ],
+    "stopping_thresholds_v1_v2_mc": [
+      0.1,
+      0.05,
+      0.01
+    ],
+    "stopping_thresholds_eq10": [
+      0.01,
+      0.0001,
+      4e-06
+    ]
+  },
+  "random_trajectory_families": [
+    {
+      "name": "Unif_K10_d2",
+      "law": "uniform",
+      "k": 10,
+      "d": 2,
+      "sigma": 0.25,
+      "budget": 5000,
+      "num_runs": 100
+    },
+    {
+      "name": "Norm_K10_d2",
+      "law": "normal",
+      "k": 10,
+      "d": 2,
+      "sigma": 0.25,
+      "budget": 5000,
+      "num_runs": 100
+    },
+    {
+      "name": "Unif_K20_d2",
+      "law": "uniform",
+      "k": 20,
+      "d": 2,
+      "sigma": 0.25,
+      "budget": 15000,
+      "num_runs": 100
+    },
+    {
+      "name": "Norm_K20_d2",
+      "law": "normal",
+      "k": 20,
+      "d": 2,
+      "sigma": 0.25,
+      "budget": 15000,
+      "num_runs": 100
+    },
+    {
+      "name": "Unif_K50_d2",
+      "law": "uniform",
+      "k": 50,
+      "d": 2,
+      "sigma": 0.25,
+      "budget": 40000,
+      "num_runs": 100
+    },
+    {
+      "name": "Unif_K10_d4",
+      "law": "uniform",
+      "k": 10,
+      "d": 4,
+      "sigma": 0.25,
+      "budget": 5000,
+      "num_runs": 100
+    },
+    {
+      "name": "Unif_K20_d4",
+      "law": "uniform",
+      "k": 20,
+      "d": 4,
+      "sigma": 0.25,
+      "budget": 15000,
+      "num_runs": 100
+    },
+    {
+      "name": "Unif_K10_d2_s05",
+      "law": "uniform",
+      "k": 10,
+      "d": 2,
+      "sigma": 0.5,
+      "budget": 15000,
+      "num_runs": 100
+    }
+  ]
+}

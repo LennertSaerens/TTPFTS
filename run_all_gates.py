@@ -31,6 +31,8 @@ GATES: tuple[Gate, ...] = (
          "Gate 2: TTPFTS known/unknown-variance posterior validation", slow=True),
     Gate("uq-replay", ("test_uq_replay.py",),
          "UQ replay: posterior-state validity and trajectory-correlation semantics"),
+    Gate("uq-variants", ("test_uq_variants.py",),
+         "Issue #2 UQ variants: analytic checks, non-dilution, and shared-dominator tests"),
     Gate("p-sweep", ("test_p_sweep.py",),
          "Hardness-normalized TTPFTS p-sweep provenance, identity, and plotting checks", slow=True),
     Gate("gap-noise-alignment", ("test_gap_noise_alignment.py",),

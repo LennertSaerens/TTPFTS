@@ -47,6 +47,7 @@ rsync -az --delete \
     --exclude='results' --exclude='results5000' --exclude='results_corr' \
     --exclude='figures' \
     --exclude='results_preregistered_final*' --exclude='results_pilot*' \
+    --exclude='results_uq_*' --exclude='results_p_sweep*' --exclude='results_*' \
     ./ "${REMOTE}:~/${REMOTE_DIR}/"
 
 echo "Synced commit ${COMMIT} to ${REMOTE}:~/${REMOTE_DIR}/"

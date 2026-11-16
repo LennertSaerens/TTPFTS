@@ -32,10 +32,14 @@
 !experiments/gap_noise_alignment/instances/*.csv
 !experiments/gap_noise_alignment/reports/*.csv
 !experiments/information_matched/reports/*.csv
+!experiments/uq/reports/*.json
+!experiments/uq_kv/reports/*.csv
+!experiments/uq_kv/reports/*.json
 
 /results_gap_noise_alignment_*/
 /results_ege_doubling_*/
 /results_information_matched_*/
+/results_uq_known_var*/
 
 # Python bytecode
 __pycache__/
