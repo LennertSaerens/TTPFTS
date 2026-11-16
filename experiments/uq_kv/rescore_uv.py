@@ -5,6 +5,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
+import os
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -48,54 +51,88 @@ def verify_uv_posterior_contract() -> dict[str, float]:
     }
 
 
-def rescore_uv(uv_results_dir: Path, output_dir: Path) -> Path:
-    verify_uv_posterior_contract()
+def _rescore_one_rep(
+    task: tuple[str, int, Path, list[tuple[int, float, int, float, float, int, float]]]
+) -> list[dict]:
+    env_name, rep, uv_run_dir, rep_rows = task
+    _cpath, spath = shard_paths(uv_run_dir, env_name, rep)
+    with np.load(spath, allow_pickle=False) as state:
+        n_arr, m_arr, m2_arr = state["n"], state["means"], state["m2"]
+
+    rows: list[dict] = []
+    for idx, (arm_pull, norm_b, bern, jacc, misid, uq_avail, bhatt) in enumerate(rep_rows):
+        if arm_pull == 0:
+            v1_val: float | str = ""
+            v2_val: float | str = ""
+            avail = 0
+        else:
+            try:
+                stds = posterior_stds_from_tposterior_state(n_arr[idx], m2_arr[idx], alpha=0.0)
+            except ValueError:
+                stds = np.full_like(m_arr[idx], np.inf)
+            if np.all(np.isfinite(stds)) and np.all(stds > 0):
+                v1_val = uq_directional_bc_from_moments(m_arr[idx], stds)
+                v2_val = uq_dominance_risk_from_moments(m_arr[idx], stds)
+                avail = 1
+            else:
+                v1_val = ""
+                v2_val = ""
+                avail = 0
+        rows.append({
+            "environment": env_name,
+            "repetition": rep,
+            "arm_pull": arm_pull,
+            "normalized_budget": norm_b,
+            "bernoulli": bern,
+            "jaccard": jacc,
+            "misidentification": misid,
+            "eq10_available": uq_avail,
+            "bhattacharyya": 0.0 if np.isnan(bhatt) and arm_pull > 0 else ("" if np.isnan(bhatt) else bhatt),
+            "bhattacharyya_raw": "" if np.isnan(bhatt) else bhatt,
+            "uv_finite_avail": avail,
+            "uq_v1": v1_val,
+            "uq_v2": v2_val,
+        })
+    return rows
+
+
+def rescore_uv(uv_results_dir: Path, output_dir: Path, n_jobs: int = 1) -> Path:
+    contract = verify_uv_posterior_contract()
     uv_run_dir = uv_results_dir / "run"
     output_dir.mkdir(parents=True, exist_ok=True)
-    environments = [item["name"] for item in load_final_config()["environments"]]
+    with (output_dir / "uv_posterior_contract.json").open("w") as handle:
+        json.dump(contract, handle, indent=2)
 
-    out_rows = []
+    environments = [item["name"] for item in load_final_config()["environments"]]
+    tasks: list[tuple[str, int, Path, list[tuple[int, float, int, float, float, int, float]]]] = []
     for env_name in environments:
         env_csv = uv_results_dir / f"{env_name}.csv"
         df = pd.read_csv(env_csv)
         reps = sorted(df["repetition"].unique())
         for rep in reps:
             rep_df = df[df["repetition"] == rep].sort_values("arm_pull")
-            _cpath, spath = shard_paths(uv_run_dir, env_name, int(rep))
-            with np.load(spath, allow_pickle=False) as state:
-                n_arr, m_arr, m2_arr = state["n"], state["means"], state["m2"]
-            for idx, row in enumerate(rep_df.itertuples(index=False)):
-                if int(row.arm_pull) == 0:
-                    v1_val = v2_val = ""
-                    avail = 0
-                else:
-                    try:
-                        stds = posterior_stds_from_tposterior_state(n_arr[idx], m2_arr[idx], alpha=0.0)
-                    except ValueError:
-                        stds = np.full_like(m_arr[idx], np.inf)
-                    if np.all(np.isfinite(stds)) and np.all(stds > 0):
-                        v1_val = uq_directional_bc_from_moments(m_arr[idx], stds)
-                        v2_val = uq_dominance_risk_from_moments(m_arr[idx], stds)
-                        avail = 1
-                    else:
-                        v1_val = v2_val = ""
-                        avail = 0
-                out_rows.append({
-                    "environment": env_name,
-                    "repetition": int(rep),
-                    "arm_pull": int(row.arm_pull),
-                    "normalized_budget": float(row.normalized_budget),
-                    "bernoulli": int(row.bernoulli),
-                    "jaccard": float(row.jaccard),
-                    "misidentification": float(row.misidentification),
-                    "eq10_available": int(row.uq_available),
-                    "bhattacharyya": 0.0 if pd.isna(row.bhattacharyya) and int(row.arm_pull) > 0 else row.bhattacharyya,
-                    "bhattacharyya_raw": "" if pd.isna(row.bhattacharyya) else float(row.bhattacharyya),
-                    "uv_finite_avail": avail,
-                    "uq_v1": v1_val,
-                    "uq_v2": v2_val,
-                })
-        print(f"[UV rescore] Completed {env_name}", flush=True)
+            rep_rows = [
+                (
+                    int(r.arm_pull),
+                    float(r.normalized_budget),
+                    int(r.bernoulli),
+                    float(r.jaccard),
+                    float(r.misidentification),
+                    int(r.uq_available),
+                    float("nan") if pd.isna(r.bhattacharyya) else float(r.bhattacharyya),
+                )
+                for r in rep_df.itertuples(index=False)
+            ]
+            tasks.append((env_name, int(rep), uv_run_dir, rep_rows))
+
+    out_rows: list[dict] = []
+    if n_jobs > 1:
+        with ProcessPoolExecutor(max_workers=n_jobs) as pool:
+            for rep_out in pool.map(_rescore_one_rep, tasks):
+                out_rows.extend(rep_out)
+    else:
+        for task in tasks:
+            out_rows.extend(_rescore_one_rep(task))
 
     out_path = output_dir / "uv_rescored_checkpoints.csv"
     with out_path.open("w", newline="") as handle:
@@ -110,8 +147,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--uv-results-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--n-jobs", type=int, default=max(1, (os.cpu_count() or 1)))
     args = parser.parse_args()
-    rescore_uv(args.uv_results_dir, args.output_dir)
+    rescore_uv(args.uv_results_dir, args.output_dir, n_jobs=args.n_jobs)
 
 
 if __name__ == "__main__":

@@ -4,8 +4,9 @@
 #SBATCH --partition=batch
 #SBATCH --nodelist=node102,node103
 #SBATCH --exclude=master
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=48
+#SBATCH --mem=32G
 #SBATCH --time=01:00:00
 #SBATCH --output=hpc/logs/%x-%j.out
 
@@ -14,6 +15,7 @@ set -euo pipefail
 REPO_DIR="${REPO_DIR:-$HOME/DENV-Bandits-uq}"
 RESULTS_ROOT="${RESULTS_ROOT:-$REPO_DIR/results_uq_known_var}"
 FINAL_RESULTS_DIR="${FINAL_RESULTS_DIR:-$HOME/DENV-Bandits-final/results_preregistered_final_ff29cc456351}"
+UV_RESULTS_DIR="${UV_RESULTS_DIR:-$REPO_DIR/results_uq_hardness_7bc58a101c75}"
 
 set +u
 source /etc/profile.d/lmod.sh
@@ -32,6 +34,15 @@ PY
 )"
 RESULTS_DIR="${RESULTS_ROOT}_${UQ_HASH:0:12}"
 RUN_DIR="$RESULTS_DIR/run"
+N_JOBS="${SLURM_CPUS_PER_TASK:-48}"
+
+if [[ -d "$UV_RESULTS_DIR" && ! -f "$RESULTS_DIR/uv_rescored/uv_rescored_checkpoints.csv" ]]; then
+    echo "=== Re-scoring TTPFTS_UNKNOWN_VAR Shards (parallel, $N_JOBS workers) ==="
+    python -m experiments.uq_kv.rescore_uv \
+        --uv-results-dir "$UV_RESULTS_DIR" \
+        --output-dir "$RESULTS_DIR/uv_rescored" \
+        --n-jobs "$N_JOBS"
+fi
 
 echo "=== Merge & Validate Known-Variance UQ ==="
 python -m experiments.uq_kv.merge_validate_kv \

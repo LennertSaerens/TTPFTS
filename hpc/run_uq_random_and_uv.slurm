@@ -4,6 +4,7 @@
 #SBATCH --partition=batch
 #SBATCH --nodelist=node102,node103
 #SBATCH --exclude=master
+#SBATCH --nodes=1
 #SBATCH --cpus-per-task=48
 #SBATCH --mem=32G
 #SBATCH --time=02:00:00
@@ -45,7 +46,8 @@ if [[ -d "$UV_RESULTS_DIR" ]]; then
     echo "=== Re-scoring TTPFTS_UNKNOWN_VAR Shards ==="
     python -m experiments.uq_kv.rescore_uv \
         --uv-results-dir "$UV_RESULTS_DIR" \
-        --output-dir "$RESULTS_DIR/uv_rescored"
+        --output-dir "$RESULTS_DIR/uv_rescored" \
+        --n-jobs "$N_JOBS"
 fi
 
 echo "Done: $(date --iso-8601=seconds)"
