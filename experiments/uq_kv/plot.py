@@ -66,7 +66,7 @@ def _env_key(name: str) -> int:
 
 def _plot_single_evolution(summary: pd.DataFrame, measure: str, output: Path) -> None:
     _apply_paper_style()
-    fig, ax = plt.subplots(figsize=(PAPER_WIDTH_INCHES, 4.6))
+    fig, ax = plt.subplots(figsize=(PAPER_WIDTH_INCHES, 4.8))
     for env in sorted(summary["environment"].unique(), key=_env_key):
         curve = summary[summary["environment"] == env].sort_values("normalized_budget")
         valid = curve["n_valid"] > 0
@@ -74,7 +74,7 @@ def _plot_single_evolution(summary: pd.DataFrame, measure: str, output: Path) ->
             curve.loc[valid, "normalized_budget"],
             curve.loc[valid, "mean"],
             linewidth=2.0,
-            label=env.removeprefix("EgeExp"),
+            label=f"Env {env.removeprefix('EgeExp')}",
         )
         ax.fill_between(
             curve.loc[valid, "normalized_budget"],
@@ -87,7 +87,16 @@ def _plot_single_evolution(summary: pd.DataFrame, measure: str, output: Path) ->
     ax.set(xlim=(0, 1), ylim=(0, 1.03), xlabel="Normalized Budget", ylabel=METRIC_LABELS[measure])
     ax.set_xticks([0, 0.25, 0.5, 0.75, 1])
     ax.grid(True, alpha=0.25)
-    ax.legend(title="Environment", ncol=4, frameon=True, loc="best", fontsize=LEGEND_FONT_SIZE, title_fontsize=LEGEND_FONT_SIZE)
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.14),
+        ncol=4,
+        frameon=True,
+        fontsize=LEGEND_FONT_SIZE,
+    )
     fig.tight_layout()
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=500, bbox_inches="tight")

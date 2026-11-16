@@ -1,0 +1,9 @@
+{
+  "n": 6.0,
+  "df": 5.0,
+  "batch_scale": 0.45946829173634074,
+  "sampler_scale": 0.45946829173634074,
+  "logged_std": 0.5931710140017395,
+  "reconstructed_std": 0.5931710140017395,
+  "ratio_std_over_scale": 1.2909944487358056
+}
