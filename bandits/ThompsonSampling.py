@@ -139,8 +139,8 @@ class NormalPTSBandit:
         Find all Pareto optimal arms and choose one uniformly at random.
         :return: The arm to pull.
         """
-        stds = stats.invgamma.rvs(self.alpha, scale=self.beta)
-        samples = np.random.normal(self.mu, stds / self.precision)
+        variances = stats.invgamma.rvs(self.alpha, scale=self.beta)
+        samples = np.random.normal(self.mu, np.sqrt(variances / self.precision))
         is_strictly_worse = np.all(samples[:, None, :] < samples[None, :, :], axis=2)
         pareto_indices = np.where(~np.any(is_strictly_worse, axis=1))[0]
         return random.choice(pareto_indices)
@@ -150,8 +150,8 @@ class NormalPTSBandit:
     #     Get the arms that are considered to be Pareto optimal by the bandit.
     #     :return: The top arms.
     #     """
-    #     stds = stats.invgamma.rvs(self.alpha, scale=self.beta)
-    #     samples = np.random.normal(self.mu, stds / self.precision)
+    #     variances = stats.invgamma.rvs(self.alpha, scale=self.beta)
+    #     samples = np.random.normal(self.mu, np.sqrt(variances / self.precision))
     #     is_strictly_worse = np.all(samples[:, None, :] < samples[None, :, :], axis=2)
     #     pareto_indices = np.where(~np.any(is_strictly_worse, axis=1))[0]
     #     return pareto_indices
@@ -173,11 +173,11 @@ class NormalPTSBandit:
         :return: None
         """
         for o in range(self.num_objectives):
+            self.beta[arm][o] += 0.5 * (reward[o] - self.mu[arm][o]) ** 2 * (
+                        self.precision[arm][o] / (self.precision[arm][o] + 1))
             self.mu[arm][o] = (self.mu[arm][o] * self.precision[arm][o] + reward[o]) / (self.precision[arm][o] + 1)
             self.precision[arm][o] += 1
             self.alpha[arm][o] += 0.5
-            self.beta[arm][o] += 0.5 * (reward[o] - self.mu[arm][o]) ** 2 * (
-                        (self.precision[arm][o] - 1) / self.precision[arm][o])
 
     def reset(self):
         """
@@ -213,8 +213,8 @@ class NormalLSTSBandit:
         Find the Pareto optimal arm by sampling from the beta distribution and using the scalarization functions.
         :return: The arm to pull.
         """
-        stds = stats.invgamma.rvs(self.alpha, scale=self.beta)
-        samples = np.random.normal(self.mu, stds / self.precision)
+        variances = stats.invgamma.rvs(self.alpha, scale=self.beta)
+        samples = np.random.normal(self.mu, np.sqrt(variances / self.precision))
         # pick a random scalarization function
         scalarization_function = random.randint(0, self.num_scalarization_functions - 1)
         # Calculate the scalarized values for each arm
@@ -233,12 +233,12 @@ class NormalLSTSBandit:
         :return: None
         """
         for o in range(self.num_objectives):
+            self.beta[self.MRU][arm][o] += 0.5 * (reward[o] - self.mu[self.MRU][arm][o]) ** 2 * (
+                        self.precision[self.MRU][arm][o] / (self.precision[self.MRU][arm][o] + 1))
             self.mu[self.MRU][arm][o] = (self.mu[self.MRU][arm][o] * self.precision[self.MRU][arm][o] + reward[o]) / (
                         self.precision[self.MRU][arm][o] + 1)
             self.precision[self.MRU][arm][o] += 1
             self.alpha[self.MRU][arm][o] += 0.5
-            self.beta[self.MRU][arm][o] += 0.5 * (reward[o] - self.mu[self.MRU][arm][o]) ** 2 * (
-                        (self.precision[self.MRU][arm][o] - 1) / self.precision[self.MRU][arm][o])
 
     def reset(self):
         """

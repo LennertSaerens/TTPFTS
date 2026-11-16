@@ -60,6 +60,51 @@ Both variants share the same explicit **4-pull-per-arm warm-up** (counted
 inside the budget) so the comparison isolates the posterior model, and both
 use rho = 0.5. Labels are `TTPFTS_KNOWN_VAR` and `TTPFTS_UNKNOWN_VAR`.
 
+### Follow-up audit: Student-t scale versus posterior standard deviation
+
+The reported missing square root is present in the historical `TPosterior`
+before commit `2f3e8f5`: it sampled with `S / sqrt(n * df)` even though `S`
+stored squared deviations. That commit corrected the scale and the online
+sum-of-squares update. The current `bandits/Posteriors.py` is byte-identical
+to the version in both `2f3e8f5` and `5bc0e3f` (the source used for the
+preregistered benchmark). No second square-root change is needed in the
+current TTPFTS sampler.
+
+For `nu = n + 2*alpha - 1` and centered sum of squares `S`, the contracts are:
+
+- sampling scale: `sqrt(S / (n * nu))`;
+- posterior standard deviation: `sqrt(S / (n * (nu - 2)))` when `nu > 2`,
+  or infinite when `0 < nu <= 2` and `S > 0`.
+
+Scale and standard deviation are different Student-t parameters; the sampler
+must not substitute one for the other. The UQ replay reconstructs the actual
+posterior standard deviation and uses its square as the covariance diagonal.
+APE-UV's frequentist Student-t confidence bounds also already take the square
+root of the online sample variance. Notebook code cells contain no separate
+Student-t sampler.
+
+The audit did find the analogous live error in the **legacy**
+`NormalPTSBandit` and `NormalLSTSBandit` in `bandits/ThompsonSampling.py`.
+An inverse-gamma draw is an observation **variance**, so the conditional
+normal sampler must use `sqrt(variance / precision)`, not
+`variance / precision`. Their conjugate `beta` updates also used the
+already-updated mean, understating the scatter; the update now uses the
+previous mean and precision. These two classes are not registered in
+`momab_main.py` and were not used for the current EGE/Uniform/APE/TTPFTS
+publication experiments. Historical results produced with these legacy
+classes require recomputation before scientific reuse; preserved archives
+are not rewritten.
+
+`validate_posteriors.py` now independently checks the scale/standard-deviation
+relationship, standardized sampling transform, logged summaries and UQ
+reconstruction for `alpha=-0.5,0,0.5,2`, plus linear response to changing
+reward units. It also covers all three Normal-Inverse-Gamma sampling paths
+and the legacy conjugate statistics against batch formulas. The two legacy
+regressions failed before the fixes; the current Student-t checks already
+passed. The existing 200,000-draw Student-t goodness-of-fit gate remains in
+place. Current corrected TTPFTS trajectories are not changed or rerun by
+this audit; pre-correction archived trajectories remain superseded.
+
 ## 3. Environments, instances and the EgeExp3 repair
 
 EgeExp1, EgeExp4 and EgeExp5 are frozen to committed, checksummed arm-mean

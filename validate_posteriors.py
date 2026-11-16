@@ -10,6 +10,7 @@ Covers, per the posterior-correctness gate spec:
      preregistered tolerances fixed *before* any run of this script.
   5. Multi-arm / multi-objective independence.
   6. TTPFTS integration (warm-up, explicit failure surfacing, end-to-end run).
+  7. Legacy Normal-Inverse-Gamma sampling scales, marginal law and batch updates.
 
 Design choices fixed by the user for this gate:
   * Gaussian reward variance for NormalPosterior tests: sigma^2 = 0.25
@@ -22,11 +23,15 @@ Exit code is 0 iff every check passes; a human-readable PASS/FAIL report is
 printed for each check. Run with:  .venv/bin/python validate_posteriors.py
 """
 import sys
+from unittest.mock import patch
+
 import numpy as np
 from scipy import stats
 
-from bandits.Posteriors import TPosterior, NormalPosterior
+from bandits.Posteriors import TPosterior, NormalPosterior, NormalIGPosterior
+from bandits.ThompsonSampling import NormalPTSBandit, NormalLSTSBandit
 from bandits.TTPFTS import TTPFTSBandit
+from experiments.uq.metrics import posterior_stds_from_tposterior_state
 
 RNG_SEED = 12345
 FAILURES = []
@@ -303,6 +308,168 @@ def test_tposterior_get_stds_vs_get_scale():
     )
 
 
+def test_tposterior_scale_contract_all_priors():
+    """Independent batch oracle for sampling, summaries, logs and UQ replay.
+
+    In particular S is a sum of squared deviations, not a standard deviation:
+    the sampler needs sqrt(S/(n*nu)), never S/sqrt(n*nu).
+    """
+    datasets = [
+        np.array([[1., 10.], [-2., 5.], [4., -1.], [8., 3.], [0., 7.], [6., 11.]]),
+        np.array([[2., -3.], [7., 0.], [1., 6.], [-4., 1.], [3., -2.],
+                  [5., 8.], [0., 3.], [9., -5.], [4., 2.]]),
+    ]
+    ok = True
+    for alpha in (-0.5, 0.0, 0.5, 2.0):
+        posterior = TPosterior(2, 2, alpha=alpha)
+        for arm, data in enumerate(datasets):
+            for reward in data:
+                posterior.update(arm, reward)
+        n = np.array([len(data) for data in datasets])[:, None]
+        means = np.array([data.mean(axis=0) for data in datasets])
+        sums = np.array([np.sum((data - data.mean(axis=0)) ** 2, axis=0) for data in datasets])
+        nu = n + 2 * alpha - 1
+        expected_scale = np.sqrt(sums / (n * nu))
+        expected_std = np.sqrt(sums / (n * (nu - 2)))
+        unit_draw = np.array([[-1.5, 0.25], [2.0, -0.5]])
+        with patch("bandits.Posteriors.t.rvs", return_value=unit_draw) as sampler:
+            draws = posterior.sample()
+        ok &= close(draws, means + expected_scale * unit_draw)
+        ok &= close(sampler.call_args.kwargs["df"], np.broadcast_to(nu, means.shape))
+        ok &= close(posterior.get_scale(), expected_scale)
+        ok &= close(posterior.get_stds(), expected_std)
+        ok &= close(posterior.get_stds(), stats.t.std(df=nu, scale=expected_scale))
+        ok &= close(posterior_stds_from_tposterior_state(posterior.n, posterior.M2, alpha), expected_std)
+        captured = []
+        with patch("pandas.DataFrame.to_parquet", lambda frame, path, **kw: captured.append(frame.copy())):
+            posterior.log("unused-test-output.parquet")
+        ok &= close(np.array(captured[0]["stds"].tolist()), expected_std)
+    return check(
+        "Student-t sampling, get_scale, get_stds, logs and UQ reconstruction agree "
+        "with independent batch formulas for alpha=-0.5,0,0.5,2",
+        ok,
+    )
+
+
+def test_tposterior_affine_scale_regression():
+    """A missing square root makes observation units scale draws quadratically."""
+    data = np.array([[-3., 4.], [1., 9.], [7., -2.], [4., 1.], [-1., 5.], [8., 0.]])
+    unit_draw = np.array([[0.5, -1.25]])
+    base = TPosterior(1, 2)
+    for reward in data:
+        base.update(0, reward)
+    ok = True
+    with patch("bandits.Posteriors.t.rvs", return_value=unit_draw):
+        original = base.sample()
+        for multiplier in (0.1, 3.0, 10.0):
+            shift = np.array([12., -8.])
+            transformed = TPosterior(1, 2)
+            for reward in multiplier * data + shift:
+                transformed.update(0, reward)
+            ok &= close(transformed.sample(), multiplier * original + shift)
+            ok &= close(transformed.get_scale(), multiplier * base.get_scale())
+            ok &= close(transformed.get_stds(), multiplier * base.get_stds())
+    return check("Student-t draws and summaries scale linearly, not quadratically, with reward units", ok)
+
+
+def test_normal_inverse_gamma_sampling_scales():
+    """An inverse-gamma draw is sigma^2; normal scale is sqrt(sigma^2/lambda)."""
+    ok = True
+    legacy = [
+        NormalPTSBandit(2, 2),
+        NormalLSTSBandit(2, 2, scalarization_functions=np.array([[0.25, 0.75]])),
+    ]
+    for bandit in legacy:
+        bandit.precision.fill(4.0)
+        variances = np.full_like(bandit.mu, 9.0)
+        with patch("bandits.ThompsonSampling.stats.invgamma.rvs", return_value=variances), \
+                patch("bandits.ThompsonSampling.np.random.normal", return_value=bandit.mu.copy()) as normal:
+            bandit.choose_arm()
+        ok &= close(normal.call_args.args[1], np.sqrt(variances / bandit.precision))
+    posterior = NormalIGPosterior(2, 2)
+    posterior.lambdas.fill(4.0)
+    with patch("bandits.Posteriors.invgamma.rvs", return_value=np.full((2, 2), 9.0)), \
+            patch("bandits.Posteriors.norm.rvs", return_value=posterior.mu.copy()) as normal:
+        posterior.sample()
+    ok &= close(normal.call_args.kwargs["scale"], np.full((2, 2), 1.5))
+    return check(
+        "All Normal-Inverse-Gamma samplers convert variance draws to normal std "
+        "with sqrt(sigma^2/lambda)",
+        ok,
+    )
+
+
+def test_legacy_normal_inverse_gamma_batch_statistics():
+    """Ensure the sampled mixture corresponds to the posterior after observed rewards."""
+    data = np.array([[1., 2.], [-2., 5.], [4., 0.], [3., -1.], [7., 6.]])
+    n = len(data)
+    batch_mean = data.mean(axis=0)
+    expected_mu = data.sum(axis=0) / (1 + n)
+    expected_beta = 1 + 0.5 * (
+        np.sum((data - batch_mean) ** 2, axis=0) + n / (1 + n) * batch_mean ** 2
+    )
+    ok = True
+    for bandit in (
+        NormalPTSBandit(2, 2),
+        NormalLSTSBandit(2, 2, scalarization_functions=np.array([[0.25, 0.75]])),
+    ):
+        if isinstance(bandit, NormalLSTSBandit):
+            bandit.MRU = 0  # The single scalarization selected by choose_arm().
+        for reward in data:
+            bandit.learn(0, reward)
+        index = (0, 0) if bandit.mu.ndim == 3 else 0
+        other = (0, 1) if bandit.mu.ndim == 3 else 1
+        ok &= close(bandit.mu[index], expected_mu)
+        ok &= close(bandit.precision[index], 1 + n)
+        ok &= close(bandit.alpha[index], 1 + n / 2)
+        ok &= close(bandit.beta[index], expected_beta)
+        ok &= close(bandit.beta[other], 1.0)
+    return check("Legacy Normal-Inverse-Gamma statistics match conjugate batch updates", ok)
+
+
+def test_legacy_normal_inverse_gamma_marginal_law():
+    """The hierarchical sampler must yield t_{2a}(mu, sqrt(beta/(lambda*a)))."""
+    rng_state = np.random.get_state()
+    normal_sampler = np.random.normal
+    ok = True
+    try:
+        for index, bandit in enumerate((
+            NormalPTSBandit(1, 1),
+            NormalLSTSBandit(1, 1, scalarization_functions=np.array([[1.0]])),
+        )):
+            np.random.seed(RNG_SEED + 30 + index)
+            bandit.mu.fill(0.7)
+            bandit.precision.fill(4.0)
+            bandit.alpha.fill(8.0)
+            bandit.beta.fill(2.5)
+            draws = []
+
+            def record_normal(mean, scale):
+                sample = normal_sampler(mean, scale)
+                draws.append(float(sample.ravel()[0]))
+                return sample
+
+            with patch("bandits.ThompsonSampling.np.random.normal", side_effect=record_normal):
+                for _ in range(15_000):
+                    bandit.choose_arm()
+            values = np.asarray(draws)
+            df, scale = 16.0, np.sqrt(2.5 / (4.0 * 8.0))
+            variance = scale**2 * df / (df - 2)
+            fourth_moment = 3 * scale**4 * df**2 / ((df - 2) * (df - 4))
+            se_variance = np.sqrt((fourth_moment - variance**2) / len(values))
+            mean_ok = abs(values.mean() - 0.7) < MC_Z_BOUND * np.sqrt(variance / len(values))
+            variance_ok = abs(values.var() - variance) < MC_Z_BOUND * se_variance
+            _, ks_p = stats.kstest(values, "t", args=(df, 0.7, scale))
+            ok &= mean_ok and variance_ok and ks_p > KS_ALPHA
+    finally:
+        np.random.set_state(rng_state)
+    return check(
+        "Both legacy hierarchical samplers match the analytic Student-t marginal "
+        "(mean, variance and KS distribution test)",
+        ok,
+    )
+
+
 def test_normalposterior_sampling_matches_normal():
     rng_state = np.random.get_state()
     np.random.seed(RNG_SEED + 6)
@@ -552,6 +719,11 @@ ALL_TESTS = [
     test_reset_reusable_after,
     test_tposterior_sampling_matches_student_t,
     test_tposterior_get_stds_vs_get_scale,
+    test_tposterior_scale_contract_all_priors,
+    test_tposterior_affine_scale_regression,
+    test_normal_inverse_gamma_sampling_scales,
+    test_legacy_normal_inverse_gamma_batch_statistics,
+    test_legacy_normal_inverse_gamma_marginal_law,
     test_normalposterior_sampling_matches_normal,
     test_tposterior_invalid_state_raises,
     test_multi_arm_objective_independence,
